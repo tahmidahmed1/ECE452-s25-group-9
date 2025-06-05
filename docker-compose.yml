@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-mydb} # Default to mydb if DB_NAME is not in .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    command: ["../gradlew", ":server:run", "--continuous", "-x", "test"]
+    working_dir: /workspace/server
+    volumes:
+      - ./:/workspace
+      - gradle_server_cache:/root/.gradle/caches
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - KTOR_ENV=development
+      - JAVA_TOOL_OPTIONS=-Dio.ktor.development=true -Dktor.jwt.secret=Qw8v2n3Xy7Zp4R1s6T0u9L5k2J8h3B6c
+      - JWT_SECRET=Qw8v2n3Xy7Zp4R1s6T0u9L5k2J8h3B6c
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+      ADMINER_DEFAULT_DB_DRIVER: pgsql
+      ADMINER_DEFAULT_DB_NAME: ${DB_NAME:-mydb}
+      ADMINER_DESIGN: 'lucas-sandery'
+    depends_on:
+      - db
+volumes:
+  pgdata:
+  gradle_server_cache: {} 

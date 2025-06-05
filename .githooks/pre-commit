@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo "🔧 Running formatter..."
+./gradlew format
+
+echo "🧪 Running linter..."
+./gradlew lint
+
+if [ $? -ne 0 ]; then
+  echo "\n❌ Lint errors detected. Please fix them before committing."
+  exit 1
+fi
