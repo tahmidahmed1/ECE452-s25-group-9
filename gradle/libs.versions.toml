@@ -1,0 +1,11 @@
+[versions]
+kotlin = "1.9.22"
+compose-hot-reload = "1.0.0-alpha10"
+compose-compiler = "1.5.10"
+compose-bom = "2024.02.00"
+
+[libraries]
+# Compose Hot Reload will be defined as a plugin
+
+[plugins]
+compose-hot-reload = { id = "org.jetbrains.compose.hot-reload", version.ref = "compose-hot-reload" } 

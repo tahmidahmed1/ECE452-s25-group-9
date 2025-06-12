@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo "🔧 Running formatter..."
+./gradlew format
+
+# Add linter when we have more code
+# echo "🧪 Running linter..."
+# ./gradlew :android:spotlessCheck
+
+if [ $? -ne 0 ]; then
+  echo "\n❌ Lint errors detected. Please fix them before committing."
+  exit 1
+fi

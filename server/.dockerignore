@@ -1,0 +1,37 @@
+# Ignore everything except what's needed for the server build
+# Node/Android/IDE/OS junk
+*.iml
+.idea/
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# Android project
+/android/
+
+# Root gradle wrapper (not needed in server image build context)
+/gradle/
+/gradlew
+/gradlew.bat
+
+# Git
+.git/
+.gitignore
+
+# Docker
+.dockerignore
+
+docker-compose.yml
+
+# Root files not needed
+README.md
+setup.sh
+setup.bat
+
+# Server build output
+build/
+
+# Exclude test resources (if not needed)
+src/test/ 

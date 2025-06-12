@@ -1,0 +1,15 @@
+#!/bin/sh
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+# Block pushes to `main`
+if [ "$branch" = "main" ]; then
+  echo "🚫 Pushing directly to main is not allowed. Please use a feature branch."
+  exit 1
+fi
+
+# Enforce branch name format: NUMBER-description
+if ! echo "$branch" | grep -Eq '^[0-9]+-.+'; then
+  echo "❌ Branch name must start with NUMBER-description (e.g., 123-new-ui-flow)."
+  exit 1
+fi

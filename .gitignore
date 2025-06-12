@@ -1,0 +1,63 @@
+### Gradle and Build ###
+**/.gradle/
+**/build/
+.idea/
+!../gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### IntelliJ IDEA ###
+.idea/modules.xml
+application/.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+*.iws
+*.iml
+*.ipr
+*.cache
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+local.properties
+
+**/app.yaml
+
+### Environment Variables ###
+.env
+
+### Python ###
+__pycache__/
+
+### Minio ###
+.minio.sys/
+.mc/
+.minio/
+.minio.sys/
+.mc/
+.minio/
