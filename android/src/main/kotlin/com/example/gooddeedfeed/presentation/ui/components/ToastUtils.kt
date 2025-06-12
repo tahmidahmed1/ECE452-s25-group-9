@@ -7,11 +7,11 @@ object ToastUtils {
     fun showSuccessToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
-    
+
     fun showErrorToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
-    
+
     fun showInfoToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }

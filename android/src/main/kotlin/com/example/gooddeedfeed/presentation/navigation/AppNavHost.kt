@@ -39,7 +39,7 @@ fun appNavHost(
             is AuthUiState.SignedOut -> {
                 val currentRoute = navController.currentDestination?.route
                 if (currentRoute != Screen.SignIn.route) {
-                    navController.navigate(Screen.SignIn.route) { 
+                    navController.navigate(Screen.SignIn.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
@@ -54,16 +54,16 @@ fun appNavHost(
                 uiState = currentState,
                 onSignIn = { u, p -> viewModel.signIn(u, p) },
                 onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
-                onNavigateToOnboarding = { 
-                    navController.navigate(Screen.Onboarding.route) { 
+                onNavigateToOnboarding = {
+                    navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.SignIn.route) { inclusive = true }
                     }
                 },
-                onNavigateToHome = { 
-                    navController.navigate(Screen.AuthenticatedHome.route) { 
+                onNavigateToHome = {
+                    navController.navigate(Screen.AuthenticatedHome.route) {
                         popUpTo(Screen.SignIn.route) { inclusive = true }
                     }
-                }
+                },
             )
         }
         composable(Screen.SignUp.route) {
@@ -71,16 +71,16 @@ fun appNavHost(
                 uiState = currentState,
                 onSignUp = { u, e, p -> viewModel.signUp(u, e, p) },
                 onNavigateToSignIn = { navController.navigate(Screen.SignIn.route) },
-                onNavigateToOnboarding = { 
-                    navController.navigate(Screen.Onboarding.route) { 
+                onNavigateToOnboarding = {
+                    navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.SignUp.route) { inclusive = true }
                     }
                 },
-                onNavigateToHome = { 
-                    navController.navigate(Screen.AuthenticatedHome.route) { 
+                onNavigateToHome = {
+                    navController.navigate(Screen.AuthenticatedHome.route) {
                         popUpTo(Screen.SignUp.route) { inclusive = true }
                     }
-                }
+                },
             )
         }
         composable(Screen.Onboarding.route) {

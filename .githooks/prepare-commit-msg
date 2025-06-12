@@ -4,16 +4,18 @@ CONTRIBUTORS_FILE="CONTRIBUTORS.md"
 COMMITTER_EMAIL=$(git config user.email)
 
 if [ -f "$CONTRIBUTORS_FILE" ]; then
+    FIRST_COAUTHOR_ADDED=false
     while IFS= read -r line; do
         if [ -n "$line" ] && [ "$line" != "${line#*@}" ]; then
             EMAIL=$(echo "$line" | awk '{print $NF}')
-            
             NAME=$(echo "$line" | sed 's/[[:space:]]*[^[:space:]]*@[^[:space:]]*[[:space:]]*$//')
-            
             if [ "$EMAIL" != "$COMMITTER_EMAIL" ] && echo "$EMAIL" | grep -q "@"; then
                 CO_AUTHOR_LINE="Co-authored-by: $NAME <$EMAIL>"
                 if ! grep -qF "$CO_AUTHOR_LINE" "$1"; then
-                    echo "" >> "$1"
+                    if [ "$FIRST_COAUTHOR_ADDED" = false ]; then
+                        echo "" >> "$1"
+                        FIRST_COAUTHOR_ADDED=true
+                    fi
                     echo "$CO_AUTHOR_LINE" >> "$1"
                 fi
             fi
