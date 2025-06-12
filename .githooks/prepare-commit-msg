@@ -1,0 +1,22 @@
+#!/bin/sh
+
+CONTRIBUTORS_FILE="CONTRIBUTORS.md"
+COMMITTER_EMAIL=$(git config user.email)
+
+if [ -f "$CONTRIBUTORS_FILE" ]; then
+    while IFS= read -r line; do
+        if [ -n "$line" ] && [ "$line" != "${line#*@}" ]; then
+            EMAIL=$(echo "$line" | awk '{print $NF}')
+            
+            NAME=$(echo "$line" | sed 's/[[:space:]]*[^[:space:]]*@[^[:space:]]*[[:space:]]*$//')
+            
+            if [ "$EMAIL" != "$COMMITTER_EMAIL" ] && echo "$EMAIL" | grep -q "@"; then
+                CO_AUTHOR_LINE="Co-authored-by: $NAME <$EMAIL>"
+                if ! grep -qF "$CO_AUTHOR_LINE" "$1"; then
+                    echo "" >> "$1"
+                    echo "$CO_AUTHOR_LINE" >> "$1"
+                fi
+            fi
+        fi
+    done < "$CONTRIBUTORS_FILE"
+fi

@@ -2,12 +2,14 @@
 
 ## Quick Start
 
-**Windows:** Run `setup.bat`
+- Windows: Run `run-dev.bat`
+- Mac/Linux: Run `./run-dev.sh`
 
-**Mac/Linux:** Run `./setup.sh`
+This script will:
 
-- Installs git hooks
-- Starts backend (Ktor server, PostgreSQL, Adminer) with Docker Compose
+- Start backend services (PostgreSQL, MinIO, Adminer) using Docker Compose
+- Run the Python FastAPI server with hot reload
+- Initialize the database with migrations
 
 **Android App:**
 - Open in Android Studio
@@ -15,14 +17,22 @@
 
 ---
 
-## Accessing the Backend & Database
+## Accessing Services
 
-- **Ktor API:** [http://localhost:8080/ping](http://localhost:8080/ping) (returns `hello world`)
-  - Auth: `/auth/signup`, `/auth/signin`, `/auth/me`
-- **Database Viewer (Adminer):** [http://localhost:8081](http://localhost:8081)
+- **FastAPI Backend:** [http://localhost:9000](http://localhost:9000)
+  - API Docs: [http://localhost:9000/docs](http://localhost:9000/docs)
+  - Auth: `/api/register`, `/api/token`, `/api/users/me`
+  - Onboarding: `/api/onboarding/step-one`, `/api/onboarding/complete`
+  - Upload: `/api/upload-profile-picture`
+
+- **Database Viewer (Adminer):** [http://localhost:8082](http://localhost:8082)
   - System: PostgreSQL
   - Server: db
-  - Username/Password/DB: from `.env`
+  - Username: postgres / Password: postgres / DB: mydb
+
+- **MinIO Object Storage Console:** [http://localhost:9002](http://localhost:9002)
+  - Username: minioadmin / Password: minioadmin123
+  - API Endpoint: [http://localhost:9001](http://localhost:9001)
 
 ---
 
@@ -33,22 +43,35 @@
 ├── android/                # Android app (Jetpack Compose, MVVM, Hilt)
 │   └── src/main/kotlin/com/example/gooddeedfeed/
 │       ├── core/          # Shared utilities
-│       ├── data/          # Data layer
-│       ├── domain/        # Business logic
+│       ├── data/          # Data layer (API services, repositories)
+│       ├── domain/        # Business logic (models, use cases)
 │       ├── di/            # Dependency injection
 │       └── presentation/  # UI, navigation, viewmodels, screens
-├── server/                # Ktor backend
-│   ├── src/main/kotlin/com/example/gooddeedfeed/
-│   │   ├── Application.kt # Ktor entry
-│   │   ├── AuthModule.kt  # JWT auth
-│   │   └── auth/          # Auth logic/routes/models
+├── server/                # Python FastAPI backend
+│   ├── app/               # FastAPI application
+│   │   ├── main.py        # FastAPI entry point
+│   │   ├── models.py      # SQLAlchemy models
+│   │   ├── schemas.py     # Pydantic schemas
+│   │   ├── routes.py      # API endpoints
+│   │   ├── auth.py        # JWT authentication
+│   │   ├── storage.py     # MinIO object storage
+│   │   └── database.py    # Database configuration
+│   ├── alembic/           # Database migrations
+│   ├── requirements.txt   # Python dependencies
 │   └── Dockerfile         # Backend Docker build
-├── docker-compose.yml     # Orchestrates backend, DB, Adminer
-├── setup.sh / setup.bat   # One-step setup scripts
-├── .env                   # Environment variables
-└── .env.template          # Environment variables template
-
+├── docker-compose.yml     # Orchestrates backend, DB, MinIO, Adminer
+└── run-dev.sh / run-dev.bat # Development setup scripts
 ```
+
+---
+
+## Features
+
+- **Authentication:** JWT-based user registration and login
+- **Onboarding:** Multi-step user type selection and profile completion
+- **Object Storage:** Profile picture uploads with MinIO S3-compatible storage
+- **Database:** PostgreSQL with Alembic migrations
+- **Hot Reload:** Development environment with automatic code reloading
 
 ---
 
@@ -60,6 +83,7 @@
 
 ---
 
-- Backend: Ktor server (JWT auth), PostgreSQL, Adminer
-- Frontend: Android (Jetpack Compose, MVVM, Hilt)
-- Lint/format: Gradle tasks & git hooks
+**Tech Stack:**
+- Backend: Python FastAPI, SQLAlchemy, PostgreSQL, MinIO, JWT auth
+- Frontend: Android (Jetpack Compose, MVVM, Hilt, Ktor client)
+- Infrastructure: Docker Compose, Alembic migrations

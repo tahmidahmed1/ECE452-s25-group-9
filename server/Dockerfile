@@ -1,33 +1,11 @@
-# server/Dockerfile
-FROM gradle:8.5.0-jdk17 AS build
+FROM python:3.11-slim
 
-# Update CA certificates as root first
-USER root
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && apt-get clean && update-ca-certificates
-
-# Switch to gradle user for all subsequent operations in this stage
-USER gradle
 WORKDIR /app
 
-# Copy files and ensure they are owned by the gradle user
-COPY --chown=gradle:gradle . .
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Produce a distribution under build/install/<projectName>
-# This will run as 'gradle' user and have permission to create .gradle in /app
-RUN gradle installDist --no-daemon -x test -x check -PskipFormatting
+COPY . .
 
-# Debug: List the contents of the installDist output directory
-RUN echo "---- Contents of /app/build/install/server ----" && ls -R /app/build/install/server
-
-FROM openjdk:17-jdk-slim
-WORKDIR /app
-
-# Copy only the "server" distribution that Gradle produced; replace "server" if your project
-# is named differently (run "./gradlew installDist" locally to confirm the folder name).
-COPY --from=build /app/build/install/server /app
-
-# Debug: List the contents of the final /app directory
-RUN echo "---- Contents of /app in final stage ----" && ls -R /app
-
-EXPOSE 8080
-# ENTRYPOINT ["./bin/server"]
+# Command with hot reload enabled
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "9000", "--reload"] 

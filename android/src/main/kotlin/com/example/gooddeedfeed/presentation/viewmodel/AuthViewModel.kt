@@ -40,11 +40,12 @@ constructor(
 
     fun signUp(
         username: String,
+        email: String,
         password: String,
     ) {
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
-            val resp = signUp.invoke(username, password)
+            val resp = signUp.invoke(username, email, password)
             if (resp.success) {
                 fetchUser()
             } else {
@@ -86,4 +87,7 @@ constructor(
             }
         }
     }
+
+    // Alias for fetchUser for clarity when refreshing after onboarding
+    fun refreshUser() = fetchUser()
 }

@@ -30,10 +30,11 @@ import com.example.gooddeedfeed.presentation.viewmodel.AuthUiState
 @Composable
 fun signUpScreen(
     uiState: AuthUiState,
-    onSignUp: (String, String) -> Unit,
+    onSignUp: (String, String, String) -> Unit,
     onNavigateToSignIn: () -> Unit,
 ) {
     var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val isLoading = uiState is AuthUiState.Loading
     val error = (uiState as? AuthUiState.Error)?.message
@@ -68,6 +69,14 @@ fun signUpScreen(
             )
             Spacer(Modifier.height(PADDING_SMALL))
             OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(PADDING_SMALL))
+            OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
@@ -77,8 +86,8 @@ fun signUpScreen(
             )
             Spacer(Modifier.height(PADDING_LARGE))
             Button(
-                onClick = { onSignUp(username, password) },
-                enabled = !isLoading && username.isNotBlank() && password.isNotBlank(),
+                onClick = { onSignUp(username, email, password) },
+                enabled = !isLoading && username.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Sign Up")

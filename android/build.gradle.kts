@@ -5,6 +5,7 @@ plugins {
     id("dagger.hilt.android.plugin")
     id("org.jlleitschuh.gradle.ktlint")
     id("com.diffplug.spotless")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -62,12 +63,34 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:2.3.7")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    // Image loading and handling
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("androidx.activity:activity-compose:1.10.1")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("app.cash.turbine:turbine:1.0.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4") // downgraded
+
+    // Enforce correct serialization version
+    constraints {
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3") {
+            because("Avoid using 1.7.x which requires Kotlin 2.0")
+        }
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") {
+            because("Avoid using 1.7.x which requires Kotlin 2.0")
+        }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
+        force("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    }
 }
 
 kapt {
@@ -77,7 +100,9 @@ kapt {
 spotless {
     kotlin {
         target("src/**/*.kt")
-        ktlint("0.50.0")
+        ktlint("0.50.0").editorConfigOverride(
+            mapOf("ktlint_standard_no-wildcard-imports" to "disabled"),
+        )
     }
     kotlinGradle {
         target("*.gradle.kts")
