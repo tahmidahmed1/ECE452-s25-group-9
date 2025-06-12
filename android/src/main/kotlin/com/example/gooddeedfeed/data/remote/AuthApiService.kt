@@ -59,7 +59,7 @@ data class User(
     val profile_picture_url: String? = null,
     val organization_name: String? = null,
     val institution_name: InstitutionName? = null,
-    val created_at: String,
+    val created_at: String? = null,
 )
 
 // Onboarding requests

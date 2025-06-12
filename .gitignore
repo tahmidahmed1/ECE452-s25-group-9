@@ -50,3 +50,14 @@ local.properties
 
 ### Environment Variables ###
 .env
+
+### Python ###
+__pycache__/
+
+### Minio ###
+.minio.sys/
+.mc/
+.minio/
+.minio.sys/
+.mc/
+.minio/

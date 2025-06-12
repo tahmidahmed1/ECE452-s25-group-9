@@ -1,6 +1,7 @@
 package com.example.gooddeedfeed.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,18 +33,19 @@ fun appNavHost(
     val uiState by viewModel.uiState.collectAsState()
     val currentState = uiState // Store in local variable to enable smart cast
 
-    when (currentState) {
-        is AuthUiState.Success -> {
-            // Check if user needs onboarding
-            val user = currentState.user
-            if (!user.onboarding_completed) {
-                navController.navigate(Screen.Onboarding.route) { popUpTo(0) }
-            } else {
-                navController.navigate(Screen.AuthenticatedHome.route) { popUpTo(0) }
+    // Handle sign out navigation
+    LaunchedEffect(currentState) {
+        when (currentState) {
+            is AuthUiState.SignedOut -> {
+                val currentRoute = navController.currentDestination?.route
+                if (currentRoute != Screen.SignIn.route) {
+                    navController.navigate(Screen.SignIn.route) { 
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             }
+            else -> {}
         }
-        is AuthUiState.SignedOut -> navController.navigate(Screen.SignIn.route) { popUpTo(0) }
-        else -> {}
     }
 
     NavHost(navController, startDestination = Screen.SignIn.route) {
@@ -52,6 +54,16 @@ fun appNavHost(
                 uiState = currentState,
                 onSignIn = { u, p -> viewModel.signIn(u, p) },
                 onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
+                onNavigateToOnboarding = { 
+                    navController.navigate(Screen.Onboarding.route) { 
+                        popUpTo(Screen.SignIn.route) { inclusive = true }
+                    }
+                },
+                onNavigateToHome = { 
+                    navController.navigate(Screen.AuthenticatedHome.route) { 
+                        popUpTo(Screen.SignIn.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Screen.SignUp.route) {
@@ -59,6 +71,16 @@ fun appNavHost(
                 uiState = currentState,
                 onSignUp = { u, e, p -> viewModel.signUp(u, e, p) },
                 onNavigateToSignIn = { navController.navigate(Screen.SignIn.route) },
+                onNavigateToOnboarding = { 
+                    navController.navigate(Screen.Onboarding.route) { 
+                        popUpTo(Screen.SignUp.route) { inclusive = true }
+                    }
+                },
+                onNavigateToHome = { 
+                    navController.navigate(Screen.AuthenticatedHome.route) { 
+                        popUpTo(Screen.SignUp.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Screen.Onboarding.route) {

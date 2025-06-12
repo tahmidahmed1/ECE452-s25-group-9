@@ -6,12 +6,16 @@ import logging
 import json
 
 from .routes import router
-from .database import engine
+from .database import engine, wait_for_db
 from . import models
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Wait for database to be ready before proceeding
+logger.info("Waiting for database to be ready...")
+wait_for_db()
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)

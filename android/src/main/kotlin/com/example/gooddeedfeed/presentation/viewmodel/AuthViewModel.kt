@@ -38,6 +38,11 @@ constructor(
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
+    init {
+        // Check if user is already signed in when ViewModel is created
+        checkCurrentUser()
+    }
+
     fun signUp(
         username: String,
         email: String,
@@ -90,4 +95,16 @@ constructor(
 
     // Alias for fetchUser for clarity when refreshing after onboarding
     fun refreshUser() = fetchUser()
+
+    // Check current user status without showing loading state (for app initialization)
+    private fun checkCurrentUser() {
+        viewModelScope.launch {
+            val user = getCurrentUser.invoke()
+            if (user != null) {
+                _uiState.value = AuthUiState.Success(user)
+            } else {
+                _uiState.value = AuthUiState.SignedOut
+            }
+        }
+    }
 }
