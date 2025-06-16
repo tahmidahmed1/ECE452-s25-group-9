@@ -45,4 +45,4 @@ timeout /t 5 /nobreak >nul
 echo.
 echo To view logs: docker-compose logs -f api
 echo To stop: docker-compose down
-echo Once the server is running, open Android Studio and run the android module on an emulator or device. 
+echo Once the server is running, open Android Studio and run the android module on an emulator or device.

@@ -3,6 +3,7 @@ package com.example.gooddeedfeed.presentation.viewmodel
 import app.cash.turbine.test
 import com.example.gooddeedfeed.data.remote.AuthResponse
 import com.example.gooddeedfeed.data.remote.User
+import com.example.gooddeedfeed.data.remote.UserType
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase
@@ -61,11 +62,11 @@ class AuthViewModelTest {
     @Test
     fun `signIn success emits Success`() =
         scope.runTest {
-            repo.user = User(1, "test")
-            viewModel.signIn("test", "pass")
-            viewModel.uiState.test {
-                assertEquals(AuthUiState.Loading, awaitItem())
-                assertEquals(AuthUiState.Success(User(1, "test")), awaitItem())
+                    repo.user = User(1, "test", "test@example.com", true, UserType.VOLUNTEER, true, "Test User")
+        viewModel.signIn("test", "pass")
+        viewModel.uiState.test {
+            assertEquals(AuthUiState.Loading, awaitItem())
+            assertEquals(AuthUiState.Success(User(1, "test", "test@example.com", true, UserType.VOLUNTEER, true, "Test User")), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }

@@ -1,0 +1,151 @@
+package com.example.gooddeedfeed.presentation.navigation
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.gooddeedfeed.data.remote.User
+import com.example.gooddeedfeed.data.remote.UserType
+import com.example.gooddeedfeed.presentation.ui.screens.*
+
+/**
+ * Configuration object that defines navigation tabs for different user types.
+ * This centralizes the navigation logic and makes it easy to modify tab configurations.
+ */
+object NavigationConfig {
+    
+    /**
+     * Tab configuration for volunteer users
+     * Features: Home, List of opportunities, Map view, Settings
+     */
+    @Composable
+    fun getVolunteerTabs(): List<TabItem> {
+        return listOf(
+            TabItem(
+                title = "Home",
+                icon = Icons.Default.Home,
+                screen = { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
+            ),
+            TabItem(
+                title = "Opportunities",
+                icon = Icons.Default.List,
+                screen = { user, _ -> ListScreen(user = user) },
+            ),
+            TabItem(
+                title = "Map",
+                icon = Icons.Default.LocationOn,
+                screen = { user, _ -> MapScreen() },
+            ),
+            TabItem(
+                title = "Settings",
+                icon = Icons.Default.Settings,
+                screen = { user, onLogout -> SettingsScreen(user = user, onLogout = onLogout) },
+            ),
+        )
+    }
+
+    /**
+     * Tab configuration for organization users
+     * Features: Home, Event Management (CRUD), Settings
+     */
+    @Composable
+    fun getOrganizerTabs(): List<TabItem> {
+        return listOf(
+            TabItem(
+                title = "Home",
+                icon = Icons.Default.Home,
+                screen = { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
+            ),
+            TabItem(
+                title = "Events",
+                icon = Icons.Default.Edit,
+                screen = { user, _ -> EventManagementScreen(user = user) },
+            ),
+            TabItem(
+                title = "Settings",
+                icon = Icons.Default.Settings,
+                screen = { user, onLogout -> SettingsScreen(user = user, onLogout = onLogout) },
+            ),
+        )
+    }
+
+    /**
+     * Tab configuration for institution users
+     * Features: Home, Review and approval system, Settings
+     */
+    @Composable
+    fun getInstitutionTabs(): List<TabItem> {
+        return listOf(
+            TabItem(
+                title = "Home",
+                icon = Icons.Default.Home,
+                screen = { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
+            ),
+            TabItem(
+                title = "Reviews",
+                icon = Icons.Default.CheckCircle,
+                screen = { user, _ -> ReviewScreen(user = user) },
+            ),
+            TabItem(
+                title = "Settings",
+                icon = Icons.Default.Settings,
+                screen = { user, onLogout -> SettingsScreen(user = user, onLogout = onLogout) },
+            ),
+        )
+    }
+
+    /**
+     * Default tab configuration for users without a defined type
+     * Features: Basic Home and Settings only
+     */
+    @Composable
+    fun getDefaultTabs(): List<TabItem> {
+        return listOf(
+            TabItem(
+                title = "Home",
+                icon = Icons.Default.Home,
+                screen = { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
+            ),
+            TabItem(
+                title = "Settings",
+                icon = Icons.Default.Settings,
+                screen = { user, onLogout -> SettingsScreen(user = user, onLogout = onLogout) },
+            ),
+        )
+    }
+
+    /**
+     * Main function to get tabs based on user type
+     * This is the entry point for determining which tabs to show
+     */
+    @Composable
+    fun getTabsForUserType(userType: UserType?): List<TabItem> {
+        return when (userType) {
+            UserType.VOLUNTEER -> getVolunteerTabs()
+            UserType.ORGANIZER -> getOrganizerTabs()
+            UserType.INSTITUTION -> getInstitutionTabs()
+            null -> getDefaultTabs()
+        }
+    }
+}
+
+/**
+ * Extension functions for better readability and type safety
+ */
+fun UserType?.getDisplayName(): String {
+    return com.example.gooddeedfeed.domain.util.UserTypeUtils.getUserTypeDisplayName(this)
+}
+
+fun UserType?.getTabCount(): Int {
+    return when (this) {
+        UserType.VOLUNTEER -> 4 // Home, List, Map, Settings
+        UserType.ORGANIZER -> 3 // Home, Events, Settings
+        UserType.INSTITUTION -> 3 // Home, Reviews, Settings
+        null -> 2 // Home, Settings
+    }
+} 

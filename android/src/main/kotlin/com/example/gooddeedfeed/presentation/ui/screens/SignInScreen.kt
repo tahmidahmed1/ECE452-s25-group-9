@@ -1,37 +1,25 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import com.example.gooddeedfeed.presentation.theme.PADDING_LARGE
-import com.example.gooddeedfeed.presentation.theme.PADDING_MEDIUM
-import com.example.gooddeedfeed.presentation.theme.PADDING_SMALL
+import com.example.gooddeedfeed.presentation.ui.components.ScreenContainer
+import com.example.gooddeedfeed.presentation.ui.components.ScreenTitle
+import com.example.gooddeedfeed.presentation.ui.components.FormTextField
+import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.SecondaryButton
+import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.viewmodel.AuthUiState
 
 @Composable
-fun signInScreen(
+fun SignInScreen(
     uiState: AuthUiState,
     onSignIn: (String, String) -> Unit,
     onNavigateToSignUp: () -> Unit,
@@ -63,55 +51,43 @@ fun signInScreen(
         }
     }
 
-    Box(
-        modifier =
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(PADDING_MEDIUM),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(PADDING_LARGE),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                "Sign In",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(PADDING_MEDIUM))
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username") },
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(PADDING_SMALL))
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(PADDING_LARGE))
-            Button(
-                onClick = { onSignIn(username, password) },
-                enabled = !isLoading && username.isNotBlank() && password.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Sign In")
-            }
-            Spacer(Modifier.height(PADDING_MEDIUM))
-            TextButton(onClick = onNavigateToSignUp, enabled = !isLoading) {
-                Text("Don't have an account? Sign Up")
-            }
-        }
+    ScreenContainer {
+        ScreenTitle("Sign In")
+        
+        VerticalSpacer()
+        
+        FormTextField(
+            value = username,
+            onValueChange = { username = it },
+            label = "Username",
+            enabled = !isLoading
+        )
+        
+        VerticalSpacer(SpacingSize.Small)
+        
+        FormTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = "Password",
+            enabled = !isLoading,
+            isPassword = true
+        )
+        
+        VerticalSpacer(SpacingSize.Large)
+        
+        PrimaryButton(
+            text = "Sign In",
+            onClick = { onSignIn(username, password) },
+            enabled = username.isNotBlank() && password.isNotBlank(),
+            isLoading = isLoading
+        )
+        
+        VerticalSpacer()
+        
+        SecondaryButton(
+            text = "Don't have an account? Sign Up",
+            onClick = onNavigateToSignUp,
+            enabled = !isLoading
+        )
     }
 }

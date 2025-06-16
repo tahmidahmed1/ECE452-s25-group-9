@@ -33,7 +33,15 @@ data class AuthResponse(val success: Boolean, val token: String? = null, val mes
 data class TokenResponse(val access_token: String, val token_type: String)
 
 @Serializable
-data class ErrorResponse(val success: Boolean = false, val message: String, val errors: List<Map<String, String>>? = null)
+data class ValidationError(
+    val type: String,
+    val loc: List<String>,
+    val msg: String,
+    val input: String? = null
+)
+
+@Serializable
+data class ErrorResponse(val success: Boolean = false, val message: String, val errors: List<ValidationError>? = null)
 
 // User types
 @Serializable
@@ -143,20 +151,39 @@ class AuthApiService(private val client: HttpClient) {
                 // Handle 422 validation errors specifically
                 if (e.response.status == HttpStatusCode.UnprocessableEntity) {
                     try {
+                        // Try to parse as ErrorResponse first
                         val errorResponse = e.response.body<ErrorResponse>()
                         Log.e(TAG, "Validation error details: ${errorResponse.message}")
                         if (!errorResponse.errors.isNullOrEmpty()) {
                             Log.e(TAG, "Validation errors: ${errorResponse.errors}")
+                            // Extract the first detailed validation message
+                            val firstError = errorResponse.errors.first()
+                            val detailedMessage = firstError.msg
+                            Log.d(TAG, "Using detailed validation message: $detailedMessage")
+                            return AuthResponse(false, message = detailedMessage)
                         }
                         return AuthResponse(false, message = errorResponse.message)
                     } catch (bodyException: Exception) {
                         Log.e(TAG, "Could not parse validation error response: ${bodyException.message}")
-                        val errorMsg = if (lastResponseBody != null) {
-                            "Registration failed: $lastResponseBody"
-                        } else {
-                            "Invalid input data. Please check your email format and try again."
+                        // Try to get raw response text to extract the actual error
+                        try {
+                            val rawBody = lastResponseBody ?: "Unknown validation error"
+                            Log.d(TAG, "Raw error response: $rawBody")
+                            
+                            // Look for email validation patterns in raw response
+                            when {
+                                rawBody.contains("email") && rawBody.contains("@") -> 
+                                    return AuthResponse(false, message = "Please enter a valid email address with an @ sign")
+                                rawBody.contains("password") -> 
+                                    return AuthResponse(false, message = "Password is required")
+                                rawBody.contains("username") -> 
+                                    return AuthResponse(false, message = "Username is required")
+                                else -> 
+                                    return AuthResponse(false, message = "Please check your input and try again")
+                            }
+                        } catch (ex: Exception) {
+                            return AuthResponse(false, message = "Please check your input and try again")
                         }
-                        return AuthResponse(false, message = errorMsg)
                     }
                 }
 
@@ -298,6 +325,11 @@ class AuthApiService(private val client: HttpClient) {
                         Log.e(TAG, "Validation error details: ${errorResponse.message}")
                         if (!errorResponse.errors.isNullOrEmpty()) {
                             Log.e(TAG, "Validation errors: ${errorResponse.errors}")
+                            // Extract the first detailed validation message
+                            val firstError = errorResponse.errors.first()
+                            val detailedMessage = firstError.msg
+                            Log.d(TAG, "Using detailed validation message: $detailedMessage")
+                            return AuthResponse(false, message = detailedMessage)
                         }
                         return AuthResponse(false, message = errorResponse.message)
                     } catch (bodyException: Exception) {
