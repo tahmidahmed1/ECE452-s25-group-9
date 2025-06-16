@@ -3,6 +3,7 @@ package com.example.gooddeedfeed.di
 import android.content.Context
 import com.example.gooddeedfeed.data.remote.AuthApiService
 import com.example.gooddeedfeed.data.repository.AuthRepositoryImpl
+import com.example.gooddeedfeed.data.services.LocationService
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase
@@ -54,4 +55,8 @@ object AuthModule {
 
     @Provides
     fun provideGetCurrentUserUseCase(repo: AuthRepository) = GetCurrentUserUseCase(repo)
+
+    @Provides
+    @Singleton
+    fun provideLocationService(@ApplicationContext context: Context): LocationService = LocationService(context)
 }

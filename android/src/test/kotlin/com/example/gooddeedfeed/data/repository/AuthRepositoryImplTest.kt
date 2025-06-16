@@ -53,11 +53,11 @@ class AuthRepositoryImplTest {
     @Test
     fun `getCurrentUser returns user if token valid`() =
         runTest {
-            whenever(api.getCurrentUser("jwt")).thenReturn(User(1, "user"))
+            whenever(api.getCurrentUser("jwt")).thenReturn(User(1, "user", "user@example.com", true))
             // Would set token in DataStore and check
             // For now, just test api call
             val user = api.getCurrentUser("jwt")
-            assertEquals(User(1, "user"), user)
+            assertEquals(User(1, "user", "user@example.com", true), user)
         }
 
     @Test

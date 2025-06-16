@@ -56,7 +56,7 @@ class OnboardingViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "An error occurred: ${e.message}",
+                    errorMessage = "Unable to save user type. Please try again.",
                 )
             }
         }
@@ -120,7 +120,7 @@ class OnboardingViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "An error occurred: ${e.message}",
+                    errorMessage = "Unable to complete setup. Please try again.",
                 )
             }
         }

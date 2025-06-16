@@ -2,8 +2,6 @@ package com.example.gooddeedfeed.presentation.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -17,7 +15,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.gooddeedfeed.data.remote.User
-import com.example.gooddeedfeed.presentation.ui.screens.homeScreen
+import com.example.gooddeedfeed.presentation.ui.components.CustomToastHost
+import com.example.gooddeedfeed.presentation.ui.components.ToastManager
+import com.example.gooddeedfeed.presentation.ui.components.rememberToastState
 
 data class TabItem(
     val title: String,
@@ -31,14 +31,13 @@ fun TabNavigationScreen(
     onLogout: () -> Unit,
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val toastState by rememberToastState()
 
-    val tabs = listOf(
-        TabItem(
-            title = "Home",
-            icon = Icons.Default.Home,
-            screen = { u, logout -> homeScreen(user = u, onLogout = logout) },
-        ),
-    )
+    // Debug logging to help identify navigation issues
+    println("TabNavigationScreen: User ID=${user.id}, Username=${user.username}, UserType=${user.user_type}")
+    
+    val tabs = NavigationConfig.getTabsForUserType(user.user_type)
+    println("TabNavigationScreen: Generated ${tabs.size} tabs for user type ${user.user_type}")
 
     Scaffold(
         bottomBar = {
@@ -56,6 +55,14 @@ fun TabNavigationScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             tabs[selectedTabIndex].screen(user, onLogout)
+            
+            // Add toast overlay
+            CustomToastHost(
+                toastData = toastState,
+                onDismiss = { ToastManager.dismiss() }
+            )
         }
     }
-} 
+}
+
+ 

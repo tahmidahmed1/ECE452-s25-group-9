@@ -3,10 +3,12 @@ package com.example.gooddeedfeed.presentation.ui.screens.onboarding
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gooddeedfeed.data.remote.UserType
+import com.example.gooddeedfeed.presentation.ui.components.LoadingIndicator
+import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.viewmodel.OnboardingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -18,24 +20,21 @@ fun OnboardingScreen(
 ) {
     var currentStep by remember { mutableStateOf(1) }
     var selectedUserType by remember { mutableStateOf<UserType?>(null) }
+    val context = LocalContext.current
 
     val uiState by viewModel.uiState.collectAsState()
 
     // Show loading indicator
     if (uiState.isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            CircularProgressIndicator()
-        }
+        LoadingIndicator()
         return
     }
 
     // Show error message if any
     uiState.errorMessage?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
-            // You can show a snackbar or dialog here
+            ToastUtils.showErrorToast(context, errorMessage)
+            viewModel.clearError() // Clear the error after showing it
         }
     }
 

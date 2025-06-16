@@ -31,10 +31,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.data.remote.InstitutionName
 import com.example.gooddeedfeed.data.remote.UserType
+import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
 import java.io.File
 import java.io.FileOutputStream
 
@@ -91,11 +94,12 @@ fun OnboardingStepTwoScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
+        VerticalSpacer(SpacingSize.Large)
 
         Text(
             text = "Almost there!",
@@ -103,16 +107,16 @@ fun OnboardingStepTwoScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+        
+        VerticalSpacer(SpacingSize.Small)
+        
         Text(
             text = "Please provide your contact information",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-
-        Spacer(modifier = Modifier.height(32.dp))
+        
+        VerticalSpacer(SpacingSize.Large)
 
         // Profile Picture Section
         Column(
@@ -159,29 +163,29 @@ fun OnboardingStepTwoScreen(
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Add photo",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(20.dp),
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            VerticalSpacer(SpacingSize.Small)
 
             Text(
                 text = "Add Profile Picture (Optional)",
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
             )
 
             Text(
                 text = "Tap to select from camera or gallery",
-                fontSize = 12.sp,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        VerticalSpacer(SpacingSize.Large)
 
         // Full Name Field
         OutlinedTextField(
@@ -193,7 +197,7 @@ fun OnboardingStepTwoScreen(
             singleLine = true,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        VerticalSpacer(SpacingSize.Medium)
 
         // Phone Field
         OutlinedTextField(
@@ -206,7 +210,7 @@ fun OnboardingStepTwoScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        VerticalSpacer(SpacingSize.Medium)
 
         // User type specific fields
         when (userType) {
@@ -259,7 +263,8 @@ fun OnboardingStepTwoScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        VerticalSpacer(SpacingSize.Large)
+        VerticalSpacer(SpacingSize.Medium)
 
         // Buttons
         Row(
@@ -269,7 +274,7 @@ fun OnboardingStepTwoScreen(
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     text = "Back",
@@ -277,7 +282,8 @@ fun OnboardingStepTwoScreen(
                 )
             }
 
-            Button(
+            PrimaryButton(
+                text = "Complete",
                 onClick = {
                     onComplete(
                         fullName,
@@ -288,17 +294,14 @@ fun OnboardingStepTwoScreen(
                     )
                 },
                 enabled = isFormValid,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text(
-                    text = "Complete",
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-            }
+                modifier = Modifier.weight(1f)
+            )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        VerticalSpacer(SpacingSize.Large)
+        
+        // Extra bottom padding for safe scrolling area
+        VerticalSpacer(SpacingSize.Medium)
     }
 
     // Image source selection dialog

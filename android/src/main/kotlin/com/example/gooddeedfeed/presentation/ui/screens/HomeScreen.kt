@@ -1,8 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
@@ -11,248 +9,166 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.data.remote.User
 import com.example.gooddeedfeed.data.remote.UserType
-import com.example.gooddeedfeed.presentation.theme.CORNER_RADIUS
-import com.example.gooddeedfeed.presentation.theme.GLASS_BACKGROUND
-import com.example.gooddeedfeed.presentation.theme.GLASS_OVERLAY
-import com.example.gooddeedfeed.presentation.theme.PADDING_LARGE
-import com.example.gooddeedfeed.presentation.theme.PADDING_MEDIUM
-import com.example.gooddeedfeed.presentation.theme.TEXT_ON_GLASS
+import com.example.gooddeedfeed.presentation.ui.components.ScreenContainer
+import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.ActionCard
+import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
+import com.example.gooddeedfeed.presentation.viewmodel.HomeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.HomeUiState
+import com.example.gooddeedfeed.presentation.viewmodel.HomeAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun homeScreen(
+fun HomeScreen(
     user: User,
     onLogout: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GLASS_OVERLAY),
-    ) {
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(PADDING_MEDIUM)
-                .background(
-                    color = GLASS_BACKGROUND,
-                    shape = RoundedCornerShape(CORNER_RADIUS),
-                )
-                .padding(PADDING_LARGE),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            // Welcome message with user type
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    LaunchedEffect(user) {
+        viewModel.loadUserHome(user)
+    }
+    
+    when (uiState) {
+        is HomeUiState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = when (user.user_type) {
-                        UserType.VOLUNTEER -> Icons.Default.Person
-                        UserType.ORGANIZER -> Icons.Default.Star
-                        UserType.INSTITUTION -> Icons.Default.Home
-                        null -> Icons.Default.Person
-                    },
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp),
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column {
+                CircularProgressIndicator()
+            }
+        }
+        is HomeUiState.Success -> {
+            val successState = uiState as HomeUiState.Success // Explicit cast
+            HomeContent(
+                user = successState.user,
+                userTypeDisplay = successState.userTypeDisplay,
+                onActionClick = { action -> viewModel.handleAction(action) },
+                onLogout = onLogout
+            )
+        }
+        is HomeUiState.Error -> {
+            val errorState = uiState as HomeUiState.Error // Explicit cast
+            
+            ScreenContainer {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     Text(
-                        text = "Welcome, ${user.full_name ?: user.username}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = TEXT_ON_GLASS,
-                        fontWeight = FontWeight.Bold,
+                        text = errorState.message,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error
                     )
-                    Text(
-                        text = when (user.user_type) {
-                            UserType.VOLUNTEER -> "Volunteer"
-                            UserType.ORGANIZER -> "Organizer${user.organization_name?.let { " • $it" } ?: ""}"
-                            UserType.INSTITUTION -> "Institution${user.institution_name?.name?.replace("_", " ")?.let { " • $it" } ?: ""}"
-                            null -> "User"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                    Spacer(modifier = Modifier.height(16.dp))
+                    PrimaryButton(
+                        text = "Retry",
+                        onClick = { viewModel.loadUserHome(user) }
+                    )
+                    PrimaryButton(
+                        text = "Log Out",
+                        onClick = onLogout
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // User type specific content
-            when (user.user_type) {
-                UserType.VOLUNTEER -> VolunteerHomeContent()
-                UserType.ORGANIZER -> OrganizerHomeContent()
-                UserType.INSTITUTION -> InstitutionHomeContent()
-                null -> DefaultHomeContent()
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text("Log Out")
-            }
         }
     }
 }
 
 @Composable
-private fun VolunteerHomeContent() {
-    Column {
-        Text(
-            text = "Find opportunities to help your community!",
-            style = MaterialTheme.typography.bodyLarge,
-            color = TEXT_ON_GLASS,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        HomeActionCard(
-            icon = Icons.Default.Favorite,
-            title = "Browse Opportunities",
-            description = "Find volunteer opportunities near you",
-        ) {
-            // TODO: Navigate to opportunities
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        HomeActionCard(
-            icon = Icons.Default.List,
-            title = "My Activities",
-            description = "View your volunteer history",
-        ) {
-            // TODO: Navigate to activities
-        }
-    }
-}
-
-@Composable
-private fun OrganizerHomeContent() {
-    Column {
-        Text(
-            text = "Manage your events and volunteers",
-            style = MaterialTheme.typography.bodyLarge,
-            color = TEXT_ON_GLASS,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        HomeActionCard(
-            icon = Icons.Default.Star,
-            title = "Create Event",
-            description = "Organize a new volunteer opportunity",
-        ) {
-            // TODO: Navigate to create event
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        HomeActionCard(
-            icon = Icons.Default.List,
-            title = "Manage Events",
-            description = "View and edit your events",
-        ) {
-            // TODO: Navigate to manage events
-        }
-    }
-}
-
-@Composable
-private fun InstitutionHomeContent() {
-    Column {
-        Text(
-            text = "Coordinate institutional volunteer programs",
-            style = MaterialTheme.typography.bodyLarge,
-            color = TEXT_ON_GLASS,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        HomeActionCard(
-            icon = Icons.Default.Info,
-            title = "Dashboard",
-            description = "View volunteer program analytics",
-        ) {
-            // TODO: Navigate to dashboard
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        HomeActionCard(
-            icon = Icons.Default.List,
-            title = "Manage Programs",
-            description = "Oversee institutional volunteer programs",
-        ) {
-            // TODO: Navigate to programs
-        }
-    }
-}
-
-@Composable
-private fun DefaultHomeContent() {
-    Text(
-        text = "Please complete your profile setup",
-        style = MaterialTheme.typography.bodyLarge,
-        color = TEXT_ON_GLASS,
-    )
-}
-
-@Composable
-private fun HomeActionCard(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    onClick: () -> Unit,
+private fun HomeContent(
+    user: User,
+    userTypeDisplay: com.example.gooddeedfeed.presentation.viewmodel.UserTypeDisplay,
+    onActionClick: (HomeAction) -> Unit,
+    onLogout: () -> Unit
 ) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        ),
-    ) {
+    ScreenContainer {
+        // Welcome header
         Row(
-            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
-                imageVector = icon,
+                imageVector = when (user.user_type) {
+                    UserType.VOLUNTEER -> Icons.Default.Person
+                    UserType.ORGANIZER -> Icons.Default.Star
+                    UserType.INSTITUTION -> Icons.Default.Home
+                    null -> Icons.Default.Person
+                },
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(32.dp),
             )
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
             Column {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = TEXT_ON_GLASS,
+                    text = "Welcome, ${user.full_name ?: user.username}",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = userTypeDisplay.subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // User type specific content
+        Text(
+            text = userTypeDisplay.title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        VerticalSpacer(SpacingSize.Small)
+
+        // Action items
+        userTypeDisplay.actionItems.forEach { actionItem ->
+            ActionCard(
+                icon = getIconForAction(actionItem.iconName),
+                title = actionItem.title,
+                description = actionItem.description,
+                onClick = { onActionClick(actionItem.action) }
+            )
+            VerticalSpacer(SpacingSize.Small)
+        }
+
+        VerticalSpacer()
+
+        PrimaryButton(
+            text = "Log Out",
+            onClick = onLogout
+        )
     }
 }
+
+@Composable
+private fun getIconForAction(iconName: String) = when (iconName) {
+    "favorite" -> Icons.Default.Favorite
+    "list" -> Icons.Default.List
+    "star" -> Icons.Default.Star
+    "info" -> Icons.Default.Info
+    else -> Icons.Default.List
+}
+
+
+
+
