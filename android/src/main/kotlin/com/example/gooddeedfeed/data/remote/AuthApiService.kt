@@ -1,6 +1,8 @@
 package com.example.gooddeedfeed.data.remote
 
 import android.util.Log
+import com.example.gooddeedfeed.data.mapper.toData
+import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -16,6 +18,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import java.io.File
@@ -37,7 +40,7 @@ data class ValidationError(
     val type: String,
     val loc: List<String>,
     val msg: String,
-    val input: String? = null
+    val input: String? = null,
 )
 
 @Serializable
@@ -46,12 +49,41 @@ data class ErrorResponse(val success: Boolean = false, val message: String, val 
 // User types
 @Serializable
 enum class UserType {
-    VOLUNTEER, ORGANIZER, INSTITUTION
+    @SerialName("volunteer")
+    VOLUNTEER,
+
+    @SerialName("organizer")
+    ORGANIZER,
+
+    @SerialName("institution")
+    INSTITUTION,
 }
 
 @Serializable
 enum class InstitutionName {
-    INSTITUTION_1, INSTITUTION_2, INSTITUTION_3
+    @SerialName("Institution 1")
+    INSTITUTION_1,
+
+    @SerialName("Institution 2")
+    INSTITUTION_2,
+
+    @SerialName("Institution 3")
+    INSTITUTION_3,
+}
+
+@Serializable
+enum class Sex {
+    @SerialName("male")
+    MALE,
+
+    @SerialName("female")
+    FEMALE,
+
+    @SerialName("non_binary")
+    NON_BINARY,
+
+    @SerialName("prefer_not_to_say")
+    PREFER_NOT_TO_SAY,
 }
 
 @Serializable
@@ -68,6 +100,17 @@ data class User(
     val organization_name: String? = null,
     val institution_name: InstitutionName? = null,
     val created_at: String? = null,
+
+    // Enhanced volunteer profile fields
+    val sex: Sex? = null,
+    val description: String? = null,
+    val skills: List<String>? = null,
+    val age: Int? = null,
+    val emergency_contact_name: String? = null,
+    val emergency_contact_phone: String? = null,
+    val location_area: String? = null,
+    val has_drivers_license: Boolean? = null,
+    val disabilities: String? = null,
 )
 
 // Onboarding requests
@@ -81,6 +124,16 @@ data class OnboardingCompleteRequest(
     val phone: String,
     val organization_name: String? = null,
     val institution_name: InstitutionName? = null,
+    // Volunteer-specific fields
+    val sex: Sex? = null,
+    val description: String? = null,
+    val skills: List<String>? = null,
+    val age: Int? = null,
+    val emergency_contact_name: String? = null,
+    val emergency_contact_phone: String? = null,
+    val location_area: String? = null,
+    val has_drivers_license: Boolean? = null,
+    val disabilities: String? = null,
 )
 
 @Serializable
@@ -100,11 +153,14 @@ class AuthApiService(private val client: HttpClient) {
         private const val TAG = "AuthApiService"
     }
 
-    // Try different IP addresses - 10.0.2.2 is for emulator, localhost for device/different setup
+    // Try different IP addresses for various network configurations
+    // 10.0.2.2 is for emulator to host, WSL IPs for WSL environments
     private val possibleUrls = listOf(
-        "http://10.0.2.2:9000/api",
-        "http://localhost:9000/api",
-        "http://127.0.0.1:9000/api",
+        "http://10.0.2.2:9000/api", // Android emulator to Windows host
+        "http://172.28.7.154:9000/api", // Current WSL IP address
+        "http://172.28.0.1:9000/api", // Windows host from WSL perspective
+        "http://localhost:9000/api", // Local host
+        "http://127.0.0.1:9000/api", // Loopback
     )
     private val baseUrl = possibleUrls[0] // Use first one by default
 
@@ -116,7 +172,6 @@ class AuthApiService(private val client: HttpClient) {
         Log.d(TAG, "Starting signUp request for username: $username, email: $email")
 
         val allErrors = mutableListOf<String>()
-        var lastHttpStatus: HttpStatusCode? = null
         var lastResponseBody: String? = null
 
         // Try each URL until one works
@@ -137,7 +192,6 @@ class AuthApiService(private val client: HttpClient) {
                 Log.d(TAG, "Registration successful with URL: $url")
                 return AuthResponse(success = true, token = response.access_token, message = "Registration successful")
             } catch (e: ClientRequestException) {
-                lastHttpStatus = e.response.status
                 Log.e(TAG, "Client error with URL $url: ${e.response.status} - ${e.message}")
 
                 // Try to get detailed error response
@@ -169,16 +223,16 @@ class AuthApiService(private val client: HttpClient) {
                         try {
                             val rawBody = lastResponseBody ?: "Unknown validation error"
                             Log.d(TAG, "Raw error response: $rawBody")
-                            
+
                             // Look for email validation patterns in raw response
                             when {
-                                rawBody.contains("email") && rawBody.contains("@") -> 
+                                rawBody.contains("email") && rawBody.contains("@") ->
                                     return AuthResponse(false, message = "Please enter a valid email address with an @ sign")
-                                rawBody.contains("password") -> 
+                                rawBody.contains("password") ->
                                     return AuthResponse(false, message = "Password is required")
-                                rawBody.contains("username") -> 
+                                rawBody.contains("username") ->
                                     return AuthResponse(false, message = "Username is required")
-                                else -> 
+                                else ->
                                     return AuthResponse(false, message = "Please check your input and try again")
                             }
                         } catch (ex: Exception) {
@@ -225,7 +279,6 @@ class AuthApiService(private val client: HttpClient) {
                 allErrors.add("URL $index: Connection failed - ${e.message}")
                 continue
             } catch (e: ServerResponseException) {
-                lastHttpStatus = e.response.status
                 Log.e(TAG, "Server error with URL $url: ${e.response.status} - ${e.message}")
 
                 try {
@@ -278,7 +331,6 @@ class AuthApiService(private val client: HttpClient) {
         Log.d(TAG, "Starting signIn request for username: $username")
 
         val allErrors = mutableListOf<String>()
-        var lastHttpStatus: HttpStatusCode? = null
         var lastResponseBody: String? = null
 
         // Try each URL until one works
@@ -296,7 +348,6 @@ class AuthApiService(private val client: HttpClient) {
                 Log.d(TAG, "Login successful with URL: $url")
                 return AuthResponse(success = true, token = response.access_token, message = "Login successful")
             } catch (e: ClientRequestException) {
-                lastHttpStatus = e.response.status
                 Log.e(TAG, "Client error with URL $url: ${e.response.status} - ${e.message}")
 
                 // Try to get detailed error response
@@ -369,7 +420,6 @@ class AuthApiService(private val client: HttpClient) {
                 allErrors.add("URL $index: Connection failed - ${e.message}")
                 continue
             } catch (e: ServerResponseException) {
-                lastHttpStatus = e.response.status
                 Log.e(TAG, "Server error with URL $url: ${e.response.status} - ${e.message}")
 
                 try {
@@ -581,5 +631,51 @@ class AuthApiService(private val client: HttpClient) {
 
         Log.e(TAG, "All URLs failed for uploading profile picture")
         return null
+    }
+
+    suspend fun completeVolunteerOnboarding(
+        token: String,
+        volunteerProfile: DomainVolunteerProfile,
+        profilePictureUrl: String? = null,
+    ): Boolean {
+        Log.d(TAG, "Completing volunteer onboarding")
+
+        for ((index, url) in possibleUrls.withIndex()) {
+            try {
+                Log.d(TAG, "Trying URL $index: $url/onboarding/volunteer-complete")
+
+                val requestBody = OnboardingCompleteRequest(
+                    user_type = UserType.VOLUNTEER,
+                    full_name = volunteerProfile.fullName,
+                    phone = volunteerProfile.phone,
+                    sex = volunteerProfile.sex.toData(),
+                    description = volunteerProfile.description,
+                    skills = volunteerProfile.skills,
+                    age = volunteerProfile.age,
+                    emergency_contact_name = volunteerProfile.emergencyContactName,
+                    emergency_contact_phone = volunteerProfile.emergencyContactPhone,
+                    location_area = volunteerProfile.locationArea,
+                    has_drivers_license = volunteerProfile.hasDriversLicense,
+                    disabilities = volunteerProfile.disabilities,
+                )
+
+                val response: OnboardingResponse = client.post("$url/onboarding/volunteer-complete") {
+                    headers {
+                        append(HttpHeaders.Authorization, "Bearer $token")
+                        append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    setBody(requestBody)
+                }.body()
+
+                Log.d(TAG, "Volunteer onboarding completed successfully")
+                return true
+            } catch (e: Exception) {
+                Log.e(TAG, "Error completing volunteer onboarding with URL $url: ${e.message}")
+                continue
+            }
+        }
+
+        Log.e(TAG, "All URLs failed for completing volunteer onboarding")
+        return false
     }
 }

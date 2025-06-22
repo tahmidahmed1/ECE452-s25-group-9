@@ -2,16 +2,21 @@ package com.example.gooddeedfeed.presentation.ui.screens.onboarding
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,32 +25,44 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-
 import coil.compose.AsyncImage
-import com.example.gooddeedfeed.data.remote.InstitutionName
-import com.example.gooddeedfeed.data.remote.UserType
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.domain.model.DomainInstitutionName
+import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
 import java.io.File
 import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingStepTwoScreen(
-    userType: UserType,
-    onComplete: (fullName: String, phone: String, organizationName: String?, institutionName: InstitutionName?, profilePictureFile: File?) -> Unit,
+    userType: DomainUserType,
+    onComplete: (fullName: String, phone: String, organizationName: String?, institutionName: DomainInstitutionName?, profilePictureFile: File?) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -53,7 +70,7 @@ fun OnboardingStepTwoScreen(
     var fullName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var organizationName by remember { mutableStateOf("") }
-    var selectedInstitution by remember { mutableStateOf<InstitutionName?>(null) }
+    var selectedInstitution by remember { mutableStateOf<DomainInstitutionName?>(null) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var profilePictureFile by remember { mutableStateOf<File?>(null) }
@@ -86,9 +103,9 @@ fun OnboardingStepTwoScreen(
     }
 
     val isFormValid = fullName.isNotBlank() && phone.isNotBlank() && when (userType) {
-        UserType.VOLUNTEER -> true
-        UserType.ORGANIZER -> organizationName.isNotBlank()
-        UserType.INSTITUTION -> selectedInstitution != null
+        DomainUserType.VOLUNTEER -> true
+        DomainUserType.ORGANIZER -> organizationName.isNotBlank()
+        DomainUserType.INSTITUTION -> selectedInstitution != null
     }
 
     Column(
@@ -107,15 +124,15 @@ fun OnboardingStepTwoScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )
-        
+
         VerticalSpacer(SpacingSize.Small)
-        
+
         Text(
             text = "Please provide your contact information",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        
+
         VerticalSpacer(SpacingSize.Large)
 
         // Profile Picture Section
@@ -214,7 +231,7 @@ fun OnboardingStepTwoScreen(
 
         // User type specific fields
         when (userType) {
-            UserType.ORGANIZER -> {
+            DomainUserType.ORGANIZER -> {
                 OutlinedTextField(
                     value = organizationName,
                     onValueChange = { organizationName = it },
@@ -224,21 +241,22 @@ fun OnboardingStepTwoScreen(
                     singleLine = true,
                 )
             }
-            UserType.INSTITUTION -> {
+            DomainUserType.INSTITUTION -> {
                 ExposedDropdownMenuBox(
                     expanded = isDropdownExpanded,
                     onExpandedChange = { isDropdownExpanded = !isDropdownExpanded },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
+                    // Use deprecated menuAnchor() for dropdown positioning
+                    @Suppress("DEPRECATION")
+                    val dropdownModifier = Modifier.menuAnchor().fillMaxWidth()
                     OutlinedTextField(
                         value = selectedInstitution?.name?.replace("_", " ") ?: "",
-                        onValueChange = {},
+                        onValueChange = { _ -> },
+                        modifier = dropdownModifier,
                         readOnly = true,
                         label = { Text("Select Institution") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDropdownExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                     )
 
@@ -246,7 +264,7 @@ fun OnboardingStepTwoScreen(
                         expanded = isDropdownExpanded,
                         onDismissRequest = { isDropdownExpanded = false },
                     ) {
-                        InstitutionName.values().forEach { institution ->
+                        DomainInstitutionName.values().forEach { institution ->
                             DropdownMenuItem(
                                 text = { Text(institution.name.replace("_", " ")) },
                                 onClick = {
@@ -258,7 +276,7 @@ fun OnboardingStepTwoScreen(
                     }
                 }
             }
-            UserType.VOLUNTEER -> {
+            DomainUserType.VOLUNTEER -> {
                 // No additional fields for volunteers
             }
         }
@@ -274,7 +292,7 @@ fun OnboardingStepTwoScreen(
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text(
                     text = "Back",
@@ -288,18 +306,18 @@ fun OnboardingStepTwoScreen(
                     onComplete(
                         fullName,
                         phone,
-                        if (userType == UserType.ORGANIZER) organizationName else null,
-                        if (userType == UserType.INSTITUTION) selectedInstitution else null,
+                        if (userType == DomainUserType.ORGANIZER) organizationName else null,
+                        if (userType == DomainUserType.INSTITUTION) selectedInstitution else null,
                         profilePictureFile,
                     )
                 },
                 enabled = isFormValid,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
 
         VerticalSpacer(SpacingSize.Large)
-        
+
         // Extra bottom padding for safe scrolling area
         VerticalSpacer(SpacingSize.Medium)
     }
@@ -350,11 +368,8 @@ private fun saveBitmapToFile(context: Context, bitmap: Bitmap): File? {
 
 private fun saveUriToFile(context: Context, uri: Uri): File? {
     return try {
-        val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
-        } else {
-            MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-        }
+        @Suppress("DEPRECATION")
+        val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
         saveBitmapToFile(context, bitmap)
     } catch (e: Exception) {
         e.printStackTrace()

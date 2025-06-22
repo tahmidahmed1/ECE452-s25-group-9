@@ -16,16 +16,18 @@
         android:name=".MainApplication"
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.GoodDeedFeed"
         android:usesCleartextTraffic="true">
         
         <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBdVl-cTICSwYKrZ95SuvNw7dbMuDt1KG0" />
+            android:value="${googleMapsApiKey}" />
         
         <activity
             android:name=".presentation.MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.GoodDeedFeed">
             
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

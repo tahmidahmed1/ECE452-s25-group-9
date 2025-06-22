@@ -62,11 +62,11 @@ class AuthViewModelTest {
     @Test
     fun `signIn success emits Success`() =
         scope.runTest {
-                    repo.user = User(1, "test", "test@example.com", true, UserType.VOLUNTEER, true, "Test User")
-        viewModel.signIn("test", "pass")
-        viewModel.uiState.test {
-            assertEquals(AuthUiState.Loading, awaitItem())
-            assertEquals(AuthUiState.Success(User(1, "test", "test@example.com", true, UserType.VOLUNTEER, true, "Test User")), awaitItem())
+            repo.user = User(1, "test", "test@example.com", true, UserType.VOLUNTEER, true, "Test User")
+            viewModel.signIn("test", "pass")
+            viewModel.uiState.test {
+                assertEquals(AuthUiState.Loading, awaitItem())
+                assertEquals(AuthUiState.Success(User(1, "test", "test@example.com", true, UserType.VOLUNTEER, true, "Test User")), awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }

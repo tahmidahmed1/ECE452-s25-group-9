@@ -1,6 +1,8 @@
 package com.example.gooddeedfeed.presentation.ui.components
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +15,7 @@ object ToastManager {
         _toastData.value = ToastData(
             message = message,
             type = ToastType.SUCCESS,
-            duration = duration
+            duration = duration,
         )
     }
 
@@ -21,7 +23,7 @@ object ToastManager {
         _toastData.value = ToastData(
             message = message,
             type = ToastType.ERROR,
-            duration = duration
+            duration = duration,
         )
     }
 
@@ -29,7 +31,7 @@ object ToastManager {
         _toastData.value = ToastData(
             message = message,
             type = ToastType.WARNING,
-            duration = duration
+            duration = duration,
         )
     }
 
@@ -37,7 +39,7 @@ object ToastManager {
         _toastData.value = ToastData(
             message = message,
             type = ToastType.INFO,
-            duration = duration
+            duration = duration,
         )
     }
 

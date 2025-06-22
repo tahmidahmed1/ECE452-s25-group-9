@@ -1,6 +1,5 @@
 package com.example.gooddeedfeed.data.repository
 
-import android.content.Context
 import com.example.gooddeedfeed.data.remote.AuthApiService
 import com.example.gooddeedfeed.data.remote.AuthResponse
 import com.example.gooddeedfeed.data.remote.User

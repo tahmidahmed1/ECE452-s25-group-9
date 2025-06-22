@@ -1,7 +1,5 @@
 package com.example.gooddeedfeed.domain.model
 
-import com.example.gooddeedfeed.data.remote.UserType
-
 /**
  * Domain models specific to volunteer functionality
  */
@@ -16,20 +14,7 @@ data class VolunteerOpportunity(
     val requiredVolunteers: Int,
     val currentVolunteers: Int,
     val category: OpportunityCategory,
-    val isActive: Boolean = true
-)
-
-
-
-data class VolunteerActivity(
-    val id: Int,
-    val opportunityId: Int,
-    val opportunityTitle: String,
-    val organizationName: String,
-    val dateCompleted: String,
-    val hoursCompleted: Int,
-    val status: ActivityStatus,
-    val description: String?
+    val isActive: Boolean = true,
 )
 
 enum class OpportunityCategory {
@@ -39,26 +24,5 @@ enum class OpportunityCategory {
     HEALTHCARE,
     SOCIAL_SERVICES,
     DISASTER_RELIEF,
-    OTHER
-}
-
-enum class ActivityStatus {
-    REGISTERED,
-    IN_PROGRESS,
-    COMPLETED,
-    CANCELLED
-}
-
-data class VolunteerProfile(
-    val userId: Int,
-    val interests: List<OpportunityCategory>,
-    val skills: List<String>,
-    val availableDays: List<DayOfWeek>,
-    val maxTravelDistance: Int, // in kilometers
-    val totalHoursCompleted: Int,
-    val rating: Double?
-)
-
-enum class DayOfWeek {
-    MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+    OTHER,
 } 

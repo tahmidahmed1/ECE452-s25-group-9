@@ -1,24 +1,44 @@
 package com.example.gooddeedfeed.presentation.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.vector.ImageVector
-import com.example.gooddeedfeed.data.remote.User
-import com.example.gooddeedfeed.data.remote.UserType
-import com.example.gooddeedfeed.presentation.ui.screens.*
+import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.presentation.ui.screens.HomeScreen
+import com.example.gooddeedfeed.presentation.ui.screens.SettingsScreen
+import com.example.gooddeedfeed.presentation.ui.screens.institution.ReviewScreen
+import com.example.gooddeedfeed.presentation.ui.screens.organizer.EventManagementScreen
+import com.example.gooddeedfeed.presentation.ui.screens.volunteer.ListScreen
+import com.example.gooddeedfeed.presentation.ui.screens.volunteer.MapScreen
 
 /**
  * Configuration object that defines navigation tabs for different user types.
  * This centralizes the navigation logic and makes it easy to modify tab configurations.
  */
 object NavigationConfig {
-    
+
+    /**
+     * Helper functions to create common tab items
+     */
+    @Composable
+    private fun createHomeTab(): TabItem = TabItem(
+        title = "Home",
+        icon = Icons.Default.Home,
+        screen = { user, onLogout -> HomeScreen(user, onLogout) },
+    )
+
+    @Composable
+    private fun createSettingsTab(): TabItem = TabItem(
+        title = "Settings",
+        icon = Icons.Default.Settings,
+        screen = { user, onLogout -> SettingsScreen(user, onLogout) },
+    )
+
     /**
      * Tab configuration for volunteer users
      * Features: Home, List of opportunities, Map view, Settings
@@ -26,26 +46,18 @@ object NavigationConfig {
     @Composable
     fun getVolunteerTabs(): List<TabItem> {
         return listOf(
-            TabItem(
-                title = "Home",
-                icon = Icons.Default.Home,
-                screen = { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
-            ),
+            createHomeTab(),
             TabItem(
                 title = "Opportunities",
-                icon = Icons.Default.List,
-                screen = { user, _ -> ListScreen(user = user) },
+                icon = Icons.AutoMirrored.Filled.List,
+                screen = { user, _ -> ListScreen(user) },
             ),
             TabItem(
                 title = "Map",
                 icon = Icons.Default.LocationOn,
-                screen = { user, _ -> MapScreen() },
+                screen = { _, _ -> MapScreen() },
             ),
-            TabItem(
-                title = "Settings",
-                icon = Icons.Default.Settings,
-                screen = { user, onLogout -> SettingsScreen(user = user, onLogout = onLogout) },
-            ),
+            createSettingsTab(),
         )
     }
 
@@ -56,21 +68,13 @@ object NavigationConfig {
     @Composable
     fun getOrganizerTabs(): List<TabItem> {
         return listOf(
-            TabItem(
-                title = "Home",
-                icon = Icons.Default.Home,
-                screen = { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
-            ),
+            createHomeTab(),
             TabItem(
                 title = "Events",
                 icon = Icons.Default.Edit,
-                screen = { user, _ -> EventManagementScreen(user = user) },
+                screen = { user, _ -> EventManagementScreen(user) },
             ),
-            TabItem(
-                title = "Settings",
-                icon = Icons.Default.Settings,
-                screen = { user, onLogout -> SettingsScreen(user = user, onLogout = onLogout) },
-            ),
+            createSettingsTab(),
         )
     }
 
@@ -81,21 +85,13 @@ object NavigationConfig {
     @Composable
     fun getInstitutionTabs(): List<TabItem> {
         return listOf(
-            TabItem(
-                title = "Home",
-                icon = Icons.Default.Home,
-                screen = { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
-            ),
+            createHomeTab(),
             TabItem(
                 title = "Reviews",
                 icon = Icons.Default.CheckCircle,
-                screen = { user, _ -> ReviewScreen(user = user) },
+                screen = { _, _ -> ReviewScreen() },
             ),
-            TabItem(
-                title = "Settings",
-                icon = Icons.Default.Settings,
-                screen = { user, onLogout -> SettingsScreen(user = user, onLogout = onLogout) },
-            ),
+            createSettingsTab(),
         )
     }
 
@@ -106,16 +102,8 @@ object NavigationConfig {
     @Composable
     fun getDefaultTabs(): List<TabItem> {
         return listOf(
-            TabItem(
-                title = "Home",
-                icon = Icons.Default.Home,
-                screen = { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
-            ),
-            TabItem(
-                title = "Settings",
-                icon = Icons.Default.Settings,
-                screen = { user, onLogout -> SettingsScreen(user = user, onLogout = onLogout) },
-            ),
+            createHomeTab(),
+            createSettingsTab(),
         )
     }
 
@@ -124,11 +112,11 @@ object NavigationConfig {
      * This is the entry point for determining which tabs to show
      */
     @Composable
-    fun getTabsForUserType(userType: UserType?): List<TabItem> {
+    fun getTabsForUserType(userType: DomainUserType?): List<TabItem> {
         return when (userType) {
-            UserType.VOLUNTEER -> getVolunteerTabs()
-            UserType.ORGANIZER -> getOrganizerTabs()
-            UserType.INSTITUTION -> getInstitutionTabs()
+            DomainUserType.VOLUNTEER -> getVolunteerTabs()
+            DomainUserType.ORGANIZER -> getOrganizerTabs()
+            DomainUserType.INSTITUTION -> getInstitutionTabs()
             null -> getDefaultTabs()
         }
     }
@@ -137,15 +125,15 @@ object NavigationConfig {
 /**
  * Extension functions for better readability and type safety
  */
-fun UserType?.getDisplayName(): String {
+fun DomainUserType?.getDisplayName(): String {
     return com.example.gooddeedfeed.domain.util.UserTypeUtils.getUserTypeDisplayName(this)
 }
 
-fun UserType?.getTabCount(): Int {
+fun DomainUserType?.getTabCount(): Int {
     return when (this) {
-        UserType.VOLUNTEER -> 4 // Home, List, Map, Settings
-        UserType.ORGANIZER -> 3 // Home, Events, Settings
-        UserType.INSTITUTION -> 3 // Home, Reviews, Settings
+        DomainUserType.VOLUNTEER -> 4 // Home, List, Map, Settings
+        DomainUserType.ORGANIZER -> 3 // Home, Events, Settings
+        DomainUserType.INSTITUTION -> 3 // Home, Reviews, Settings
         null -> 2 // Home, Settings
     }
 } 

@@ -26,4 +26,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "GoodDeedFeed"
 include(":android")
-include(":server")
