@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
+import os
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -10,8 +11,8 @@ from .database import get_db
 from .models import User
 from .schemas import TokenData
 
-# Secret key should be stored securely in production
-SECRET_KEY = "Qw8v2n3Xy7Zp4R1s6T0u9L5k2J8h3B6c"
+# Load JWT secret from environment variables
+SECRET_KEY = os.getenv("JWT_SECRET", "fallback_secret_key_for_development_only")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

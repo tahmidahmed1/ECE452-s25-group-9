@@ -1,47 +1,63 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.gooddeedfeed.data.remote.User
-import com.example.gooddeedfeed.data.remote.UserType
-import com.example.gooddeedfeed.presentation.ui.components.ScreenContainer
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
-import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
+import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ActionCard
+import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.ScreenContainer
 import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
-import com.example.gooddeedfeed.presentation.viewmodel.HomeViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.HomeUiState
-import com.example.gooddeedfeed.presentation.viewmodel.HomeAction
+import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
+import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.common.UserTypeDisplay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    user: User,
+    user: DomainUser,
     onLogout: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel<HomeViewModel>()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     LaunchedEffect(user) {
         viewModel.loadUserHome(user)
     }
-    
-    when (uiState) {
-        is HomeUiState.Loading -> {
+
+    when (val currentState = uiState) {
+        is UiState.Loading -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -49,18 +65,15 @@ fun HomeScreen(
                 CircularProgressIndicator()
             }
         }
-        is HomeUiState.Success -> {
-            val successState = uiState as HomeUiState.Success // Explicit cast
+        is UiState.Success -> {
+            val homeData = currentState.data
             HomeContent(
-                user = successState.user,
-                userTypeDisplay = successState.userTypeDisplay,
-                onActionClick = { action -> viewModel.handleAction(action) },
-                onLogout = onLogout
+                user = homeData.user,
+                userTypeDisplay = homeData.userTypeDisplay,
+                onActionClick = { action -> viewModel.handleAction(action) }
             )
         }
-        is HomeUiState.Error -> {
-            val errorState = uiState as HomeUiState.Error // Explicit cast
-            
+        is UiState.Error -> {
             ScreenContainer {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -68,7 +81,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Text(
-                        text = errorState.message,
+                        text = currentState.message,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -76,10 +89,6 @@ fun HomeScreen(
                     PrimaryButton(
                         text = "Retry",
                         onClick = { viewModel.loadUserHome(user) }
-                    )
-                    PrimaryButton(
-                        text = "Log Out",
-                        onClick = onLogout
                     )
                 }
             }
@@ -89,10 +98,9 @@ fun HomeScreen(
 
 @Composable
 private fun HomeContent(
-    user: User,
-    userTypeDisplay: com.example.gooddeedfeed.presentation.viewmodel.UserTypeDisplay,
-    onActionClick: (HomeAction) -> Unit,
-    onLogout: () -> Unit
+    user: DomainUser,
+    userTypeDisplay: UserTypeDisplay,
+    onActionClick: (HomeAction) -> Unit
 ) {
     ScreenContainer {
         // Welcome header
@@ -101,10 +109,10 @@ private fun HomeContent(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
-                imageVector = when (user.user_type) {
-                    UserType.VOLUNTEER -> Icons.Default.Person
-                    UserType.ORGANIZER -> Icons.Default.Star
-                    UserType.INSTITUTION -> Icons.Default.Home
+                imageVector = when (user.userType) {
+                    DomainUserType.VOLUNTEER -> Icons.Default.Person
+                    DomainUserType.ORGANIZER -> Icons.Default.Star
+                    DomainUserType.INSTITUTION -> Icons.Default.Home
                     null -> Icons.Default.Person
                 },
                 contentDescription = null,
@@ -116,7 +124,7 @@ private fun HomeContent(
 
             Column {
                 Text(
-                    text = "Welcome, ${user.full_name ?: user.username}",
+                    text = "Welcome, ${user.fullName ?: user.username}",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
@@ -143,7 +151,10 @@ private fun HomeContent(
         // Action items
         userTypeDisplay.actionItems.forEach { actionItem ->
             ActionCard(
-                icon = getIconForAction(actionItem.iconName),
+                icon = when(actionItem.iconName) {
+                    "list" -> Icons.AutoMirrored.Filled.List
+                    else -> getIconForAction(actionItem.iconName)
+                },
                 title = actionItem.title,
                 description = actionItem.description,
                 onClick = { onActionClick(actionItem.action) }
@@ -152,21 +163,15 @@ private fun HomeContent(
         }
 
         VerticalSpacer()
-
-        PrimaryButton(
-            text = "Log Out",
-            onClick = onLogout
-        )
     }
 }
 
 @Composable
 private fun getIconForAction(iconName: String) = when (iconName) {
     "favorite" -> Icons.Default.Favorite
-    "list" -> Icons.Default.List
     "star" -> Icons.Default.Star
     "info" -> Icons.Default.Info
-    else -> Icons.Default.List
+    else -> Icons.AutoMirrored.Filled.List
 }
 
 

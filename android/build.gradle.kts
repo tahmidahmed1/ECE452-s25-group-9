@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -18,11 +20,29 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+        
+        val envFile = file("../.env")
+        val envProps = Properties()
+        if (envFile.exists()) {
+            envFile.inputStream().use { envProps.load(it) }
+        }
+        
+        val googleMapsApiKey = envProps.getProperty("GOOGLE_MAPS_API_KEY") ?: 
+                              System.getenv("GOOGLE_MAPS_API_KEY") ?: ""
+        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$googleMapsApiKey\"")
+        manifestPlaceholders["googleMapsApiKey"] = googleMapsApiKey
     }
 
     buildTypes {
+        debug {
+            isDebuggable = true
+            buildConfigField("boolean", "DEV_MODE", "true")
+            buildConfigField("String", "DEV_BASE_URL", "\"http://10.0.2.2:8000\"")
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField("boolean", "DEV_MODE", "false")
+            buildConfigField("String", "DEV_BASE_URL", "\"\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -32,6 +52,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -49,12 +70,14 @@ android {
 }
 
 dependencies {
+    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
     implementation("androidx.activity:activity-compose:1.10.1")
-    implementation("androidx.compose.ui:ui:1.8.2")
-    implementation("androidx.compose.material3:material3:1.3.2")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.8.2")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
     implementation("androidx.navigation:navigation-compose:2.9.0")
     implementation("com.google.dagger:hilt-android:2.51.1")
@@ -66,22 +89,15 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-
-    // Image loading and handling
     implementation("io.coil-kt:coil-compose:2.5.0")
-    implementation("androidx.activity:activity-compose:1.10.1")
-
-    // Google Maps and Location Services
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
-
     testImplementation("junit:junit:4.13.2")
     testImplementation("app.cash.turbine:turbine:1.0.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4") // downgraded
-
-    // Enforce correct serialization version
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.02.00"))
     constraints {
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3") {
             because("Avoid using 1.7.x which requires Kotlin 2.0")

@@ -25,17 +25,6 @@ data class VolunteerEvent(
     val longitude: Double = 0.0
 )
 
-data class EventRegistration(
-    val id: Int,
-    val eventId: Int,
-    val volunteerId: Int,
-    val volunteerName: String,
-    val volunteerEmail: String,
-    val registrationDate: String,
-    val status: RegistrationStatus,
-    val notes: String?
-)
-
 enum class EventStatus {
     DRAFT,
     PUBLISHED,
@@ -44,36 +33,17 @@ enum class EventStatus {
     CANCELLED
 }
 
-enum class RegistrationStatus {
-    PENDING,
-    CONFIRMED,
-    WAITLISTED,
-    DECLINED,
-    NO_SHOW,
-    COMPLETED
-}
-
-data class OrganizationProfile(
-    val id: Int,
-    val userId: Int,
-    val organizationName: String,
+/**
+ * Data class for creating/updating events
+ */
+data class CreateEventData(
+    val title: String,
     val description: String,
-    val contactEmail: String,
-    val contactPhone: String,
-    val address: String,
-    val website: String?,
-    val focusAreas: List<OpportunityCategory>,
-    val isVerified: Boolean,
-    val totalEventsCreated: Int,
-    val totalVolunteersReached: Int,
-    val rating: Double?
+    val location: String,
+    val date: String,
+    val startTime: String,
+    val endTime: String,
+    val maxVolunteers: Int,
+    val category: OpportunityCategory,
+    val requirements: List<String>
 )
-
-data class EventAnalytics(
-    val eventId: Int,
-    val totalRegistrations: Int,
-    val completedRegistrations: Int,
-    val noShowRate: Double,
-    val averageRating: Double?,
-    val feedbackCount: Int
-) 

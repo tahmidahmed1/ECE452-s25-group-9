@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, Enum
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, Enum, Text, JSON
 from sqlalchemy.sql import func
 import enum
 
@@ -13,6 +13,12 @@ class InstitutionName(enum.Enum):
     INSTITUTION_1 = "Institution 1"
     INSTITUTION_2 = "Institution 2"
     INSTITUTION_3 = "Institution 3"
+
+class Sex(enum.Enum):
+    MALE = "male"
+    FEMALE = "female"
+    NON_BINARY = "non_binary"
+    PREFER_NOT_TO_SAY = "prefer_not_to_say"
 
 class User(Base):
     __tablename__ = "users"
@@ -39,6 +45,17 @@ class User(Base):
     
     # Institution (for institutions)
     institution_name = Column(Enum(InstitutionName), nullable=True)
+    
+    # Enhanced volunteer profile fields
+    sex = Column(Enum(Sex), nullable=True)
+    description = Column(Text, nullable=True)
+    skills = Column(JSON, nullable=True)  # Store as JSON array
+    age = Column(Integer, nullable=True)
+    emergency_contact_name = Column(String, nullable=True)
+    emergency_contact_phone = Column(String, nullable=True)
+    location_area = Column(String, nullable=True)
+    has_drivers_license = Column(Boolean, nullable=True)
+    disabilities = Column(Text, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 

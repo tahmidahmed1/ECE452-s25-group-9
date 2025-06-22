@@ -1,10 +1,11 @@
 package com.example.gooddeedfeed.domain.repository
 
-import com.example.gooddeedfeed.data.remote.AuthResponse
-import com.example.gooddeedfeed.data.remote.InstitutionName
-import com.example.gooddeedfeed.data.remote.ProfilePictureUploadResponse
-import com.example.gooddeedfeed.data.remote.User
-import com.example.gooddeedfeed.data.remote.UserType
+import com.example.gooddeedfeed.domain.model.DomainAuthResponse
+import com.example.gooddeedfeed.domain.model.DomainInstitutionName
+import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse
+import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 
@@ -13,31 +14,36 @@ interface AuthRepository {
         username: String,
         email: String,
         password: String,
-    ): AuthResponse
+    ): Flow<Result<DomainAuthResponse>>
 
     suspend fun signIn(
         username: String,
         password: String,
-    ): AuthResponse
+    ): Flow<Result<DomainAuthResponse>>
 
-    suspend fun signOut()
+    suspend fun signOut(): Flow<Result<Unit>>
 
     fun getToken(): Flow<String?>
 
-    suspend fun getCurrentUser(): User?
+    suspend fun getCurrentUser(): Flow<Result<DomainUser>>
 
     // Onboarding methods
-    suspend fun completeOnboardingStepOne(token: String, userType: UserType): Boolean
+    suspend fun updateUserType(userType: DomainUserType): Result<Unit>
 
     suspend fun completeOnboarding(
-        token: String,
-        userType: UserType,
+        userType: DomainUserType,
         fullName: String,
         phone: String,
         organizationName: String?,
-        institutionName: InstitutionName?,
-    ): Boolean
+        institutionName: DomainInstitutionName?,
+        profilePictureUrl: String? = null
+    ): Result<Unit>
+
+    suspend fun completeVolunteerOnboarding(
+        volunteerProfile: DomainVolunteerProfile,
+        profilePictureUrl: String? = null
+    ): Result<Unit>
 
     // Profile picture upload
-    suspend fun uploadProfilePicture(token: String, imageFile: File): ProfilePictureUploadResponse?
+    suspend fun uploadProfilePicture(file: File): Flow<Result<DomainProfilePictureUploadResponse>>
 }

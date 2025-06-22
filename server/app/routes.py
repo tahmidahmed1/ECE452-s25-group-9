@@ -3,12 +3,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 import logging
+from typing import List
 
 from .database import get_db
-from .models import User
+from .models import User, UserType, InstitutionName
 from .schemas import (
     UserCreate, User as UserSchema, Token, OnboardingStepOne, 
-    OnboardingComplete, UserType, InstitutionName, ProfilePictureUploadResponse
+    OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
+    InstitutionName as SchemaInstitutionName
 )
 from .auth import (
     authenticate_user, create_access_token, get_password_hash, 
@@ -44,6 +46,39 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         hashed_password=hashed_password
     )
+    
+    # Check if this is a dev user and auto-complete onboarding
+    if user.username.startswith("dev_"):
+        logger.info(f"Dev user detected: {user.username}, auto-completing onboarding")
+        
+        # Extract user type from username (e.g., "dev_volunteer_123456")
+        parts = user.username.split("_")
+        if len(parts) >= 2:
+            user_type_str = parts[1].upper()
+            try:
+                # Map the user type
+                if user_type_str == "VOLUNTEER":
+                    db_user.user_type = UserType.VOLUNTEER
+                    db_user.full_name = f"Dev Volunteer {parts[2] if len(parts) > 2 else 'User'}"
+                    db_user.phone = f"+1-555-DEV-{parts[2] if len(parts) > 2 else '123'}"
+                elif user_type_str == "ORGANIZER":
+                    db_user.user_type = UserType.ORGANIZER
+                    db_user.full_name = f"Dev Organizer {parts[2] if len(parts) > 2 else 'User'}"
+                    db_user.phone = f"+1-555-DEV-{parts[2] if len(parts) > 2 else '123'}"
+                    db_user.organization_name = f"Dev Organization {parts[2] if len(parts) > 2 else '123'}"
+                elif user_type_str == "INSTITUTION":
+                    db_user.user_type = UserType.INSTITUTION
+                    db_user.full_name = f"Dev Institution {parts[2] if len(parts) > 2 else 'User'}"
+                    db_user.phone = f"+1-555-DEV-{parts[2] if len(parts) > 2 else '123'}"
+                    db_user.institution_name = InstitutionName.INSTITUTION_1
+                    
+                # Mark onboarding as completed for dev users
+                db_user.onboarding_completed = True
+                logger.info(f"Dev user {user.username} onboarding auto-completed with type: {user_type_str}")
+                
+            except Exception as e:
+                logger.warning(f"Failed to auto-complete onboarding for dev user {user.username}: {e}")
+    
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -148,7 +183,64 @@ def complete_onboarding(
     logger.info(f"Onboarding completed for user {current_user.username}")
     return {"message": "Onboarding completed successfully"}
 
+@router.post("/onboarding/volunteer-complete")
+def complete_volunteer_onboarding(
+    onboarding_data: OnboardingComplete,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    logger.info(f"Completing volunteer onboarding for user {current_user.username}")
+    
+    # Update user profile with all volunteer fields
+    current_user.full_name = onboarding_data.full_name
+    current_user.phone = onboarding_data.phone
+    current_user.onboarding_completed = True
+    
+    # Volunteer-specific fields
+    if onboarding_data.sex:
+        current_user.sex = onboarding_data.sex
+    if onboarding_data.description:
+        current_user.description = onboarding_data.description
+    if onboarding_data.skills:
+        current_user.skills = onboarding_data.skills
+    if onboarding_data.age:
+        current_user.age = onboarding_data.age
+    if onboarding_data.emergency_contact_name:
+        current_user.emergency_contact_name = onboarding_data.emergency_contact_name
+    if onboarding_data.emergency_contact_phone:
+        current_user.emergency_contact_phone = onboarding_data.emergency_contact_phone
+    if onboarding_data.location_area:
+        current_user.location_area = onboarding_data.location_area
+    if onboarding_data.has_drivers_license is not None:
+        current_user.has_drivers_license = onboarding_data.has_drivers_license
+    if onboarding_data.disabilities:
+        current_user.disabilities = onboarding_data.disabilities
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    logger.info(f"Volunteer onboarding completed for user {current_user.username}")
+    return {"message": "Volunteer onboarding completed successfully"}
+
 @router.get("/institutions")
 def get_institutions():
     """Get available institutions for onboarding"""
-    return [{"value": inst.value, "label": inst.value} for inst in InstitutionName] 
+    return [{"value": inst.value, "label": inst.value} for inst in SchemaInstitutionName] 
+
+# Stub endpoint for fetching events
+@router.get("/events", response_model=List[EventSchema])
+def get_events_stub():
+    return []
+
+# CRUD stub endpoints for events
+@router.post("/events", response_model=EventSchema)
+def create_event_stub(event: EventSchema):
+    return event
+
+@router.put("/events/{event_id}", response_model=EventSchema)
+def update_event_stub(event_id: int, event: EventSchema):
+    return event
+
+@router.delete("/events/{event_id}", status_code=204)
+def delete_event_stub(event_id: int):
+    return None 

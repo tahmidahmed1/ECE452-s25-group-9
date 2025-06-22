@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Application theme for dark mode with no action bar -->
+    <style name="Theme.GoodDeedFeed" parent="android:Theme.Material.NoActionBar">
+        <!-- Dark theme customizations -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources> 
