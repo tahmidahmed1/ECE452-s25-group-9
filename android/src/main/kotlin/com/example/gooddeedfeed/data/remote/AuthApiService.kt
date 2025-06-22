@@ -40,7 +40,7 @@ data class ValidationError(
     val type: String,
     val loc: List<String>,
     val msg: String,
-    val input: String? = null
+    val input: String? = null,
 )
 
 @Serializable
@@ -51,32 +51,39 @@ data class ErrorResponse(val success: Boolean = false, val message: String, val 
 enum class UserType {
     @SerialName("volunteer")
     VOLUNTEER,
-    @SerialName("organizer") 
+
+    @SerialName("organizer")
     ORGANIZER,
+
     @SerialName("institution")
-    INSTITUTION
+    INSTITUTION,
 }
 
 @Serializable
 enum class InstitutionName {
     @SerialName("Institution 1")
     INSTITUTION_1,
-    @SerialName("Institution 2") 
+
+    @SerialName("Institution 2")
     INSTITUTION_2,
+
     @SerialName("Institution 3")
-    INSTITUTION_3
+    INSTITUTION_3,
 }
 
 @Serializable
 enum class Sex {
     @SerialName("male")
     MALE,
+
     @SerialName("female")
     FEMALE,
+
     @SerialName("non_binary")
     NON_BINARY,
+
     @SerialName("prefer_not_to_say")
-    PREFER_NOT_TO_SAY
+    PREFER_NOT_TO_SAY,
 }
 
 @Serializable
@@ -93,7 +100,7 @@ data class User(
     val organization_name: String? = null,
     val institution_name: InstitutionName? = null,
     val created_at: String? = null,
-    
+
     // Enhanced volunteer profile fields
     val sex: Sex? = null,
     val description: String? = null,
@@ -103,7 +110,7 @@ data class User(
     val emergency_contact_phone: String? = null,
     val location_area: String? = null,
     val has_drivers_license: Boolean? = null,
-    val disabilities: String? = null
+    val disabilities: String? = null,
 )
 
 // Onboarding requests
@@ -126,7 +133,7 @@ data class OnboardingCompleteRequest(
     val emergency_contact_phone: String? = null,
     val location_area: String? = null,
     val has_drivers_license: Boolean? = null,
-    val disabilities: String? = null
+    val disabilities: String? = null,
 )
 
 @Serializable
@@ -149,11 +156,11 @@ class AuthApiService(private val client: HttpClient) {
     // Try different IP addresses for various network configurations
     // 10.0.2.2 is for emulator to host, WSL IPs for WSL environments
     private val possibleUrls = listOf(
-        "http://10.0.2.2:9000/api",        // Android emulator to Windows host
-        "http://172.28.7.154:9000/api",    // Current WSL IP address  
-        "http://172.28.0.1:9000/api",      // Windows host from WSL perspective
-        "http://localhost:9000/api",       // Local host
-        "http://127.0.0.1:9000/api",       // Loopback
+        "http://10.0.2.2:9000/api", // Android emulator to Windows host
+        "http://172.28.7.154:9000/api", // Current WSL IP address
+        "http://172.28.0.1:9000/api", // Windows host from WSL perspective
+        "http://localhost:9000/api", // Local host
+        "http://127.0.0.1:9000/api", // Loopback
     )
     private val baseUrl = possibleUrls[0] // Use first one by default
 
@@ -216,16 +223,16 @@ class AuthApiService(private val client: HttpClient) {
                         try {
                             val rawBody = lastResponseBody ?: "Unknown validation error"
                             Log.d(TAG, "Raw error response: $rawBody")
-                            
+
                             // Look for email validation patterns in raw response
                             when {
-                                rawBody.contains("email") && rawBody.contains("@") -> 
+                                rawBody.contains("email") && rawBody.contains("@") ->
                                     return AuthResponse(false, message = "Please enter a valid email address with an @ sign")
-                                rawBody.contains("password") -> 
+                                rawBody.contains("password") ->
                                     return AuthResponse(false, message = "Password is required")
-                                rawBody.contains("username") -> 
+                                rawBody.contains("username") ->
                                     return AuthResponse(false, message = "Username is required")
-                                else -> 
+                                else ->
                                     return AuthResponse(false, message = "Please check your input and try again")
                             }
                         } catch (ex: Exception) {
@@ -629,7 +636,7 @@ class AuthApiService(private val client: HttpClient) {
     suspend fun completeVolunteerOnboarding(
         token: String,
         volunteerProfile: DomainVolunteerProfile,
-        profilePictureUrl: String? = null
+        profilePictureUrl: String? = null,
     ): Boolean {
         Log.d(TAG, "Completing volunteer onboarding")
 
@@ -649,7 +656,7 @@ class AuthApiService(private val client: HttpClient) {
                     emergency_contact_phone = volunteerProfile.emergencyContactPhone,
                     location_area = volunteerProfile.locationArea,
                     has_drivers_license = volunteerProfile.hasDriversLicense,
-                    disabilities = volunteerProfile.disabilities
+                    disabilities = volunteerProfile.disabilities,
                 )
 
                 val response: OnboardingResponse = client.post("$url/onboarding/volunteer-complete") {

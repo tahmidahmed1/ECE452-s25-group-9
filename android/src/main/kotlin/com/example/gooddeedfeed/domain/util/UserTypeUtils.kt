@@ -7,18 +7,18 @@ import com.example.gooddeedfeed.domain.model.DomainUserType
  * Utility functions for user type management and validation
  */
 object UserTypeUtils {
-    
+
     /**
      * Check if user has completed onboarding for their user type
      */
     fun isOnboardingComplete(user: DomainUser): Boolean {
-        return user.onboardingCompleted && 
-               user.userType != null &&
-               user.fullName?.isNotBlank() == true &&
-               user.phone?.isNotBlank() == true &&
-               isUserTypeSpecificDataComplete(user)
+        return user.onboardingCompleted &&
+            user.userType != null &&
+            user.fullName?.isNotBlank() == true &&
+            user.phone?.isNotBlank() == true &&
+            isUserTypeSpecificDataComplete(user)
     }
-    
+
     /**
      * Check if user type specific data is complete
      */
@@ -30,7 +30,7 @@ object UserTypeUtils {
             null -> false
         }
     }
-    
+
     /**
      * Get display name for user type
      */
@@ -42,7 +42,7 @@ object UserTypeUtils {
             null -> "User"
         }
     }
-    
+
     /**
      * Get user's full display name including organization/institution
      */
@@ -65,7 +65,7 @@ object UserTypeUtils {
             null -> baseName
         }
     }
-    
+
     /**
      * Get available user types for registration
      */
@@ -73,10 +73,10 @@ object UserTypeUtils {
         return listOf(
             DomainUserType.VOLUNTEER,
             DomainUserType.ORGANIZER,
-            DomainUserType.INSTITUTION
+            DomainUserType.INSTITUTION,
         )
     }
-    
+
     /**
      * Get description for user type
      */

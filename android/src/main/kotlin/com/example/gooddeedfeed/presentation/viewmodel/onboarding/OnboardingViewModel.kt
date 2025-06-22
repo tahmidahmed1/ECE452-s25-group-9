@@ -34,21 +34,21 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-                
+
                 // Call the repository to update user type
                 val result = authRepository.updateUserType(userType)
                 result.onFailure { error ->
                     throw error
                 }
-                
+
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    stepOneCompleted = true
+                    stepOneCompleted = true,
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "Failed to update user type"
+                    errorMessage = e.message ?: "Failed to update user type",
                 )
             }
         }
@@ -85,7 +85,7 @@ class OnboardingViewModel @Inject constructor(
                     phone = phone,
                     organizationName = organizationName,
                     institutionName = institutionName,
-                    profilePictureUrl = profilePictureUrl
+                    profilePictureUrl = profilePictureUrl,
                 )
                 result.onFailure { error ->
                     throw error
@@ -93,12 +93,12 @@ class OnboardingViewModel @Inject constructor(
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    isOnboardingCompleted = true
+                    isOnboardingCompleted = true,
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "Failed to complete onboarding"
+                    errorMessage = e.message ?: "Failed to complete onboarding",
                 )
             }
         }
@@ -106,7 +106,7 @@ class OnboardingViewModel @Inject constructor(
 
     fun completeVolunteerOnboarding(
         volunteerProfile: DomainVolunteerProfile,
-        profilePictureFile: File? = null
+        profilePictureFile: File? = null,
     ) {
         viewModelScope.launch {
             try {
@@ -127,7 +127,7 @@ class OnboardingViewModel @Inject constructor(
                 // Complete volunteer onboarding with comprehensive profile
                 val result = authRepository.completeVolunteerOnboarding(
                     volunteerProfile = volunteerProfile,
-                    profilePictureUrl = profilePictureUrl
+                    profilePictureUrl = profilePictureUrl,
                 )
                 result.onFailure { error ->
                     throw error
@@ -135,12 +135,12 @@ class OnboardingViewModel @Inject constructor(
 
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    isOnboardingCompleted = true
+                    isOnboardingCompleted = true,
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "Failed to complete volunteer profile"
+                    errorMessage = e.message ?: "Failed to complete volunteer profile",
                 )
             }
         }

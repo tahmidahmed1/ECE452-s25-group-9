@@ -39,16 +39,16 @@ abstract class EventModule {
         @Provides
         @Singleton
         fun provideEventApiService(client: HttpClient): EventApiService = EventApiService(client)
-        
+
         @Provides
         fun provideGetMapEventsUseCase(repo: MapRepository) = GetMapEventsUseCase(repo)
-        
+
         @Provides
         fun provideGetOpportunitiesUseCase(repo: OpportunitiesRepository) = GetOpportunitiesUseCase(repo)
-        
+
         @Provides
         fun provideApplyForOpportunityUseCase(repo: OpportunitiesRepository) = ApplyForOpportunityUseCase(repo)
-        
+
         @Provides
         fun provideManageEventsUseCase(repo: EventRepository) = ManageEventsUseCase(repo)
     }

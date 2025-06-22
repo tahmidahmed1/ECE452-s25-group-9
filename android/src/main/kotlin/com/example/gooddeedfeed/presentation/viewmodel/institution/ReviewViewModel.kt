@@ -18,7 +18,7 @@ data class ReviewData(
     val pendingReviews: List<ActivityReview>,
     val completedReviews: List<ActivityReview>,
     val selectedTab: ReviewTab,
-    val selectedReview: ActivityReview? = null
+    val selectedReview: ActivityReview? = null,
 )
 
 enum class ReviewTab {
@@ -27,30 +27,30 @@ enum class ReviewTab {
 
 @HiltViewModel
 class ReviewViewModel @Inject constructor(
-    private val manageReviewsUseCase: ManageReviewsUseCase
+    private val manageReviewsUseCase: ManageReviewsUseCase,
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow<UiState<ReviewData>>(UiState.Loading)
     val uiState: StateFlow<UiState<ReviewData>> = _uiState.asStateFlow()
-    
+
     private val _selectedTab = MutableStateFlow(ReviewTab.PENDING)
-    
+
     init {
         loadReviews()
     }
-    
+
     fun loadReviews() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
-            
+
             combine(
                 manageReviewsUseCase.getPendingReviews(),
-                manageReviewsUseCase.getCompletedReviews()
+                manageReviewsUseCase.getCompletedReviews(),
             ) { pending, completed ->
                 ReviewData(
                     pendingReviews = pending,
                     completedReviews = completed,
-                    selectedTab = _selectedTab.value
+                    selectedTab = _selectedTab.value,
                 )
             }
                 .catch { e ->
@@ -61,26 +61,26 @@ class ReviewViewModel @Inject constructor(
                 }
         }
     }
-    
+
     fun selectTab(tab: ReviewTab) {
         _selectedTab.value = tab
         val currentState = _uiState.value
         if (currentState is UiState.Success) {
             _uiState.value = currentState.copy(
-                data = currentState.data.copy(selectedTab = tab)
+                data = currentState.data.copy(selectedTab = tab),
             )
         }
     }
-    
+
     fun selectReview(review: ActivityReview?) {
         val currentState = _uiState.value
         if (currentState is UiState.Success) {
             _uiState.value = currentState.copy(
-                data = currentState.data.copy(selectedReview = review)
+                data = currentState.data.copy(selectedReview = review),
             )
         }
     }
-    
+
     fun approveReview(reviewId: Int, feedback: String? = null) {
         viewModelScope.launch {
             manageReviewsUseCase.approveReview(reviewId, feedback)
@@ -92,7 +92,7 @@ class ReviewViewModel @Inject constructor(
                 }
         }
     }
-    
+
     fun rejectReview(reviewId: Int, reason: String? = null) {
         viewModelScope.launch {
             manageReviewsUseCase.rejectReview(reviewId, reason)
@@ -104,7 +104,7 @@ class ReviewViewModel @Inject constructor(
                 }
         }
     }
-    
+
     fun requestMoreInfo(reviewId: Int, message: String? = null) {
         viewModelScope.launch {
             manageReviewsUseCase.requestMoreInfo(reviewId, message)

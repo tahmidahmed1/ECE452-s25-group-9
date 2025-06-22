@@ -40,51 +40,51 @@ object AppAnimations {
     val fadeIn = fadeIn(
         animationSpec = tween(
             durationMillis = AnimationDurations.normal,
-            easing = FastOutSlowInEasing
-        )
+            easing = FastOutSlowInEasing,
+        ),
     )
-    
+
     val fadeOut = fadeOut(
         animationSpec = tween(
             durationMillis = AnimationDurations.fast,
-            easing = FastOutLinearInEasing
-        )
+            easing = FastOutLinearInEasing,
+        ),
     )
-    
+
     // Scale animations
     val scaleIn = scaleIn(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
+            stiffness = Spring.StiffnessHigh,
         ),
-        initialScale = 0.8f
+        initialScale = 0.8f,
     )
-    
+
     val scaleOut = scaleOut(
         animationSpec = tween(
             durationMillis = AnimationDurations.fast,
-            easing = FastOutLinearInEasing
+            easing = FastOutLinearInEasing,
         ),
-        targetScale = 0.8f
+        targetScale = 0.8f,
     )
-    
+
     // Slide animations
     val slideInFromBottom = slideInVertically(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
+            stiffness = Spring.StiffnessMedium,
         ),
-        initialOffsetY = { it / 2 }
+        initialOffsetY = { it / 2 },
     )
-    
+
     val slideOutToBottom = slideOutVertically(
         animationSpec = tween(
             durationMillis = AnimationDurations.normal,
-            easing = FastOutLinearInEasing
+            easing = FastOutLinearInEasing,
         ),
-        targetOffsetY = { it / 2 }
+        targetOffsetY = { it / 2 },
     )
-    
+
     // Combined animations
     val enterAnimation = fadeIn + scaleIn + slideInFromBottom
     val exitAnimation = fadeOut + scaleOut + slideOutToBottom
@@ -96,7 +96,7 @@ fun ModernAnimatedVisibility(
     visible: Boolean,
     modifier: Modifier = Modifier,
     label: String = "AnimatedVisibility",
-    content: @Composable AnimatedVisibilityScope.() -> Unit
+    content: @Composable AnimatedVisibilityScope.() -> Unit,
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -104,62 +104,62 @@ fun ModernAnimatedVisibility(
         enter = AppAnimations.enterAnimation,
         exit = AppAnimations.exitAnimation,
         label = label,
-        content = content
+        content = content,
     )
 }
 
 // Bounce click effect
 fun Modifier.bounceClick(
     enabled: Boolean = true,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "bounceClick"
         properties["enabled"] = enabled
         properties["onClick"] = onClick
-    }
+    },
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val scale by animateFloatAsState(
         targetValue = if (enabled) 1f else 0.96f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
+            stiffness = Spring.StiffnessHigh,
         ),
-        label = "bounceScale"
+        label = "bounceScale",
     )
-    
+
     this
         .scale(scale)
         .clickable(
             interactionSource = interactionSource,
             indication = null,
             enabled = enabled,
-            onClick = onClick
+            onClick = onClick,
         )
 }
 
 // Hover scale effect
 fun Modifier.hoverScale(
     scale: Float = 1.05f,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "hoverScale"
         properties["scale"] = scale
         properties["enabled"] = enabled
-    }
+    },
 ) {
     var isHovered by remember { mutableStateOf(false) }
     val animatedScale by animateFloatAsState(
         targetValue = if (isHovered && enabled) scale else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
+            stiffness = Spring.StiffnessHigh,
         ),
-        label = "hoverScale"
+        label = "hoverScale",
     )
-    
+
     this
         .graphicsLayer {
             scaleX = animatedScale
@@ -170,15 +170,15 @@ fun Modifier.hoverScale(
 // Shimmer loading effect
 @Composable
 fun Modifier.shimmer(
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "shimmer"
         properties["enabled"] = enabled
-    }
+    },
 ) {
     if (!enabled) return@composed this
-    
+
     val transition = rememberInfiniteTransition(label = "shimmer")
     val alpha by transition.animateFloat(
         initialValue = 0.2f,
@@ -186,13 +186,13 @@ fun Modifier.shimmer(
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = 1000,
-                easing = LinearEasing
+                easing = LinearEasing,
             ),
-            repeatMode = RepeatMode.Reverse
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "shimmerAlpha"
+        label = "shimmerAlpha",
     )
-    
+
     this.graphicsLayer { this.alpha = alpha }
 }
 
@@ -201,17 +201,17 @@ fun Modifier.shimmer(
 fun Modifier.pulse(
     enabled: Boolean = true,
     scale: Float = 1.1f,
-    duration: Int = 1000
+    duration: Int = 1000,
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "pulse"
         properties["enabled"] = enabled
         properties["scale"] = scale
         properties["duration"] = duration
-    }
+    },
 ) {
     if (!enabled) return@composed this
-    
+
     val transition = rememberInfiniteTransition(label = "pulse")
     val animatedScale by transition.animateFloat(
         initialValue = 1f,
@@ -219,13 +219,13 @@ fun Modifier.pulse(
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = duration,
-                easing = FastOutSlowInEasing
+                easing = FastOutSlowInEasing,
             ),
-            repeatMode = RepeatMode.Reverse
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "pulseScale"
+        label = "pulseScale",
     )
-    
+
     this.graphicsLayer {
         scaleX = animatedScale
         scaleY = animatedScale
@@ -235,22 +235,22 @@ fun Modifier.pulse(
 // Shake animation for errors
 @Composable
 fun Modifier.shake(
-    enabled: Boolean = false
+    enabled: Boolean = false,
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "shake"
         properties["enabled"] = enabled
-    }
+    },
 ) {
     val shakeOffset by animateFloatAsState(
         targetValue = if (enabled) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessHigh
+            stiffness = Spring.StiffnessHigh,
         ),
-        label = "shakeOffset"
+        label = "shakeOffset",
     )
-    
+
     this.graphicsLayer {
         translationX = shakeOffset * 10f * kotlin.math.sin(shakeOffset * 20f)
     }
@@ -262,12 +262,12 @@ fun animateColorAsState(
     targetValue: androidx.compose.ui.graphics.Color,
     animationSpec: AnimationSpec<androidx.compose.ui.graphics.Color> = spring(),
     label: String = "ColorAnimation",
-    finishedListener: ((androidx.compose.ui.graphics.Color) -> Unit)? = null
+    finishedListener: ((androidx.compose.ui.graphics.Color) -> Unit)? = null,
 ): State<androidx.compose.ui.graphics.Color> {
     return androidx.compose.animation.animateColorAsState(
         targetValue = targetValue,
         animationSpec = animationSpec,
         label = label,
-        finishedListener = finishedListener
+        finishedListener = finishedListener,
     )
 } 

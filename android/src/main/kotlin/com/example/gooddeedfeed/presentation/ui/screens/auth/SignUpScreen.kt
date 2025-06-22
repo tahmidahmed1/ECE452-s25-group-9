@@ -53,50 +53,50 @@ fun SignUpScreen(
 
     ScreenContainer {
         ScreenTitle(text = "Create Account")
-        
+
         VerticalSpacer()
-        
+
         FormTextField(
             value = username,
             onValueChange = { username = it },
             label = "Username",
-            enabled = !isLoading
+            enabled = !isLoading,
         )
-        
+
         VerticalSpacer(SpacingSize.Small)
-        
+
         FormTextField(
             value = email,
             onValueChange = { email = it },
             label = "Email",
-            enabled = !isLoading
+            enabled = !isLoading,
         )
-        
+
         VerticalSpacer(SpacingSize.Small)
-        
+
         FormTextField(
             value = password,
             onValueChange = { password = it },
             label = "Password",
             enabled = !isLoading,
-            isPassword = true
+            isPassword = true,
         )
-        
+
         VerticalSpacer(SpacingSize.Large)
-        
+
         PrimaryButton(
             text = "Sign Up",
             onClick = { onSignUp(username, email, password) },
             enabled = username.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
-            isLoading = isLoading
+            isLoading = isLoading,
         )
-        
+
         VerticalSpacer()
-        
+
         SecondaryButton(
             text = "Already have an account? Sign In",
             onClick = onNavigateToSignIn,
-            enabled = !isLoading
+            enabled = !isLoading,
         )
     }
 }

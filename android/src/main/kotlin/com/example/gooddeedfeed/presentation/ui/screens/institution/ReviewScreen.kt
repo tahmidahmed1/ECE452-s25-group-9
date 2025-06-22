@@ -27,7 +27,7 @@ import com.example.gooddeedfeed.presentation.viewmodel.institution.ReviewViewMod
 @Composable
 fun ReviewScreen(
     modifier: Modifier = Modifier,
-    viewModel: ReviewViewModel = hiltViewModel<ReviewViewModel>()
+    viewModel: ReviewViewModel = hiltViewModel<ReviewViewModel>(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -38,21 +38,21 @@ fun ReviewScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Star,
                 contentDescription = "Review",
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Reviews to Approve",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
 
@@ -60,56 +60,56 @@ fun ReviewScreen(
             is UiState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
             }
             is UiState.Success -> {
                 val reviewData = currentState.data
-                
+
                 if (reviewData.pendingReviews.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = "No Reviews",
                                 modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "No reviews pending",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = "All reviews have been processed",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
                 } else {
                     LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(reviewData.pendingReviews) { review ->
                             ReviewCard(
                                 review = review,
-                                onAction = { action -> 
+                                onAction = { action ->
                                     when (action) {
                                         ReviewActionType.APPROVE -> viewModel.approveReview(review.id, null)
                                         ReviewActionType.REJECT -> viewModel.rejectReview(review.id, null)
                                         ReviewActionType.REQUEST_MORE_INFO -> viewModel.requestMoreInfo(review.id, null)
                                     }
-                                }
+                                },
                             )
                         }
                     }
@@ -118,17 +118,17 @@ fun ReviewScreen(
             is UiState.Error -> {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     Text(
                         text = currentState.message,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { viewModel.loadReviews() }
+                        onClick = { viewModel.loadReviews() },
                     ) {
                         Text("Retry")
                     }
@@ -142,41 +142,41 @@ fun ReviewScreen(
 @Composable
 private fun ReviewCard(
     review: ActivityReview,
-    onAction: (ReviewActionType) -> Unit
+    onAction: (ReviewActionType) -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             // Header with volunteer info
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = review.volunteerName,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
                         text = review.eventTitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                
+
                 FilterChip(
                     selected = false,
                     onClick = { },
-                    label = { 
+                    label = {
                         Text(
                             text = review.status.name,
-                            style = MaterialTheme.typography.labelSmall
+                            style = MaterialTheme.typography.labelSmall,
                         )
-                    }
+                    },
                 )
             }
 
@@ -185,23 +185,23 @@ private fun ReviewCard(
             // Activity details
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text(
                         text = "Hours: ${review.hoursCompleted}",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
                         text = "Date: ${review.completionDate}",
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                
+
                 if (review.evidenceUrls.isNotEmpty()) {
                     AssistChip(
                         onClick = { },
-                        label = { Text("View Evidence") }
+                        label = { Text("View Evidence") },
                     )
                 }
             }
@@ -210,7 +210,7 @@ private fun ReviewCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = review.description,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
@@ -219,51 +219,51 @@ private fun ReviewCard(
             // Action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Button(
                     onClick = { onAction(ReviewActionType.APPROVE) },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
                 ) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Approve",
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Approve")
                 }
-                
+
                 OutlinedButton(
                     onClick = { onAction(ReviewActionType.REQUEST_MORE_INFO) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = "Request Info",
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("More Info")
                 }
-                
+
                 OutlinedButton(
                     onClick = { onAction(ReviewActionType.REJECT) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Reject",
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.error,
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         "Reject",
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }

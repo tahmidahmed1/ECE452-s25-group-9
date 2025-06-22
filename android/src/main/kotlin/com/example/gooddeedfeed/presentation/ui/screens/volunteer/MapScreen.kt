@@ -64,14 +64,14 @@ import com.google.maps.android.compose.rememberCameraPositionState
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapScreen(
-    viewModel: MapViewModel = hiltViewModel<MapViewModel>()
+    viewModel: MapViewModel = hiltViewModel<MapViewModel>(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
-    
+
     // Location permission
     val locationPermissionState = rememberPermissionState(
-        Manifest.permission.ACCESS_FINE_LOCATION
+        Manifest.permission.ACCESS_FINE_LOCATION,
     ) { isGranted ->
         if (isGranted) {
             viewModel.onLocationPermissionGranted()
@@ -101,19 +101,19 @@ fun MapScreen(
             val userLatLng = LatLng(location.latitude, location.longitude)
             cameraPositionState.animate(
                 CameraUpdateFactory.newLatLngZoom(userLatLng, 13f),
-                1000
+                1000,
             )
         }
     }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         // Map Area
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f),
         ) {
             if (locationPermissionState.status.isGranted) {
                 GoogleMap(
@@ -121,12 +121,12 @@ fun MapScreen(
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
                         isMyLocationEnabled = true,
-                        mapType = MapType.NORMAL
+                        mapType = MapType.NORMAL,
                     ),
                     uiSettings = MapUiSettings(
                         myLocationButtonEnabled = true,
-                        zoomControlsEnabled = false
-                    )
+                        zoomControlsEnabled = false,
+                    ),
                 ) {
                     // Draw radius circle if user location is available
                     uiState.currentLocation?.let { location ->
@@ -136,14 +136,14 @@ fun MapScreen(
                             radius = (uiState.radiusKm * 1000).toDouble(), // Convert km to meters
                             strokeColor = Color.Blue.copy(alpha = 0.5f),
                             fillColor = Color.Blue.copy(alpha = 0.1f),
-                            strokeWidth = 2f
+                            strokeWidth = 2f,
                         )
                     }
 
                     // Event markers
                     uiState.filteredEvents.forEach { event ->
                         val eventLocation = LatLng(event.latitude, event.longitude)
-                        
+
                         Marker(
                             state = MarkerState(position = eventLocation),
                             title = event.title,
@@ -153,8 +153,8 @@ fun MapScreen(
                                 true
                             },
                             icon = BitmapDescriptorFactory.defaultMarker(
-                                getCategoryHue(event.category)
-                            )
+                                getCategoryHue(event.category),
+                            ),
                         )
                     }
                 }
@@ -165,49 +165,49 @@ fun MapScreen(
                         .fillMaxSize()
                         .padding(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(24.dp),
                         verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
+
                         Text(
                             text = "Location Permission Required",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         Text(
                             text = "To show nearby volunteer events on the map, please grant location permission.",
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            lineHeight = 20.sp
+                            lineHeight = 20.sp,
                         )
-                        
+
                         Spacer(modifier = Modifier.height(24.dp))
-                        
+
                         Button(
-                            onClick = { locationPermissionState.launchPermissionRequest() }
+                            onClick = { locationPermissionState.launchPermissionRequest() },
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
-                                contentDescription = null
+                                contentDescription = null,
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Grant Location Permission")
@@ -223,38 +223,38 @@ fun MapScreen(
                         .align(Alignment.TopEnd)
                         .padding(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.9f)
-                    )
+                        containerColor = Color.White.copy(alpha = 0.9f),
+                    ),
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(12.dp),
                     ) {
                         Text(
                             text = "Nearby Events",
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         OpportunityCategory.values().forEach { category ->
                             val eventCount = uiState.filteredEvents.count { it.category == category }
                             if (eventCount > 0) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(vertical = 2.dp)
+                                    modifier = Modifier.padding(vertical = 2.dp),
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .size(12.dp)
                                             .background(
                                                 color = getCategoryColor(category),
-                                                shape = CircleShape
-                                            )
+                                                shape = CircleShape,
+                                            ),
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = "${category.name.replace("_", " ")} ($eventCount)",
-                                        fontSize = 12.sp
+                                        fontSize = 12.sp,
                                     )
                                 }
                             }
@@ -271,54 +271,54 @@ fun MapScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "Search Radius",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             text = "${uiState.radiusKm.toInt()} km",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Slider(
                         value = uiState.radiusKm,
                         onValueChange = { viewModel.updateRadius(it) },
                         valueRange = 1f..50f,
                         steps = 49,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
                             text = "1 km",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         )
                         Text(
                             text = "50 km",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         )
                     }
                 }
@@ -333,103 +333,105 @@ fun MapScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
                     ) {
                         Text(
                             text = event.title,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                         IconButton(
-                            onClick = { selectedEvent = null }
+                            onClick = { selectedEvent = null },
                         ) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
                         text = event.organizationName,
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
                         text = event.description,
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     )
-                    
+
                     Spacer(modifier = Modifier.height(12.dp))
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column {
                             Text(
                                 text = "Date & Time",
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                             Text(
                                 text = "${event.date}\n${event.startTime} - ${event.endTime}",
-                                fontSize = 12.sp
+                                fontSize = 12.sp,
                             )
                         }
-                        
+
                         Column {
                             Text(
                                 text = "Available Spots",
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                             Text(
                                 text = "${event.maxVolunteers - event.currentVolunteers}/${event.maxVolunteers}",
-                                fontSize = 12.sp
+                                fontSize = 12.sp,
                             )
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(12.dp))
-                    
+
                     Text(
                         text = "Location: ${event.location}",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
 
                     // Show distance if user location is available
                     uiState.currentLocation?.let { userLocation ->
                         val distance = calculateDistance(
-                            userLocation.latitude, userLocation.longitude,
-                            event.latitude, event.longitude
+                            userLocation.latitude,
+                            userLocation.longitude,
+                            event.latitude,
+                            event.longitude,
                         )
                         Text(
                             text = "Distance: ${"%.1f".format(distance)} km",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Button(
                         onClick = { selectedEvent = null },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Join Event")
                     }

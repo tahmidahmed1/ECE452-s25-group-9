@@ -49,101 +49,101 @@ fun SignInScreen(
 
     ScreenContainer {
         ScreenTitle(text = "Welcome Back")
-        
+
         VerticalSpacer()
-        
+
         FormTextField(
             value = username,
             onValueChange = { username = it },
             label = "Username",
-            enabled = !isLoading
+            enabled = !isLoading,
         )
-        
+
         VerticalSpacer(SpacingSize.Small)
-        
+
         FormTextField(
             value = password,
             onValueChange = { password = it },
             label = "Password",
             enabled = !isLoading,
-            isPassword = true
+            isPassword = true,
         )
-        
+
         VerticalSpacer(SpacingSize.Large)
-        
+
         PrimaryButton(
             text = "Sign In",
             onClick = { onSignIn(username, password) },
             enabled = username.isNotBlank() && password.isNotBlank(),
-            isLoading = isLoading
+            isLoading = isLoading,
         )
-        
+
         VerticalSpacer()
-        
+
         SecondaryButton(
             text = "Don't have an account? Sign Up",
             onClick = onNavigateToSignUp,
-            enabled = !isLoading
+            enabled = !isLoading,
         )
-        
+
         // Development Mode Section
         if (BuildConfig.DEV_MODE) {
             VerticalSpacer(SpacingSize.Large)
-            
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = "🚀 Development Mode",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
-                    
+
                     VerticalSpacer(SpacingSize.Small)
-                    
+
                     Text(
                         text = "Quick sign-in with auto-generated accounts",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    
+
                     VerticalSpacer(SpacingSize.Medium)
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         DevModeButton(
                             text = "👤 Volunteer",
                             userType = DomainUserType.VOLUNTEER,
                             onDevModeSignIn = onDevModeSignIn,
                             enabled = !isLoading,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
-                        
+
                         DevModeButton(
                             text = "⭐ Organizer",
                             userType = DomainUserType.ORGANIZER,
                             onDevModeSignIn = onDevModeSignIn,
                             enabled = !isLoading,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
-                        
+
                         DevModeButton(
                             text = "🏛️ Institution",
                             userType = DomainUserType.INSTITUTION,
                             onDevModeSignIn = onDevModeSignIn,
                             enabled = !isLoading,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -158,20 +158,20 @@ private fun DevModeButton(
     userType: DomainUserType,
     onDevModeSignIn: (DomainUserType) -> Unit,
     enabled: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     OutlinedButton(
         onClick = { onDevModeSignIn(userType) },
         enabled = enabled,
         modifier = modifier,
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.primary,
         ),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall,
         )
     }
 }

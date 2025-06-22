@@ -52,20 +52,20 @@ fun FloatingNavBarItem(
     icon: ImageVector,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.1f else 1.0f,
         animationSpec = tween(200),
-        label = "nav_item_scale"
+        label = "nav_item_scale",
     )
-    
+
     val iconColor = if (isSelected) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
-    
+
     Box(
         modifier = modifier
             .size(48.dp)
@@ -76,19 +76,19 @@ fun FloatingNavBarItem(
                     MaterialTheme.colorScheme.primaryContainer
                 } else {
                     MaterialTheme.colorScheme.surface
-                }
+                },
             )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null
+                indication = null,
             ) { onClick() },
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = iconColor,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp),
         )
     }
 }
@@ -98,13 +98,13 @@ fun FloatingNavigationBar(
     tabs: List<TabItem>,
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = Spacing.md),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
@@ -113,19 +113,19 @@ fun FloatingNavigationBar(
                 .shadow(
                     elevation = Elevation.lg,
                     shape = RoundedCornerShape(BorderRadius.xxl),
-                    clip = false
+                    clip = false,
                 )
                 .clip(RoundedCornerShape(BorderRadius.xxl))
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = Spacing.md, vertical = Spacing.sm),
             horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEachIndexed { index, tab ->
                 FloatingNavBarItem(
                     icon = tab.icon,
                     isSelected = selectedTabIndex == index,
-                    onClick = { onTabSelected(index) }
+                    onClick = { onTabSelected(index) },
                 )
             }
         }
@@ -156,28 +156,26 @@ fun TabNavigationScreen(
             }
         }
     }
-    
+
     Scaffold(
         bottomBar = {
             FloatingNavigationBar(
                 tabs = tabs,
                 selectedTabIndex = selectedTabIndex,
                 onTabSelected = { selectedTabIndex = it },
-                modifier = Modifier.padding(bottom = Spacing.md)
+                modifier = Modifier.padding(bottom = Spacing.md),
             )
         },
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             tabs[selectedTabIndex].screen(user, onLogout)
-            
+
             // Add toast overlay
             CustomToastHost(
                 toastData = toastState,
-                onDismiss = { ToastManager.dismiss() }
+                onDismiss = { ToastManager.dismiss() },
             )
         }
     }
 }
-
- 

@@ -22,15 +22,15 @@ data class MapUiState(
     val radiusKm: Float = 10f,
     val isLocationPermissionGranted: Boolean = false,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
     private val locationService: LocationService,
-    private val getMapEventsUseCase: GetMapEventsUseCase
+    private val getMapEventsUseCase: GetMapEventsUseCase,
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
@@ -42,13 +42,13 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-                
+
                 locationService.getLocationUpdates()
                     .catch { throwable ->
-                        _uiState.update { 
+                        _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = "Failed to get location: ${throwable.message}"
+                                errorMessage = "Failed to get location: ${throwable.message}",
                             )
                         }
                     }
@@ -58,16 +58,16 @@ class MapViewModel @Inject constructor(
                                 currentLocation = location,
                                 isLoading = false,
                                 isLocationPermissionGranted = location != null,
-                                errorMessage = if (location == null) "Location permission denied" else null
+                                errorMessage = if (location == null) "Location permission denied" else null,
                             )
                             filterEventsByRadius(newState)
                         }
                     }
             } catch (e: Exception) {
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "Location service error: ${e.message}"
+                        errorMessage = "Location service error: ${e.message}",
                     )
                 }
             }
@@ -87,10 +87,10 @@ class MapViewModel @Inject constructor(
     }
 
     fun onLocationPermissionDenied() {
-        _uiState.update { 
+        _uiState.update {
             it.copy(
                 isLocationPermissionGranted = false,
-                errorMessage = "Location permission is required to show nearby events"
+                errorMessage = "Location permission is required to show nearby events",
             )
         }
     }
@@ -99,10 +99,10 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val events = getMapEventsUseCase()
-                
+
                 _uiState.update { currentState -> filterEventsByRadius(currentState.copy(allEvents = events)) }
             } catch (e: Exception) {
-                _uiState.update { 
+                _uiState.update {
                     it.copy(errorMessage = "Failed to load events: ${e.message}")
                 }
             }
@@ -121,7 +121,7 @@ class MapViewModel @Inject constructor(
                     currentLocation.latitude,
                     currentLocation.longitude,
                     event.latitude,
-                    event.longitude
+                    event.longitude,
                 )
                 distance <= state.radiusKm
             }
@@ -129,7 +129,7 @@ class MapViewModel @Inject constructor(
         } catch (e: Exception) {
             state.copy(
                 filteredEvents = state.allEvents,
-                errorMessage = "Error filtering events: ${e.message}"
+                errorMessage = "Error filtering events: ${e.message}",
             )
         }
     }

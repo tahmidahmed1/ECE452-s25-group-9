@@ -19,14 +19,14 @@ import javax.inject.Singleton
 
 @Singleton
 class LocationService @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
-    private val fusedLocationClient: FusedLocationProviderClient = 
+    private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context)
 
     private val locationRequest = LocationRequest.Builder(
         Priority.PRIORITY_HIGH_ACCURACY,
-        10000L // 10 seconds
+        10000L, // 10 seconds
     ).apply {
         setMinUpdateIntervalMillis(5000L) // 5 seconds
         setMaxUpdateDelayMillis(15000L) // 15 seconds
@@ -46,7 +46,7 @@ class LocationService @Inject constructor(
             fusedLocationClient.requestLocationUpdates(
                 locationRequest,
                 locationCallback,
-                Looper.getMainLooper()
+                Looper.getMainLooper(),
             )
         } catch (e: SecurityException) {
             // Handle permission denied

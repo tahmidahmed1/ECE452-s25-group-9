@@ -15,7 +15,7 @@ object ToastManager {
         _toastData.value = ToastData(
             message = message,
             type = ToastType.SUCCESS,
-            duration = duration
+            duration = duration,
         )
     }
 
@@ -23,7 +23,7 @@ object ToastManager {
         _toastData.value = ToastData(
             message = message,
             type = ToastType.ERROR,
-            duration = duration
+            duration = duration,
         )
     }
 
@@ -31,7 +31,7 @@ object ToastManager {
         _toastData.value = ToastData(
             message = message,
             type = ToastType.WARNING,
-            duration = duration
+            duration = duration,
         )
     }
 
@@ -39,7 +39,7 @@ object ToastManager {
         _toastData.value = ToastData(
             message = message,
             type = ToastType.INFO,
-            duration = duration
+            duration = duration,
         )
     }
 

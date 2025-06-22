@@ -31,140 +31,140 @@ fun ReviewCard(
     onApprove: () -> Unit,
     onReject: () -> Unit,
     onRequestMoreInfo: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = review.eventTitle,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
-                
+
                 ReviewStatusChip(status = review.status)
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = review.organizationName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             ReviewDetailRow(
                 icon = Icons.Default.Person,
-                text = review.volunteerName
+                text = review.volunteerName,
             )
-            
+
             ReviewDetailRow(
                 icon = Icons.Default.DateRange,
-                text = review.completionDate
+                text = review.completionDate,
             )
-            
+
             ReviewDetailRow(
                 icon = Icons.Default.Schedule,
-                text = "${review.hoursCompleted} hours completed"
+                text = "${review.hoursCompleted} hours completed",
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = review.description,
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = 3
+                maxLines = 3,
             )
-            
+
             // Only show action buttons for pending reviews
             if (review.status == ReviewStatus.PENDING) {
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Button(
                         onClick = onApprove,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ),
                     ) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Approve")
                     }
-                    
+
                     OutlinedButton(
                         onClick = onReject,
                         modifier = Modifier.weight(1f),
-                        colors =    ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Reject")
                     }
-                    
+
                     OutlinedButton(
                         onClick = onRequestMoreInfo,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("More Info")
                     }
                 }
             }
-            
+
             // Show reviewer notes for completed reviews
             if (review.reviewerNotes != null && review.status != ReviewStatus.PENDING) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(12.dp),
                     ) {
                         Text(
                             text = "Review Notes:",
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = review.reviewerNotes,
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 }
@@ -176,23 +176,23 @@ fun ReviewCard(
 @Composable
 private fun ReviewDetailRow(
     icon: ImageVector,
-    text: String
+    text: String,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 2.dp)
+        modifier = Modifier.padding(vertical = 2.dp),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -200,7 +200,7 @@ private fun ReviewDetailRow(
 @Composable
 fun ReviewStatusChip(
     status: ReviewStatus,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val (color, text) = when (status) {
         ReviewStatus.PENDING -> MaterialTheme.colorScheme.outline to "Pending"
@@ -208,15 +208,15 @@ fun ReviewStatusChip(
         ReviewStatus.REJECTED -> MaterialTheme.colorScheme.error to "Rejected"
         ReviewStatus.REQUIRES_MORE_INFO -> MaterialTheme.colorScheme.secondary to "More Info Needed"
     }
-    
+
     AssistChip(
         onClick = { },
         label = { Text(text) },
         modifier = modifier,
         colors = AssistChipDefaults.assistChipColors(
             containerColor = color.copy(alpha = 0.1f),
-            labelColor = color
-        )
+            labelColor = color,
+        ),
     )
 }
 
@@ -229,19 +229,19 @@ fun ReviewsList(
     onApproveReview: (Int) -> Unit,
     onRejectReview: (Int) -> Unit,
     onRequestMoreInfo: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = PaddingValues(16.dp),
     ) {
         items(reviews) { review ->
             ReviewCard(
                 review = review,
                 onApprove = { onApproveReview(review.id) },
                 onReject = { onRejectReview(review.id) },
-                onRequestMoreInfo = { onRequestMoreInfo(review.id) }
+                onRequestMoreInfo = { onRequestMoreInfo(review.id) },
             )
         }
     }

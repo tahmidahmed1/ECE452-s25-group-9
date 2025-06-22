@@ -29,7 +29,7 @@ fun CreateDeedScreen(
         FormTextField(
             value = title,
             onValueChange = { title = it },
-            label = "Title"
+            label = "Title",
         )
 
         VerticalSpacer()
@@ -47,7 +47,7 @@ fun CreateDeedScreen(
         PrimaryButton(
             text = "Create",
             onClick = {},
-            enabled = title.isNotBlank() && description.isNotBlank()
+            enabled = title.isNotBlank() && description.isNotBlank(),
         )
     }
 } 

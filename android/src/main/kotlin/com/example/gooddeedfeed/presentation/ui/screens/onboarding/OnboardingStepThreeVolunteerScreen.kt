@@ -44,45 +44,45 @@ fun OnboardingStepThreeVolunteerScreen(
     var locationArea by remember { mutableStateOf("") }
     var hasDriversLicense by remember { mutableStateOf(false) }
     var disabilities by remember { mutableStateOf("") }
-    
+
     var sexDropdownExpanded by remember { mutableStateOf(false) }
 
     // Predefined skill options
     val predefinedSkills = listOf(
-        "First Aid", "CPR", "Teaching", "Cooking", "Construction", 
+        "First Aid", "CPR", "Teaching", "Cooking", "Construction",
         "Gardening", "Event Planning", "Photography", "Translation",
         "Computer Skills", "Social Media", "Leadership", "Customer Service",
         "Animal Care", "Child Care", "Senior Care", "Art & Crafts",
-        "Music", "Sports", "Driving"
+        "Music", "Sports", "Driving",
     )
 
-    val isFormValid = fullName.isNotBlank() && 
-                     phone.isNotBlank() && 
-                     selectedSex != null &&
-                     description.isNotBlank() &&
-                     age.isNotBlank() && age.toIntOrNull() != null &&
-                     emergencyContactName.isNotBlank() &&
-                     emergencyContactPhone.isNotBlank() &&
-                     locationArea.isNotBlank()
+    val isFormValid = fullName.isNotBlank() &&
+        phone.isNotBlank() &&
+        selectedSex != null &&
+        description.isNotBlank() &&
+        age.isNotBlank() && age.toIntOrNull() != null &&
+        emergencyContactName.isNotBlank() &&
+        emergencyContactPhone.isNotBlank() &&
+        locationArea.isNotBlank()
 
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = MaterialTheme.colorScheme.background,
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             // Top bar with back button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.Start
+                horizontalArrangement = Arrangement.Start,
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Go back"
+                        contentDescription = "Go back",
                     )
                 }
             }
@@ -101,15 +101,15 @@ fun OnboardingStepThreeVolunteerScreen(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                
+
                 VerticalSpacer(SpacingSize.Small)
-                
+
                 Text(
                     text = "Help us match you with the perfect volunteer opportunities",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                
+
                 VerticalSpacer(SpacingSize.Large)
 
                 // Personal Information Section
@@ -120,13 +120,13 @@ fun OnboardingStepThreeVolunteerScreen(
                 ExposedDropdownMenuBox(
                     expanded = sexDropdownExpanded,
                     onExpandedChange = { sexDropdownExpanded = !sexDropdownExpanded },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     OutlinedTextField(
-                        value = selectedSex?.let { 
-                            when(it) {
+                        value = selectedSex?.let {
+                            when (it) {
                                 DomainSex.MALE -> "Male"
-                                DomainSex.FEMALE -> "Female" 
+                                DomainSex.FEMALE -> "Female"
                                 DomainSex.NON_BINARY -> "Non-binary"
                                 DomainSex.PREFER_NOT_TO_SAY -> "Prefer not to say"
                             }
@@ -137,32 +137,34 @@ fun OnboardingStepThreeVolunteerScreen(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sexDropdownExpanded) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
                         ),
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     )
-                    
+
                     ExposedDropdownMenu(
                         expanded = sexDropdownExpanded,
-                        onDismissRequest = { sexDropdownExpanded = false }
+                        onDismissRequest = { sexDropdownExpanded = false },
                     ) {
                         DomainSex.values().forEach { sex ->
                             DropdownMenuItem(
-                                text = { 
-                                    Text(when(sex) {
-                                        DomainSex.MALE -> "Male"
-                                        DomainSex.FEMALE -> "Female"
-                                        DomainSex.NON_BINARY -> "Non-binary"
-                                        DomainSex.PREFER_NOT_TO_SAY -> "Prefer not to say"
-                                    }) 
+                                text = {
+                                    Text(
+                                        when (sex) {
+                                            DomainSex.MALE -> "Male"
+                                            DomainSex.FEMALE -> "Female"
+                                            DomainSex.NON_BINARY -> "Non-binary"
+                                            DomainSex.PREFER_NOT_TO_SAY -> "Prefer not to say"
+                                        },
+                                    )
                                 },
                                 onClick = {
                                     selectedSex = sex
                                     sexDropdownExpanded = false
-                                }
+                                },
                             )
                         }
                     }
@@ -181,8 +183,8 @@ fun OnboardingStepThreeVolunteerScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
-                    )
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    ),
                 )
 
                 VerticalSpacer(SpacingSize.Medium)
@@ -198,8 +200,8 @@ fun OnboardingStepThreeVolunteerScreen(
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
-                    )
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    ),
                 )
 
                 VerticalSpacer(SpacingSize.Large)
@@ -220,8 +222,8 @@ fun OnboardingStepThreeVolunteerScreen(
                     maxLines = 5,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
-                    )
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    ),
                 )
 
                 VerticalSpacer(SpacingSize.Large)
@@ -233,7 +235,7 @@ fun OnboardingStepThreeVolunteerScreen(
                 Text(
                     text = "Select your skills or add custom ones:",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 VerticalSpacer(SpacingSize.Small)
@@ -241,7 +243,7 @@ fun OnboardingStepThreeVolunteerScreen(
                 // Skills Selection
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     items(predefinedSkills) { skill ->
                         SkillChip(
@@ -253,7 +255,7 @@ fun OnboardingStepThreeVolunteerScreen(
                                 } else {
                                     selectedSkills + skill
                                 }
-                            }
+                            },
                         )
                     }
                 }
@@ -264,7 +266,7 @@ fun OnboardingStepThreeVolunteerScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
                         value = customSkill,
@@ -275,10 +277,10 @@ fun OnboardingStepThreeVolunteerScreen(
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        )
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        ),
                     )
-                    
+
                     Button(
                         onClick = {
                             if (customSkill.isNotBlank() && !selectedSkills.contains(customSkill)) {
@@ -286,7 +288,7 @@ fun OnboardingStepThreeVolunteerScreen(
                                 customSkill = ""
                             }
                         },
-                        enabled = customSkill.isNotBlank()
+                        enabled = customSkill.isNotBlank(),
                     ) {
                         Text("Add")
                     }
@@ -307,8 +309,8 @@ fun OnboardingStepThreeVolunteerScreen(
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
-                    )
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    ),
                 )
 
                 VerticalSpacer(SpacingSize.Medium)
@@ -323,8 +325,8 @@ fun OnboardingStepThreeVolunteerScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
-                    )
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    ),
                 )
 
                 VerticalSpacer(SpacingSize.Large)
@@ -336,19 +338,19 @@ fun OnboardingStepThreeVolunteerScreen(
                 // Driver's License Checkbox
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Checkbox(
                         checked = hasDriversLicense,
                         onCheckedChange = { hasDriversLicense = it },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = MaterialTheme.colorScheme.primary
-                        )
+                            checkedColor = MaterialTheme.colorScheme.primary,
+                        ),
                     )
                     Text(
                         text = "I have a valid G driver's license",
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(start = 8.dp)
+                        modifier = Modifier.padding(start = 8.dp),
                     )
                 }
 
@@ -366,8 +368,8 @@ fun OnboardingStepThreeVolunteerScreen(
                     maxLines = 4,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
-                    )
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    ),
                 )
 
                 VerticalSpacer(SpacingSize.ExtraLarge)
@@ -377,7 +379,7 @@ fun OnboardingStepThreeVolunteerScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.background,
-                shadowElevation = 8.dp
+                shadowElevation = 8.dp,
             ) {
                 PrimaryButton(
                     text = "Complete Profile",
@@ -393,14 +395,14 @@ fun OnboardingStepThreeVolunteerScreen(
                             emergencyContactPhone = emergencyContactPhone,
                             locationArea = locationArea,
                             hasDriversLicense = hasDriversLicense,
-                            disabilities = disabilities.ifBlank { null }
+                            disabilities = disabilities.ifBlank { null },
                         )
                         onComplete(volunteerProfile, null)
                     },
                     enabled = isFormValid,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp)
+                        .padding(24.dp),
                 )
             }
         }

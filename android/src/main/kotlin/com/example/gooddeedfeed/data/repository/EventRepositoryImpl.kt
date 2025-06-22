@@ -16,12 +16,12 @@ import javax.inject.Singleton
 class EventRepositoryImpl @Inject constructor(
     // TODO: Inject API service when available
 ) : EventRepository {
-    
+
     override suspend fun getMyEvents(): Flow<List<VolunteerEvent>> = flow {
         delay(500) // Simulate network delay
         emit(getMockEvents())
     }
-    
+
     override suspend fun createEvent(eventData: CreateEventData): Result<VolunteerEvent> {
         delay(500)
         val newEvent = VolunteerEvent(
@@ -40,11 +40,11 @@ class EventRepositoryImpl @Inject constructor(
             requirements = eventData.requirements,
             status = EventStatus.DRAFT,
             createdAt = "2024-01-01T00:00:00Z",
-            updatedAt = "2024-01-01T00:00:00Z"
+            updatedAt = "2024-01-01T00:00:00Z",
         )
         return Result.success(newEvent)
     }
-    
+
     override suspend fun updateEvent(eventId: Int, eventData: CreateEventData): Result<VolunteerEvent> {
         delay(500)
         val updatedEvent = VolunteerEvent(
@@ -63,16 +63,16 @@ class EventRepositoryImpl @Inject constructor(
             requirements = eventData.requirements,
             status = EventStatus.PUBLISHED,
             createdAt = "2024-01-01T00:00:00Z",
-            updatedAt = "2024-01-02T00:00:00Z"
+            updatedAt = "2024-01-02T00:00:00Z",
         )
         return Result.success(updatedEvent)
     }
-    
+
     override suspend fun deleteEvent(eventId: Int): Result<Unit> {
         delay(500)
         return Result.success(Unit)
     }
-    
+
     override suspend fun getEventById(eventId: Int): Result<VolunteerEvent> {
         delay(500)
         val event = getMockEvents().find { it.id == eventId }
@@ -82,17 +82,17 @@ class EventRepositoryImpl @Inject constructor(
             Result.failure(Exception("Event not found"))
         }
     }
-    
+
     override suspend fun toggleEventStatus(eventId: Int, isPublished: Boolean): Result<Unit> {
         delay(500)
         return Result.success(Unit)
     }
-    
+
     override suspend fun getEventApplications(eventId: Int): Flow<List<VolunteerApplicationForOrganizer>> = flow {
         delay(500)
         emit(emptyList()) // TODO: Implement when API is available
     }
-    
+
     private fun getMockEvents(): List<VolunteerEvent> {
         return listOf(
             VolunteerEvent(
@@ -111,7 +111,7 @@ class EventRepositoryImpl @Inject constructor(
                 requirements = listOf("Bring gloves", "Wear comfortable clothes"),
                 status = EventStatus.PUBLISHED,
                 createdAt = "2024-01-15T10:00:00Z",
-                updatedAt = "2024-01-15T10:00:00Z"
+                updatedAt = "2024-01-15T10:00:00Z",
             ),
             VolunteerEvent(
                 id = 2,
@@ -129,8 +129,8 @@ class EventRepositoryImpl @Inject constructor(
                 requirements = listOf("Must be 16+", "Food safety training provided"),
                 status = EventStatus.PUBLISHED,
                 createdAt = "2024-01-10T15:00:00Z",
-                updatedAt = "2024-01-10T15:00:00Z"
-            )
+                updatedAt = "2024-01-10T15:00:00Z",
+            ),
         )
     }
 } 

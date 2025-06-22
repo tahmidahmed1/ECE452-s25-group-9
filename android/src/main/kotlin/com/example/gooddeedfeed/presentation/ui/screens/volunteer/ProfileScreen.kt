@@ -16,23 +16,23 @@ fun ProfileScreen(
 ) {
     ScreenContainer {
         // Header removed per design
-        
+
         VerticalSpacer()
-        
+
         Text(
             "Username: ${user.username}",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        
+
         VerticalSpacer()
-        
+
         Text(
             "Email: ${user.email}",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        
+
         user.fullName?.let { fullName ->
             VerticalSpacer()
             Text(
@@ -41,7 +41,7 @@ fun ProfileScreen(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        
+
         user.phone?.let { phone ->
             VerticalSpacer()
             Text(
@@ -50,12 +50,12 @@ fun ProfileScreen(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        
+
         VerticalSpacer(SpacingSize.Large)
-        
+
         PrimaryButton(
             text = "Log Out",
-            onClick = onLogout
+            onClick = onLogout,
         )
     }
 } 

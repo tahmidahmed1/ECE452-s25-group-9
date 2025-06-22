@@ -16,18 +16,18 @@ data class ActivityReview(
     val status: ReviewStatus,
     val submittedAt: String,
     val reviewedAt: String?,
-    val reviewerNotes: String?
+    val reviewerNotes: String?,
 )
 
 enum class ReviewStatus {
     PENDING,
     APPROVED,
     REJECTED,
-    REQUIRES_MORE_INFO
+    REQUIRES_MORE_INFO,
 }
 
 enum class ReviewActionType {
     APPROVE,
     REJECT,
-    REQUEST_MORE_INFO
+    REQUEST_MORE_INFO,
 } 

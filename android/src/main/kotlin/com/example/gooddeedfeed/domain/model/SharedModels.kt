@@ -21,7 +21,7 @@ data class VolunteerApplicationForOrganizer(
     val volunteerEmail: String,
     val applicationDate: String,
     val status: ApplicationStatus,
-    val message: String?
+    val message: String?,
 )
 
 /**
@@ -34,5 +34,5 @@ data class VolunteerApplicationForVolunteer(
     val organizationName: String,
     val applicationDate: String,
     val status: ApplicationStatus,
-    val message: String?
+    val message: String?,
 ) 

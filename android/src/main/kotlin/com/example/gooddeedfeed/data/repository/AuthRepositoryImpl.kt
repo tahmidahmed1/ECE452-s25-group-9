@@ -27,18 +27,18 @@ class AuthRepositoryImpl(
     private val context: Context,
     private val api: AuthApiService,
 ) : AuthRepository {
-    
+
     override suspend fun signUp(
         username: String,
         email: String,
         password: String,
     ): Flow<Result<DomainAuthResponse>> = flow {
         android.util.Log.d("AuthRepositoryImpl", "Starting signUp for username: $username")
-        
+
         val result = try {
             val resp = api.signUp(username, email, password)
             android.util.Log.d("AuthRepositoryImpl", "API response: success=${resp.success}, token=${resp.token?.take(10)}..., message=${resp.message}")
-            
+
             // Check if the API response indicates failure
             if (!resp.success) {
                 android.util.Log.e("AuthRepositoryImpl", "API returned failure: ${resp.message}")
@@ -61,7 +61,7 @@ class AuthRepositoryImpl(
             e.printStackTrace()
             Result.failure(e)
         }
-        
+
         emit(result)
     }
 
@@ -91,7 +91,7 @@ class AuthRepositoryImpl(
 
     override suspend fun getCurrentUser(): Flow<Result<DomainUser>> = flow {
         android.util.Log.d("AuthRepositoryImpl", "Getting current user...")
-        
+
         val result = try {
             val token = getTokenString()
             android.util.Log.d("AuthRepositoryImpl", "Token retrieved: ${token?.take(10)}...")
@@ -110,7 +110,7 @@ class AuthRepositoryImpl(
             e.printStackTrace()
             Result.failure(e)
         }
-        
+
         emit(result)
     }
 
@@ -138,7 +138,7 @@ class AuthRepositoryImpl(
         phone: String,
         organizationName: String?,
         institutionName: DomainInstitutionName?,
-        profilePictureUrl: String?
+        profilePictureUrl: String?,
     ): Result<Unit> {
         return try {
             val token = getTokenString()
@@ -151,7 +151,7 @@ class AuthRepositoryImpl(
                     fullName = fullName,
                     phone = phone,
                     organizationName = organizationName,
-                    institutionName = institutionName?.toData()
+                    institutionName = institutionName?.toData(),
                 )
                 if (success) {
                     Result.success(Unit)
@@ -166,7 +166,7 @@ class AuthRepositoryImpl(
 
     override suspend fun completeVolunteerOnboarding(
         volunteerProfile: DomainVolunteerProfile,
-        profilePictureUrl: String?
+        profilePictureUrl: String?,
     ): Result<Unit> {
         return try {
             val token = getTokenString()
@@ -176,7 +176,7 @@ class AuthRepositoryImpl(
                 val success = api.completeVolunteerOnboarding(
                     token = token,
                     volunteerProfile = volunteerProfile,
-                    profilePictureUrl = profilePictureUrl
+                    profilePictureUrl = profilePictureUrl,
                 )
                 if (success) {
                     Result.success(Unit)
@@ -208,8 +208,8 @@ class AuthRepositoryImpl(
         emit(result)
     }
 
-    override fun getToken(): Flow<String?> = context.dataStore.data.map { preferences -> 
-        preferences[TOKEN_KEY] 
+    override fun getToken(): Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[TOKEN_KEY]
     }
 
     // Helper method to get token as String for API calls
@@ -221,4 +221,3 @@ class AuthRepositoryImpl(
         }
     }
 }
-

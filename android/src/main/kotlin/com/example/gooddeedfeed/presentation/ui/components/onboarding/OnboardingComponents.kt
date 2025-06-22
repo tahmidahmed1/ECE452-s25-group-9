@@ -27,21 +27,21 @@ import androidx.compose.ui.unit.dp
 fun OnboardingDotIndicators(
     totalSteps: Int,
     currentStep: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(totalSteps) { index ->
             val isActive = index < currentStep
             val isSelected = index == currentStep - 1
-            
+
             Box(
                 modifier = Modifier
                     .size(
-                        if (isSelected) 12.dp else 8.dp
+                        if (isSelected) 12.dp else 8.dp,
                     )
                     .clip(CircleShape)
                     .background(
@@ -49,8 +49,8 @@ fun OnboardingDotIndicators(
                             isSelected -> MaterialTheme.colorScheme.primary
                             isActive -> MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                             else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        }
-                    )
+                        },
+                    ),
             )
         }
     }
@@ -62,19 +62,19 @@ fun OnboardingDotIndicators(
 @Composable
 fun ProfileSectionHeader(
     title: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+        ),
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         )
     }
 }
@@ -87,7 +87,7 @@ fun SkillChip(
     text: String,
     isSelected: Boolean,
     onToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     FilterChip(
         selected = isSelected,
@@ -96,7 +96,7 @@ fun SkillChip(
         modifier = modifier,
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
-        )
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+        ),
     )
 } 

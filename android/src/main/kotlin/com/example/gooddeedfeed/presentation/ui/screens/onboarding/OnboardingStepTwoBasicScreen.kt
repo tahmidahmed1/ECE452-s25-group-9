@@ -81,7 +81,7 @@ fun OnboardingStepTwoBasicScreen(
 
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = MaterialTheme.colorScheme.background,
     ) {
         Column(
             modifier = Modifier
@@ -93,12 +93,12 @@ fun OnboardingStepTwoBasicScreen(
             // Back button
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
+                horizontalArrangement = Arrangement.Start,
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Go back"
+                        contentDescription = "Go back",
                     )
                 }
             }
@@ -111,15 +111,15 @@ fun OnboardingStepTwoBasicScreen(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
             )
-            
+
             VerticalSpacer(SpacingSize.Small)
-            
+
             Text(
                 text = "Let's start with your basic contact information",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            
+
             VerticalSpacer(SpacingSize.Large)
 
             // Profile Picture Section
@@ -201,8 +201,8 @@ fun OnboardingStepTwoBasicScreen(
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    focusedLabelColor = MaterialTheme.colorScheme.primary
-                )
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                ),
             )
 
             VerticalSpacer(SpacingSize.Medium)
@@ -218,8 +218,8 @@ fun OnboardingStepTwoBasicScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    focusedLabelColor = MaterialTheme.colorScheme.primary
-                )
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                ),
             )
 
             VerticalSpacer(SpacingSize.ExtraLarge)
@@ -228,7 +228,7 @@ fun OnboardingStepTwoBasicScreen(
                 text = "Continue",
                 onClick = { onComplete(fullName, phone, profilePictureFile) },
                 enabled = isFormValid,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -244,7 +244,7 @@ fun OnboardingStepTwoBasicScreen(
                     onClick = {
                         showImageSourceDialog = false
                         cameraLauncher.launch(null)
-                    }
+                    },
                 ) {
                     Text("Camera")
                 }
@@ -254,12 +254,12 @@ fun OnboardingStepTwoBasicScreen(
                     onClick = {
                         showImageSourceDialog = false
                         galleryLauncher.launch("image/*")
-                    }
+                    },
                 ) {
                     Text("Gallery")
                 }
             },
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface,
         )
     }
 }

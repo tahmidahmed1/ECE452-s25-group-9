@@ -124,15 +124,15 @@ fun OnboardingStepTwoScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )
-        
+
         VerticalSpacer(SpacingSize.Small)
-        
+
         Text(
             text = "Please provide your contact information",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        
+
         VerticalSpacer(SpacingSize.Large)
 
         // Profile Picture Section
@@ -292,7 +292,7 @@ fun OnboardingStepTwoScreen(
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text(
                     text = "Back",
@@ -312,12 +312,12 @@ fun OnboardingStepTwoScreen(
                     )
                 },
                 enabled = isFormValid,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
 
         VerticalSpacer(SpacingSize.Large)
-        
+
         // Extra bottom padding for safe scrolling area
         VerticalSpacer(SpacingSize.Medium)
     }

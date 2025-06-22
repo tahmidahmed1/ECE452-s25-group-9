@@ -54,9 +54,9 @@ fun appNavHost(
             is AuthUiState.Success -> {
                 val currentRoute = navController.currentDestination?.route
                 val user = currentState.user
-                
+
                 Log.d("AppNavHost", "AuthUiState.Success - current route: $currentRoute, user: ${user.username}, onboarding: ${user.onboardingCompleted}")
-                
+
                 // If user is authenticated but on auth screens, navigate appropriately
                 if (currentRoute == Screen.SignIn.route || currentRoute == Screen.SignUp.route) {
                     if (!user.onboardingCompleted) {
@@ -78,69 +78,71 @@ fun appNavHost(
 
     Box {
         NavHost(navController, startDestination = Screen.SignIn.route) {
-        composable(Screen.SignIn.route) {
-            SignInScreen(
-                uiState = currentState,
-                onSignIn = { u, p -> viewModel.signIn(u, p) },
-                onDevModeSignIn = { userType -> viewModel.devModeSignIn(userType) },
-                onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
-                onNavigateToOnboarding = {
-                    navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.SignIn.route) { inclusive = true }
+            composable(Screen.SignIn.route) {
+                SignInScreen(
+                    uiState = currentState,
+                    onSignIn = { u, p -> viewModel.signIn(u, p) },
+                    onDevModeSignIn = { userType -> viewModel.devModeSignIn(userType) },
+                    onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
+                    onNavigateToOnboarding = {
+                        navController.navigate(Screen.Onboarding.route) {
+                            popUpTo(Screen.SignIn.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToHome = {
+                        navController.navigate(Screen.AuthenticatedHome.route) {
+                            popUpTo(Screen.SignIn.route) { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable(Screen.SignUp.route) {
+                SignUpScreen(
+                    uiState = currentState,
+                    onSignUp = { u, e, p -> viewModel.signUp(u, e, p) },
+                    onNavigateToSignIn = { navController.navigate(Screen.SignIn.route) },
+                    onNavigateToOnboarding = {
+                        navController.navigate(Screen.Onboarding.route) {
+                            popUpTo(Screen.SignUp.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToHome = {
+                        navController.navigate(Screen.AuthenticatedHome.route) {
+                            popUpTo(Screen.SignUp.route) { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable(Screen.Onboarding.route) {
+                OnboardingScreen(
+                    onOnboardingComplete = {
+                        // Refresh user data and navigate to home
+                        viewModel.refreshUser()
+                        navController.navigate(Screen.AuthenticatedHome.route) {
+                            popUpTo(0)
+                        }
+                    },
+                )
+            }
+            composable(Screen.AuthenticatedHome.route) {
+                val user = (currentState as? AuthUiState.Success)?.user
+                if (user != null) {
+                    // Default missing userType to VOLUNTEER for dev preview
+                    val userWithType = if (user.userType == null) {
+                        println("AppNavHost: Missing userType, defaulting to VOLUNTEER")
+                        user.copy(userType = DomainUserType.VOLUNTEER)
+                    } else {
+                        user
                     }
-                },
-                onNavigateToHome = {
-                    navController.navigate(Screen.AuthenticatedHome.route) {
-                        popUpTo(Screen.SignIn.route) { inclusive = true }
-                    }
-                },
-            )
-        }
-        composable(Screen.SignUp.route) {
-            SignUpScreen(
-                uiState = currentState,
-                onSignUp = { u, e, p -> viewModel.signUp(u, e, p) },
-                onNavigateToSignIn = { navController.navigate(Screen.SignIn.route) },
-                onNavigateToOnboarding = {
-                    navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.SignUp.route) { inclusive = true }
-                    }
-                },
-                onNavigateToHome = {
-                    navController.navigate(Screen.AuthenticatedHome.route) {
-                        popUpTo(Screen.SignUp.route) { inclusive = true }
-                    }
-                },
-            )
-        }
-        composable(Screen.Onboarding.route) {
-            OnboardingScreen(
-                onOnboardingComplete = {
-                    // Refresh user data and navigate to home
-                    viewModel.refreshUser()
-                    navController.navigate(Screen.AuthenticatedHome.route) {
-                        popUpTo(0)
-                    }
-                },
-            )
-        }
-        composable(Screen.AuthenticatedHome.route) {
-            val user = (currentState as? AuthUiState.Success)?.user
-            if (user != null) {
-                // Default missing userType to VOLUNTEER for dev preview
-                val userWithType = if (user.userType == null) {
-                    println("AppNavHost: Missing userType, defaulting to VOLUNTEER")
-                    user.copy(userType = DomainUserType.VOLUNTEER)
-                } else user
-                TabNavigationScreen(user = userWithType, onLogout = { viewModel.signOut() })
+                    TabNavigationScreen(user = userWithType, onLogout = { viewModel.signOut() })
+                }
             }
         }
-    }
-        
+
         // Add toast overlay for authentication screens
         CustomToastHost(
             toastData = toastState,
-            onDismiss = { ToastManager.dismiss() }
+            onDismiss = { ToastManager.dismiss() },
         )
     }
 }

@@ -19,22 +19,22 @@ data class OpportunitiesData(
     val opportunities: List<VolunteerOpportunity>,
     val categories: List<OpportunityCategory>,
     val selectedCategory: OpportunityCategory?,
-    val isMapView: Boolean
+    val isMapView: Boolean,
 )
 
 @HiltViewModel
 class OpportunitiesViewModel @Inject constructor(
     private val getOpportunitiesUseCase: GetOpportunitiesUseCase,
-    private val applyForOpportunityUseCase: ApplyForOpportunityUseCase
+    private val applyForOpportunityUseCase: ApplyForOpportunityUseCase,
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow<UiState<OpportunitiesData>>(UiState.Loading)
     val uiState: StateFlow<UiState<OpportunitiesData>> = _uiState.asStateFlow()
-    
+
     init {
         loadOpportunities()
     }
-    
+
     fun loadOpportunities() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
@@ -49,13 +49,13 @@ class OpportunitiesViewModel @Inject constructor(
                             opportunities = opportunities,
                             categories = categories,
                             selectedCategory = null,
-                            isMapView = false
-                        )
+                            isMapView = false,
+                        ),
                     )
                 }
         }
     }
-    
+
     fun filterByCategory(category: OpportunityCategory?) {
         viewModelScope.launch {
             if (category == null) {
@@ -71,15 +71,15 @@ class OpportunitiesViewModel @Inject constructor(
                             _uiState.value = currentState.copy(
                                 data = currentState.data.copy(
                                     opportunities = opportunities,
-                                    selectedCategory = category
-                                )
+                                    selectedCategory = category,
+                                ),
                             )
                         }
                     }
             }
         }
     }
-    
+
     fun searchOpportunities(query: String) {
         viewModelScope.launch {
             getOpportunitiesUseCase.search(query)
@@ -92,14 +92,14 @@ class OpportunitiesViewModel @Inject constructor(
                         _uiState.value = currentState.copy(
                             data = currentState.data.copy(
                                 opportunities = opportunities,
-                                selectedCategory = null
-                            )
+                                selectedCategory = null,
+                            ),
                         )
                     }
                 }
         }
     }
-    
+
     fun joinOpportunity(opportunityId: Int) {
         viewModelScope.launch {
             applyForOpportunityUseCase(opportunityId)
@@ -112,12 +112,12 @@ class OpportunitiesViewModel @Inject constructor(
                 }
         }
     }
-    
+
     fun toggleMapView() {
         val currentState = _uiState.value
         if (currentState is UiState.Success) {
             _uiState.value = currentState.copy(
-                data = currentState.data.copy(isMapView = !currentState.data.isMapView)
+                data = currentState.data.copy(isMapView = !currentState.data.isMapView),
             )
         }
     }

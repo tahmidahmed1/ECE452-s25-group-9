@@ -51,14 +51,14 @@ constructor(
             _uiState.value = AuthUiState.Error("Dev mode is not available in release builds")
             return
         }
-        
+
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             try {
                 // Create a unique dev username for each user type
                 val timestamp = System.currentTimeMillis().toString().takeLast(6)
                 val devUsername = "dev_${userType.name.lowercase()}_$timestamp"
-                val responseFlow = this@AuthViewModel.signUp.invoke(devUsername, "${devUsername}@example.com", "dev_password_123")
+                val responseFlow = this@AuthViewModel.signUp.invoke(devUsername, "$devUsername@example.com", "dev_password_123")
                 val result = responseFlow.first()
                 result.onSuccess { response ->
                     Log.d("AuthViewModel", "Dev sign up successful, token received: ${response.token != null}")
@@ -81,8 +81,6 @@ constructor(
             }
         }
     }
-
-
 
     fun signUp(username: String, email: String, password: String) {
         _uiState.value = AuthUiState.Loading

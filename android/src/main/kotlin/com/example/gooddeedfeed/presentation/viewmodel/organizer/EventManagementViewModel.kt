@@ -16,21 +16,21 @@ import javax.inject.Inject
 
 data class EventManagementData(
     val events: List<VolunteerEvent>,
-    val selectedEvent: VolunteerEvent? = null
+    val selectedEvent: VolunteerEvent? = null,
 )
 
 @HiltViewModel
 class EventManagementViewModel @Inject constructor(
-    private val manageEventsUseCase: ManageEventsUseCase
+    private val manageEventsUseCase: ManageEventsUseCase,
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow<UiState<EventManagementData>>(UiState.Loading)
     val uiState: StateFlow<UiState<EventManagementData>> = _uiState.asStateFlow()
-    
+
     init {
         loadEvents()
     }
-    
+
     fun loadEvents() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
@@ -40,21 +40,21 @@ class EventManagementViewModel @Inject constructor(
                 }
                 .collect { events ->
                     _uiState.value = UiState.Success(
-                        EventManagementData(events = events)
+                        EventManagementData(events = events),
                     )
                 }
         }
     }
-    
+
     fun selectEvent(event: VolunteerEvent) {
         val currentState = _uiState.value
         if (currentState is UiState.Success) {
             _uiState.value = currentState.copy(
-                data = currentState.data.copy(selectedEvent = event)
+                data = currentState.data.copy(selectedEvent = event),
             )
         }
     }
-    
+
     fun deleteEvent(eventId: Int) {
         viewModelScope.launch {
             manageEventsUseCase.deleteEvent(eventId)
@@ -66,7 +66,7 @@ class EventManagementViewModel @Inject constructor(
                 }
         }
     }
-    
+
     fun createEvent(eventData: CreateEventData) {
         viewModelScope.launch {
             manageEventsUseCase.createEvent(eventData)
@@ -78,7 +78,7 @@ class EventManagementViewModel @Inject constructor(
                 }
         }
     }
-    
+
     fun updateEvent(eventId: Int, eventData: CreateEventData) {
         viewModelScope.launch {
             manageEventsUseCase.updateEvent(eventId, eventData)
@@ -90,7 +90,7 @@ class EventManagementViewModel @Inject constructor(
                 }
         }
     }
-    
+
     fun toggleEventStatus(eventId: Int, isPublished: Boolean) {
         viewModelScope.launch {
             manageEventsUseCase.toggleEventStatus(eventId, isPublished)

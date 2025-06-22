@@ -18,7 +18,7 @@ data class DomainUser(
     val organizationName: String? = null,
     val institutionName: DomainInstitutionName? = null,
     val createdAt: String? = null,
-    
+
     // Enhanced volunteer profile fields
     val sex: DomainSex? = null,
     val description: String? = null,
@@ -28,7 +28,7 @@ data class DomainUser(
     val emergencyContactPhone: String? = null,
     val locationArea: String? = null,
     val hasDriversLicense: Boolean? = null,
-    val disabilities: String? = null
+    val disabilities: String? = null,
 )
 
 enum class DomainUserType {
@@ -46,12 +46,12 @@ enum class DomainInstitutionName {
 data class DomainAuthResponse(
     val success: Boolean,
     val token: String? = null,
-    val message: String? = null
+    val message: String? = null,
 )
 
 data class DomainProfilePictureUploadResponse(
     val profilePictureUrl: String,
-    val message: String
+    val message: String,
 )
 
 /**
@@ -68,5 +68,5 @@ data class DomainVolunteerProfile(
     val emergencyContactPhone: String,
     val locationArea: String,
     val hasDriversLicense: Boolean,
-    val disabilities: String?
+    val disabilities: String?,
 ) 

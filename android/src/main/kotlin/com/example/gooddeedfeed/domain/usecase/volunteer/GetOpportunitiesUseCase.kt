@@ -10,24 +10,24 @@ import javax.inject.Inject
  * Use case for getting volunteer opportunities
  */
 class GetOpportunitiesUseCase @Inject constructor(
-    private val repository: OpportunitiesRepository
+    private val repository: OpportunitiesRepository,
 ) {
     suspend operator fun invoke(): Flow<List<VolunteerOpportunity>> {
         return repository.getOpportunities()
     }
-    
+
     suspend fun getByCategory(category: OpportunityCategory): Flow<List<VolunteerOpportunity>> {
         return repository.getOpportunitiesByCategory(category)
     }
-    
+
     suspend fun search(query: String): Flow<List<VolunteerOpportunity>> {
         return repository.searchOpportunities(query)
     }
-    
+
     suspend fun getNearLocation(
         latitude: Double,
         longitude: Double,
-        radiusKm: Double
+        radiusKm: Double,
     ): Flow<List<VolunteerOpportunity>> {
         return repository.getOpportunitiesNearLocation(latitude, longitude, radiusKm)
     }

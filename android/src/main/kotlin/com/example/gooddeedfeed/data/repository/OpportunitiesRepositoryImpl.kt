@@ -14,51 +14,53 @@ import javax.inject.Singleton
 class OpportunitiesRepositoryImpl @Inject constructor(
     // TODO: Inject API service when available
 ) : OpportunitiesRepository {
-    
+
     override suspend fun getOpportunities(): Flow<List<VolunteerOpportunity>> = flow {
         delay(500)
         emit(getMockOpportunities())
     }
-    
+
     override suspend fun getOpportunitiesByCategory(category: OpportunityCategory): Flow<List<VolunteerOpportunity>> = flow {
         delay(500)
         emit(getMockOpportunities().filter { it.category == category })
     }
-    
+
     override suspend fun searchOpportunities(query: String): Flow<List<VolunteerOpportunity>> = flow {
         delay(500)
-        emit(getMockOpportunities().filter { 
-            it.title.contains(query, ignoreCase = true) || 
-            it.description.contains(query, ignoreCase = true) ||
-            it.organizationName.contains(query, ignoreCase = true)
-        })
+        emit(
+            getMockOpportunities().filter {
+                it.title.contains(query, ignoreCase = true) ||
+                    it.description.contains(query, ignoreCase = true) ||
+                    it.organizationName.contains(query, ignoreCase = true)
+            },
+        )
     }
-    
+
     override suspend fun getOpportunitiesNearLocation(
-        latitude: Double, 
-        longitude: Double, 
-        radiusKm: Double
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double,
     ): Flow<List<VolunteerOpportunity>> = flow {
         delay(500)
         // TODO: Implement location-based filtering when location data is available
         emit(getMockOpportunities())
     }
-    
+
     override suspend fun applyForOpportunity(opportunityId: Int, message: String?): Result<Unit> {
         delay(500)
         return Result.success(Unit)
     }
-    
+
     override suspend fun getMyApplications(): Flow<List<VolunteerApplicationForVolunteer>> = flow {
         delay(500)
         emit(emptyList()) // TODO: Implement when API is available
     }
-    
+
     override suspend fun cancelApplication(opportunityId: Int): Result<Unit> {
         delay(500)
         return Result.success(Unit)
     }
-    
+
     override suspend fun getOpportunityById(opportunityId: Int): Result<VolunteerOpportunity> {
         delay(500)
         val opportunity = getMockOpportunities().find { it.id == opportunityId }
@@ -68,11 +70,11 @@ class OpportunitiesRepositoryImpl @Inject constructor(
             Result.failure(Exception("Opportunity not found"))
         }
     }
-    
+
     override suspend fun getCategories(): List<OpportunityCategory> {
         return OpportunityCategory.values().toList()
     }
-    
+
     private fun getMockOpportunities(): List<VolunteerOpportunity> {
         return listOf(
             VolunteerOpportunity(
@@ -84,7 +86,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 description = "Join us for a morning beach cleanup to protect marine life",
                 requiredVolunteers = 30,
                 currentVolunteers = 12,
-                category = OpportunityCategory.ENVIRONMENTAL
+                category = OpportunityCategory.ENVIRONMENTAL,
             ),
             VolunteerOpportunity(
                 id = 2,
@@ -95,7 +97,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 description = "Help children improve their reading skills through one-on-one sessions",
                 requiredVolunteers = 10,
                 currentVolunteers = 6,
-                category = OpportunityCategory.EDUCATION
+                category = OpportunityCategory.EDUCATION,
             ),
             VolunteerOpportunity(
                 id = 3,
@@ -106,7 +108,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 description = "Provide companionship and assistance to elderly residents",
                 requiredVolunteers = 15,
                 currentVolunteers = 3,
-                category = OpportunityCategory.HEALTHCARE
+                category = OpportunityCategory.HEALTHCARE,
             ),
             VolunteerOpportunity(
                 id = 4,
@@ -117,8 +119,8 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 description = "Help prepare and serve meals to those in need",
                 requiredVolunteers = 20,
                 currentVolunteers = 14,
-                category = OpportunityCategory.SOCIAL_SERVICES
-            )
+                category = OpportunityCategory.SOCIAL_SERVICES,
+            ),
         )
     }
 } 

@@ -63,7 +63,6 @@ This script will:
 └── run-dev.sh / run-dev.bat # Development setup scripts
 ```
 
----
 
 ## Features
 
@@ -73,7 +72,6 @@ This script will:
 - **Database:** PostgreSQL with Alembic migrations
 - **Hot Reload:** Development environment with automatic code reloading
 
----
 
 ## Contribution Rules
 
@@ -81,7 +79,6 @@ This script will:
 - Use feature branches: `<issue#>-description` (e.g., `12-signup-endpoint`)
 - Open PRs for review before merging
 
----
 
 **Tech Stack:**
 - Backend: Python FastAPI, SQLAlchemy, PostgreSQL, MinIO, JWT auth
@@ -170,5 +167,3 @@ This project uses environment variables for configuration. The main configuratio
 - Use `.env.example` as a template for required variables
 - Generate strong, unique secrets for production
 - The server automatically loads environment variables using `os.getenv()`
-
----

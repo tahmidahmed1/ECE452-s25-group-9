@@ -22,7 +22,7 @@ data class VolunteerEvent(
     val createdAt: String,
     val updatedAt: String,
     val latitude: Double = 0.0,
-    val longitude: Double = 0.0
+    val longitude: Double = 0.0,
 )
 
 enum class EventStatus {
@@ -30,7 +30,7 @@ enum class EventStatus {
     PUBLISHED,
     IN_PROGRESS,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
 }
 
 /**
@@ -45,5 +45,5 @@ data class CreateEventData(
     val endTime: String,
     val maxVolunteers: Int,
     val category: OpportunityCategory,
-    val requirements: List<String>
+    val requirements: List<String>,
 )

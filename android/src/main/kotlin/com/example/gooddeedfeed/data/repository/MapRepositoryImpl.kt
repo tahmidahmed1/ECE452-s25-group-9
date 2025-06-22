@@ -8,7 +8,7 @@ import com.example.gooddeedfeed.domain.repository.MapRepository
 import javax.inject.Inject
 
 class MapRepositoryImpl @Inject constructor(
-    private val apiService: EventApiService
+    private val apiService: EventApiService,
 ) : MapRepository {
     override suspend fun getMapEvents(): List<VolunteerEvent> {
         return apiService.getEvents().map { response ->
@@ -30,7 +30,7 @@ class MapRepositoryImpl @Inject constructor(
                 createdAt = response.created_at,
                 updatedAt = response.updated_at,
                 latitude = response.latitude,
-                longitude = response.longitude
+                longitude = response.longitude,
             )
         }
     }

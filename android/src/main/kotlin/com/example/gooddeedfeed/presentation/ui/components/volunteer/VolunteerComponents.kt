@@ -42,68 +42,68 @@ import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 fun OpportunityCard(
     opportunity: VolunteerOpportunity,
     onJoinClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        onClick = { /* Navigate to details */ }
+        onClick = { /* Navigate to details */ },
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Text(
                 text = opportunity.title,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = opportunity.organizationName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             OpportunityDetailRow(
                 icon = Icons.Default.LocationOn,
-                text = opportunity.location
+                text = opportunity.location,
             )
-            
+
             OpportunityDetailRow(
                 icon = Icons.Default.DateRange,
-                text = opportunity.date
+                text = opportunity.date,
             )
-            
+
             OpportunityDetailRow(
                 icon = Icons.Default.Person,
-                text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers} volunteers"
+                text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers} volunteers",
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = opportunity.description,
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = 2
+                maxLines = 2,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 CategoryChip(category = opportunity.category)
-                
+
                 Button(
                     onClick = onJoinClick,
-                    enabled = opportunity.currentVolunteers < opportunity.requiredVolunteers
+                    enabled = opportunity.currentVolunteers < opportunity.requiredVolunteers,
                 ) {
                     Text("Join")
                 }
@@ -115,23 +115,23 @@ fun OpportunityCard(
 @Composable
 private fun OpportunityDetailRow(
     icon: ImageVector,
-    text: String
+    text: String,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 2.dp)
+        modifier = Modifier.padding(vertical = 2.dp),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -139,17 +139,17 @@ private fun OpportunityDetailRow(
 @Composable
 fun CategoryChip(
     category: OpportunityCategory,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AssistChip(
         onClick = { },
         label = {
             Text(
                 text = category.name.replace("_", " ").lowercase()
-                    .replaceFirstChar { it.uppercase() }
+                    .replaceFirstChar { it.uppercase() },
             )
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -160,17 +160,17 @@ fun CategoryChip(
 fun OpportunitiesList(
     opportunities: List<VolunteerOpportunity>,
     onJoinOpportunity: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = PaddingValues(16.dp),
     ) {
         items(opportunities) { opportunity ->
             OpportunityCard(
                 opportunity = opportunity,
-                onJoinClick = { onJoinOpportunity(opportunity.id) }
+                onJoinClick = { onJoinOpportunity(opportunity.id) },
             )
         }
     }

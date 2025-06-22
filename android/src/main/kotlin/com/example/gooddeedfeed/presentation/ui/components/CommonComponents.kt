@@ -31,22 +31,22 @@ import com.example.gooddeedfeed.presentation.theme.*
 @Composable
 fun ScreenContainer(
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val isDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
     val backgroundBrush = if (isDarkTheme) {
         Brush.verticalGradient(
             colors = listOf(
                 DarkColors.background,
-                DarkColors.background.copy(alpha = 0.95f)
-            )
+                DarkColors.background.copy(alpha = 0.95f),
+            ),
         )
     } else {
         Brush.verticalGradient(
             colors = listOf(
                 LightColors.background,
-                LightColors.surface
-            )
+                LightColors.surface,
+            ),
         )
     }
 
@@ -63,7 +63,7 @@ fun ScreenContainer(
                 .padding(Spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            content = content
+            content = content,
         )
     }
 }
@@ -74,14 +74,14 @@ fun ScreenContainer(
 @Composable
 fun ScreenTitle(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = text,
         style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -91,13 +91,13 @@ fun ScreenTitle(
 @Composable
 fun ScreenSubtitle(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -113,10 +113,10 @@ fun FormTextField(
     enabled: Boolean = true,
     isPassword: Boolean = false,
     isError: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    
+
     val borderColor by animateColorAsState(
         targetValue = when {
             isError -> MaterialTheme.colorScheme.error
@@ -124,22 +124,22 @@ fun FormTextField(
             else -> MaterialTheme.colorScheme.outline
         },
         animationSpec = spring(),
-        label = "borderColor"
+        label = "borderColor",
     )
 
     Column(modifier = modifier) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-            label = { 
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             },
-        enabled = enabled,
-        isError = isError,
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+            enabled = enabled,
+            isError = isError,
+            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
             modifier = Modifier
                 .fillMaxWidth()
                 .shake(enabled = isError),
@@ -149,17 +149,17 @@ fun FormTextField(
                 unfocusedBorderColor = borderColor,
                 errorBorderColor = MaterialTheme.colorScheme.error,
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-            )
-    )
-        
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            ),
+        )
+
         if (isError && errorMessage != null) {
             ModernAnimatedVisibility(visible = true) {
                 Text(
                     text = errorMessage,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(start = Spacing.md, top = Spacing.xs)
+                    modifier = Modifier.padding(start = Spacing.md, top = Spacing.xs),
                 )
             }
         }
@@ -175,7 +175,7 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
 ) {
     val buttonColor by animateColorAsState(
         targetValue = if (enabled && !isLoading) {
@@ -183,7 +183,7 @@ fun PrimaryButton(
         } else {
             MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
         },
-        label = "buttonColor"
+        label = "buttonColor",
     )
 
     Button(
@@ -195,42 +195,42 @@ fun PrimaryButton(
             .shadow(
                 elevation = Elevation.md,
                 shape = RoundedCornerShape(BorderRadius.md),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
             ),
         shape = RoundedCornerShape(BorderRadius.md),
         colors = ButtonDefaults.buttonColors(
             containerColor = buttonColor,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             disabledContainerColor = buttonColor,
-            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = Elevation.sm,
             pressedElevation = Elevation.none,
-            disabledElevation = Elevation.none
+            disabledElevation = Elevation.none,
         ),
         contentPadding = PaddingValues(
             horizontal = Spacing.lg,
-            vertical = Spacing.md
-        )
+            vertical = Spacing.md,
+        ),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(16.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
-            )
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp,
+                )
                 Spacer(modifier = Modifier.width(Spacing.sm))
-        }
-        Text(
-            text = text,
+            }
+            Text(
+                text = text,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium
-        )
+                fontWeight = FontWeight.Medium,
+            )
         }
     }
 }
@@ -243,7 +243,7 @@ fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     TextButton(
         onClick = onClick,
@@ -252,13 +252,13 @@ fun SecondaryButton(
         shape = RoundedCornerShape(BorderRadius.md),
         contentPadding = PaddingValues(
             horizontal = Spacing.lg,
-            vertical = Spacing.sm
-        )
+            vertical = Spacing.sm,
+        ),
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -269,20 +269,20 @@ fun SecondaryButton(
 @Composable
 fun LoadingIndicator(
     message: String = "Loading...",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             CircularProgressIndicator()
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }
@@ -303,25 +303,25 @@ fun SelectableOptionCard(
     val animatedElevation by animateFloatAsState(
         targetValue = if (isSelected) 8f else 2f,
         animationSpec = spring(),
-        label = "elevation"
+        label = "elevation",
     )
 
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outline
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.outline
         },
-        label = "borderColor"
+        label = "borderColor",
     )
 
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surface
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surface
         },
-        label = "backgroundColor"
+        label = "backgroundColor",
     )
 
     Card(
@@ -331,16 +331,16 @@ fun SelectableOptionCard(
             .shadow(
                 elevation = animatedElevation.dp,
                 shape = RoundedCornerShape(BorderRadius.lg),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
             )
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 color = borderColor,
-                shape = RoundedCornerShape(BorderRadius.lg)
+                shape = RoundedCornerShape(BorderRadius.lg),
             ),
         shape = RoundedCornerShape(BorderRadius.lg),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier.padding(Spacing.lg),
@@ -355,20 +355,20 @@ fun SelectableOptionCard(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                         } else {
                             MaterialTheme.colorScheme.surfaceVariant
-                        }
+                        },
                     ),
-                contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                tint = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
+                    tint = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-            )
+                    },
+                )
             }
 
             Spacer(modifier = Modifier.width(Spacing.md))
@@ -382,7 +382,7 @@ fun SelectableOptionCard(
                         MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
                         MaterialTheme.colorScheme.onSurface
-                    }
+                    },
                 )
 
                 Spacer(modifier = Modifier.height(Spacing.xs))
@@ -390,7 +390,7 @@ fun SelectableOptionCard(
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -400,14 +400,14 @@ fun SelectableOptionCard(
                         .size(32.dp)
                         .clip(RoundedCornerShape(BorderRadius.full))
                         .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
-                Icon(
-                    imageVector = Icons.Default.Done,
-                    contentDescription = "Selected",
+                    Icon(
+                        imageVector = Icons.Default.Done,
+                        contentDescription = "Selected",
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(16.dp)
-                )
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
             }
         }
@@ -433,16 +433,16 @@ fun ActionCard(
             .shadow(
                 elevation = Elevation.sm,
                 shape = RoundedCornerShape(BorderRadius.lg),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
             ),
         shape = RoundedCornerShape(BorderRadius.lg),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = Elevation.sm,
-            pressedElevation = Elevation.md
-        )
+            pressedElevation = Elevation.md,
+        ),
     ) {
         Row(
             modifier = Modifier.padding(Spacing.lg),
@@ -453,14 +453,14 @@ fun ActionCard(
                     .size(40.dp)
                     .clip(RoundedCornerShape(BorderRadius.sm))
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
             }
 
             Spacer(modifier = Modifier.width(Spacing.md))
@@ -470,12 +470,12 @@ fun ActionCard(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -499,7 +499,7 @@ enum class SpacingSize(val dp: androidx.compose.ui.unit.Dp) {
     Small(Spacing.sm),
     Medium(Spacing.md),
     Large(Spacing.lg),
-    ExtraLarge(Spacing.xl)
+    ExtraLarge(Spacing.xl),
 }
 
 /**
@@ -509,7 +509,7 @@ enum class SpacingSize(val dp: androidx.compose.ui.unit.Dp) {
 fun ErrorState(
     message: String,
     onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
@@ -517,25 +517,25 @@ fun ErrorState(
             .padding(16.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                color = MaterialTheme.colorScheme.onErrorContainer,
             )
             onRetry?.let {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -556,22 +556,22 @@ fun EmptyState(
     icon: ImageVector? = null,
     actionText: String? = null,
     onAction: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(32.dp),
         ) {
             icon?.let {
                 Icon(
                     imageVector = it,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -579,7 +579,7 @@ fun EmptyState(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (actionText != null && onAction != null) {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -597,13 +597,13 @@ fun EmptyState(
 @Composable
 fun SectionHeader(
     title: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = title,
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.Bold,
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     )
 }
 
@@ -615,25 +615,25 @@ fun InfoCard(
     title: String,
     content: String,
     icon: ImageVector? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             icon?.let {
                 Icon(
                     imageVector = it,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(modifier = Modifier.width(16.dp))
             }
@@ -641,13 +641,13 @@ fun InfoCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = content,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

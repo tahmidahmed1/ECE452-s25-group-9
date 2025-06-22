@@ -99,24 +99,22 @@ object AnimationDurations {
 object AnimationSpecs {
     val fastSpring = spring<Float>(
         dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessHigh
+        stiffness = Spring.StiffnessHigh,
     )
     val normalSpring = spring<Float>(
         dampingRatio = Spring.DampingRatioLowBouncy,
-        stiffness = Spring.StiffnessMedium
+        stiffness = Spring.StiffnessMedium,
     )
     val slowSpring = spring<Float>(
         dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessLow
+        stiffness = Spring.StiffnessLow,
     )
 }
-
-
 
 @Composable
 fun appTheme(content: @Composable () -> Unit) {
     val isDarkTheme = isSystemInDarkTheme()
-    
+
     val colorScheme = if (isDarkTheme) {
         darkColorScheme(
             primary = DarkColors.primary,
@@ -145,7 +143,7 @@ fun appTheme(content: @Composable () -> Unit) {
             error = DarkColors.error,
             onError = DarkColors.onError,
             errorContainer = DarkColors.error.copy(alpha = 0.3f),
-            onErrorContainer = DarkColors.error
+            onErrorContainer = DarkColors.error,
         )
     } else {
         lightColorScheme(
@@ -175,7 +173,7 @@ fun appTheme(content: @Composable () -> Unit) {
             error = LightColors.error,
             onError = LightColors.onError,
             errorContainer = LightColors.error.copy(alpha = 0.1f),
-            onErrorContainer = LightColors.error
+            onErrorContainer = LightColors.error,
         )
     }
 
@@ -183,6 +181,6 @@ fun appTheme(content: @Composable () -> Unit) {
         colorScheme = colorScheme,
         typography = AppTypography,
         shapes = AppShapes,
-        content = content
+        content = content,
     )
 }

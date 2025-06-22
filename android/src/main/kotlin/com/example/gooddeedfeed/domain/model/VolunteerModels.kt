@@ -14,7 +14,7 @@ data class VolunteerOpportunity(
     val requiredVolunteers: Int,
     val currentVolunteers: Int,
     val category: OpportunityCategory,
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
 )
 
 enum class OpportunityCategory {
@@ -24,5 +24,5 @@ enum class OpportunityCategory {
     HEALTHCARE,
     SOCIAL_SERVICES,
     DISASTER_RELIEF,
-    OTHER
+    OTHER,
 } 

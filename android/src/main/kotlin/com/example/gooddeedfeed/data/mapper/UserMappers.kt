@@ -39,7 +39,7 @@ fun User.toDomain(): DomainUser = DomainUser(
     emergencyContactPhone = emergency_contact_phone,
     locationArea = location_area,
     hasDriversLicense = has_drivers_license,
-    disabilities = disabilities
+    disabilities = disabilities,
 )
 
 // UserType mappers
@@ -87,12 +87,12 @@ fun DomainInstitutionName.toData(): InstitutionName = when (this) {
 fun AuthResponse.toDomain(): DomainAuthResponse = DomainAuthResponse(
     success = success,
     token = token,
-    message = message
+    message = message,
 )
 
 // ProfilePictureUploadResponse mappers
-fun ProfilePictureUploadResponse.toDomain(): DomainProfilePictureUploadResponse = 
+fun ProfilePictureUploadResponse.toDomain(): DomainProfilePictureUploadResponse =
     DomainProfilePictureUploadResponse(
         profilePictureUrl = profile_picture_url,
-        message = message
+        message = message,
     ) 

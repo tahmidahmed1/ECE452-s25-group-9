@@ -48,10 +48,10 @@ import com.example.gooddeedfeed.presentation.viewmodel.common.UserTypeDisplay
 fun HomeScreen(
     user: DomainUser,
     onLogout: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel<HomeViewModel>()
+    viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
+
     LaunchedEffect(user) {
         viewModel.loadUserHome(user)
     }
@@ -60,7 +60,7 @@ fun HomeScreen(
         is UiState.Loading -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
@@ -70,7 +70,7 @@ fun HomeScreen(
             HomeContent(
                 user = homeData.user,
                 userTypeDisplay = homeData.userTypeDisplay,
-                onActionClick = { action -> viewModel.handleAction(action) }
+                onActionClick = { action -> viewModel.handleAction(action) },
             )
         }
         is UiState.Error -> {
@@ -78,17 +78,17 @@ fun HomeScreen(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     Text(
                         text = currentState.message,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     PrimaryButton(
                         text = "Retry",
-                        onClick = { viewModel.loadUserHome(user) }
+                        onClick = { viewModel.loadUserHome(user) },
                     )
                 }
             }
@@ -100,7 +100,7 @@ fun HomeScreen(
 private fun HomeContent(
     user: DomainUser,
     userTypeDisplay: UserTypeDisplay,
-    onActionClick: (HomeAction) -> Unit
+    onActionClick: (HomeAction) -> Unit,
 ) {
     ScreenContainer {
         // Welcome header
@@ -151,13 +151,13 @@ private fun HomeContent(
         // Action items
         userTypeDisplay.actionItems.forEach { actionItem ->
             ActionCard(
-                icon = when(actionItem.iconName) {
+                icon = when (actionItem.iconName) {
                     "list" -> Icons.AutoMirrored.Filled.List
                     else -> getIconForAction(actionItem.iconName)
                 },
                 title = actionItem.title,
                 description = actionItem.description,
-                onClick = { onActionClick(actionItem.action) }
+                onClick = { onActionClick(actionItem.action) },
             )
             VerticalSpacer(SpacingSize.Small)
         }
@@ -173,7 +173,3 @@ private fun getIconForAction(iconName: String) = when (iconName) {
     "info" -> Icons.Default.Info
     else -> Icons.AutoMirrored.Filled.List
 }
-
-
-
-

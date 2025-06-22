@@ -20,15 +20,16 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-        
+
         val envFile = file("../.env")
         val envProps = Properties()
         if (envFile.exists()) {
             envFile.inputStream().use { envProps.load(it) }
         }
-        
-        val googleMapsApiKey = envProps.getProperty("GOOGLE_MAPS_API_KEY") ?: 
-                              System.getenv("GOOGLE_MAPS_API_KEY") ?: ""
+
+        val googleMapsApiKey =
+            envProps.getProperty("GOOGLE_MAPS_API_KEY")
+                ?: System.getenv("GOOGLE_MAPS_API_KEY") ?: ""
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$googleMapsApiKey\"")
         manifestPlaceholders["googleMapsApiKey"] = googleMapsApiKey
     }

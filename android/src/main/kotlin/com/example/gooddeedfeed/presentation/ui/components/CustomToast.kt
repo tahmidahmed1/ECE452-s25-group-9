@@ -50,16 +50,16 @@ enum class ToastType {
 data class ToastData(
     val message: String,
     val type: ToastType,
-    val duration: Long = 4000L
+    val duration: Long = 4000L,
 )
 
 @Composable
 fun CustomToastHost(
     toastData: ToastData?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var visible by remember(toastData) { mutableStateOf(false) }
-    
+
     LaunchedEffect(toastData) {
         if (toastData != null) {
             visible = true
@@ -76,18 +76,18 @@ fun CustomToastHost(
             initialOffsetY = { -it },
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
-            )
+                stiffness = Spring.StiffnessLow,
+            ),
         ) + fadeIn(),
         exit = slideOutVertically(
             targetOffsetY = { -it },
-            animationSpec = tween(300)
-        ) + fadeOut()
+            animationSpec = tween(300),
+        ) + fadeOut(),
     ) {
         if (toastData != null) {
             CustomToast(
                 message = toastData.message,
-                type = toastData.type
+                type = toastData.type,
             )
         }
     }
@@ -96,32 +96,32 @@ fun CustomToastHost(
 @Composable
 private fun CustomToast(
     message: String,
-    type: ToastType
+    type: ToastType,
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val maxWidth = (screenWidth * 0.9f).coerceAtMost(400.dp)
-    
+
     val (backgroundColor, contentColor, icon) = when (type) {
         ToastType.SUCCESS -> Triple(
             Color(0xFF4CAF50),
             Color.White,
-            Icons.Default.CheckCircle
+            Icons.Default.CheckCircle,
         )
         ToastType.ERROR -> Triple(
             MaterialTheme.colorScheme.error,
             MaterialTheme.colorScheme.onError,
-            Icons.Default.Close
+            Icons.Default.Close,
         )
         ToastType.WARNING -> Triple(
             Color(0xFFFF9800),
             Color.White,
-            Icons.Default.Warning
+            Icons.Default.Warning,
         )
         ToastType.INFO -> Triple(
             MaterialTheme.colorScheme.primary,
             MaterialTheme.colorScheme.onPrimary,
-            Icons.Default.CheckCircle
+            Icons.Default.CheckCircle,
         )
     }
 
@@ -130,34 +130,34 @@ private fun CustomToast(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .zIndex(999f),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Card(
             modifier = Modifier
                 .widthIn(min = 200.dp, max = maxWidth)
                 .shadow(
                     elevation = 8.dp,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
-                containerColor = backgroundColor
-            )
+                containerColor = backgroundColor,
+            ),
         ) {
             Row(
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = contentColor,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
-                
+
                 Text(
                     text = message,
                     color = contentColor,
@@ -165,7 +165,7 @@ private fun CustomToast(
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Start,
                     modifier = Modifier.weight(1f),
-                    lineHeight = 18.sp
+                    lineHeight = 18.sp,
                 )
             }
         }

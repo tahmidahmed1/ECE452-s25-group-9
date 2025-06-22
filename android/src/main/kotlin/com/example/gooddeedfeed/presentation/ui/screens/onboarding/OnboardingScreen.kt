@@ -38,7 +38,7 @@ fun OnboardingScreen(
     val context = LocalContext.current
 
     val uiState by viewModel.uiState.collectAsState()
-    
+
     // Calculate total steps based on user type
     val totalSteps = when (selectedUserType) {
         DomainUserType.VOLUNTEER -> 3 // Step 1: User type, Step 2: Basic info, Step 3: Detailed volunteer profile
@@ -49,7 +49,7 @@ fun OnboardingScreen(
     if (uiState.isLoading) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+            color = MaterialTheme.colorScheme.background,
         ) {
             LoadingIndicator()
         }
@@ -74,7 +74,7 @@ fun OnboardingScreen(
     // Main content with consistent theme
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = MaterialTheme.colorScheme.background,
     ) {
         Column {
             // Dot indicators at the top
@@ -82,14 +82,14 @@ fun OnboardingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 OnboardingDotIndicators(
                     totalSteps = totalSteps,
-                    currentStep = currentStep
+                    currentStep = currentStep,
                 )
             }
-            
+
             // Screen content
             Box(modifier = Modifier.weight(1f)) {
                 when (currentStep) {
@@ -147,13 +147,13 @@ fun OnboardingScreen(
                             onComplete = { volunteerProfile, profilePictureFile ->
                                 viewModel.completeVolunteerOnboarding(
                                     volunteerProfile = volunteerProfile,
-                                    profilePictureFile = profilePictureFile
+                                    profilePictureFile = profilePictureFile,
                                 )
                             },
                             onBack = {
                                 currentStep = 2
                             },
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }

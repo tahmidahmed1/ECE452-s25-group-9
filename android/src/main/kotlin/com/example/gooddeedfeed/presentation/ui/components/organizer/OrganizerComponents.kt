@@ -30,79 +30,79 @@ fun EventCard(
     event: VolunteerEvent,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = event.title,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
-                
+
                 EventStatusChip(status = event.status)
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             EventDetailRow(
                 icon = Icons.Default.LocationOn,
-                text = event.location
+                text = event.location,
             )
-            
+
             EventDetailRow(
                 icon = Icons.Default.DateRange,
-                text = event.date
+                text = event.date,
             )
-            
+
             EventDetailRow(
                 icon = Icons.Default.Schedule,
-                text = "${event.startTime} - ${event.endTime}"
+                text = "${event.startTime} - ${event.endTime}",
             )
-            
+
             EventDetailRow(
                 icon = Icons.Default.Group,
-                text = "${event.currentVolunteers}/${event.maxVolunteers} volunteers"
+                text = "${event.currentVolunteers}/${event.maxVolunteers} volunteers",
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = event.description,
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = 3
+                maxLines = 3,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.End,
             ) {
                 IconButton(onClick = onEditClick) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit event"
+                        contentDescription = "Edit event",
                     )
                 }
-                
+
                 IconButton(onClick = onDeleteClick) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete event",
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -113,23 +113,23 @@ fun EventCard(
 @Composable
 private fun EventDetailRow(
     icon: ImageVector,
-    text: String
+    text: String,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 2.dp)
+        modifier = Modifier.padding(vertical = 2.dp),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -137,7 +137,7 @@ private fun EventDetailRow(
 @Composable
 fun EventStatusChip(
     status: EventStatus,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val (color, text) = when (status) {
         EventStatus.DRAFT -> MaterialTheme.colorScheme.outline to "Draft"
@@ -146,15 +146,15 @@ fun EventStatusChip(
         EventStatus.COMPLETED -> MaterialTheme.colorScheme.tertiary to "Completed"
         EventStatus.CANCELLED -> MaterialTheme.colorScheme.error to "Cancelled"
     }
-    
+
     AssistChip(
         onClick = { },
         label = { Text(text) },
         modifier = modifier,
         colors = AssistChipDefaults.assistChipColors(
             containerColor = color.copy(alpha = 0.1f),
-            labelColor = color
-        )
+            labelColor = color,
+        ),
     )
 }
 
@@ -166,18 +166,18 @@ fun EventsList(
     events: List<VolunteerEvent>,
     onEditEvent: (VolunteerEvent) -> Unit,
     onDeleteEvent: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = PaddingValues(16.dp),
     ) {
         items(events) { event ->
             EventCard(
                 event = event,
                 onEditClick = { onEditEvent(event) },
-                onDeleteClick = { onDeleteEvent(event.id) }
+                onDeleteClick = { onDeleteEvent(event.id) },
             )
         }
     }

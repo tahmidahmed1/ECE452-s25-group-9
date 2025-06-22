@@ -21,7 +21,7 @@ import com.example.gooddeedfeed.presentation.ui.screens.volunteer.MapScreen
  * This centralizes the navigation logic and makes it easy to modify tab configurations.
  */
 object NavigationConfig {
-    
+
     /**
      * Helper functions to create common tab items
      */
@@ -29,16 +29,16 @@ object NavigationConfig {
     private fun createHomeTab(): TabItem = TabItem(
         title = "Home",
         icon = Icons.Default.Home,
-        screen = { user, onLogout -> HomeScreen(user, onLogout) }
+        screen = { user, onLogout -> HomeScreen(user, onLogout) },
     )
-    
+
     @Composable
     private fun createSettingsTab(): TabItem = TabItem(
         title = "Settings",
         icon = Icons.Default.Settings,
-        screen = { user, onLogout -> SettingsScreen(user, onLogout) }
+        screen = { user, onLogout -> SettingsScreen(user, onLogout) },
     )
-    
+
     /**
      * Tab configuration for volunteer users
      * Features: Home, List of opportunities, Map view, Settings
@@ -50,14 +50,14 @@ object NavigationConfig {
             TabItem(
                 title = "Opportunities",
                 icon = Icons.AutoMirrored.Filled.List,
-                screen = { user, _ -> ListScreen(user) }
+                screen = { user, _ -> ListScreen(user) },
             ),
             TabItem(
                 title = "Map",
                 icon = Icons.Default.LocationOn,
-                screen = { _, _ -> MapScreen() }
+                screen = { _, _ -> MapScreen() },
             ),
-            createSettingsTab()
+            createSettingsTab(),
         )
     }
 
@@ -72,9 +72,9 @@ object NavigationConfig {
             TabItem(
                 title = "Events",
                 icon = Icons.Default.Edit,
-                screen = { user, _ -> EventManagementScreen(user) }
+                screen = { user, _ -> EventManagementScreen(user) },
             ),
-            createSettingsTab()
+            createSettingsTab(),
         )
     }
 
@@ -89,9 +89,9 @@ object NavigationConfig {
             TabItem(
                 title = "Reviews",
                 icon = Icons.Default.CheckCircle,
-                screen = { _, _ -> ReviewScreen() }
+                screen = { _, _ -> ReviewScreen() },
             ),
-            createSettingsTab()
+            createSettingsTab(),
         )
     }
 
@@ -103,7 +103,7 @@ object NavigationConfig {
     fun getDefaultTabs(): List<TabItem> {
         return listOf(
             createHomeTab(),
-            createSettingsTab()
+            createSettingsTab(),
         )
     }
 

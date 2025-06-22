@@ -17,20 +17,20 @@ import javax.inject.Inject
 
 data class HomeData(
     val user: DomainUser,
-    val userTypeDisplay: UserTypeDisplay
+    val userTypeDisplay: UserTypeDisplay,
 )
 
 data class UserTypeDisplay(
     val title: String,
     val subtitle: String,
-    val actionItems: List<HomeActionItem>
+    val actionItems: List<HomeActionItem>,
 )
 
 data class HomeActionItem(
     val iconName: String,
     val title: String,
     val description: String,
-    val action: HomeAction
+    val action: HomeAction,
 )
 
 sealed class HomeAction {
@@ -44,14 +44,14 @@ sealed class HomeAction {
 
 @HiltViewModel
 class HomeViewModel @Inject constructor() : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Loading)
     val uiState: StateFlow<UiState<HomeData>> = _uiState.asStateFlow()
-    
+
     // Navigation events for home actions to switch bottom tabs
     private val _navigationEvent = MutableSharedFlow<HomeAction>(extraBufferCapacity = 1)
     val navigationEvent: SharedFlow<HomeAction> = _navigationEvent.asSharedFlow()
-    
+
     fun loadUserHome(user: DomainUser) {
         viewModelScope.launch {
             try {
@@ -60,20 +60,20 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                 _uiState.value = UiState.Success(
                     HomeData(
                         user = user,
-                        userTypeDisplay = userTypeDisplay
-                    )
+                        userTypeDisplay = userTypeDisplay,
+                    ),
                 )
             } catch (e: Exception) {
                 _uiState.value = UiState.Error("Failed to load home screen: ${e.message}")
             }
         }
     }
-    
+
     fun handleAction(action: HomeAction) {
         // Emit navigation event for bottom bar switching
         _navigationEvent.tryEmit(action)
     }
-    
+
     private fun createUserTypeDisplay(user: DomainUser): UserTypeDisplay {
         return when (user.userType) {
             DomainUserType.VOLUNTEER -> UserTypeDisplay(
@@ -84,15 +84,15 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                         iconName = "search",
                         title = "Browse Opportunities",
                         description = "Discover volunteer opportunities near you",
-                        action = HomeAction.BrowseOpportunities
+                        action = HomeAction.BrowseOpportunities,
                     ),
                     HomeActionItem(
                         iconName = "history",
                         title = "My Activities",
                         description = "Track your volunteer history and hours",
-                        action = HomeAction.ViewMyActivities
-                    )
-                )
+                        action = HomeAction.ViewMyActivities,
+                    ),
+                ),
             )
             DomainUserType.ORGANIZER -> UserTypeDisplay(
                 title = "Welcome, Organizer!",
@@ -102,15 +102,15 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                         iconName = "add_circle",
                         title = "Create Event",
                         description = "Post a new volunteer opportunity",
-                        action = HomeAction.CreateEvent
+                        action = HomeAction.CreateEvent,
                     ),
                     HomeActionItem(
                         iconName = "event",
                         title = "Manage Events",
                         description = "View and edit your posted events",
-                        action = HomeAction.ManageEvents
-                    )
-                )
+                        action = HomeAction.ManageEvents,
+                    ),
+                ),
             )
             DomainUserType.INSTITUTION -> UserTypeDisplay(
                 title = "Welcome, Institution!",
@@ -120,15 +120,15 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                         iconName = "dashboard",
                         title = "Review Dashboard",
                         description = "Review pending volunteer activities",
-                        action = HomeAction.ViewDashboard
+                        action = HomeAction.ViewDashboard,
                     ),
                     HomeActionItem(
                         iconName = "business",
                         title = "Manage Programs",
                         description = "Oversee volunteer programs and organizations",
-                        action = HomeAction.ManagePrograms
-                    )
-                )
+                        action = HomeAction.ManagePrograms,
+                    ),
+                ),
             )
             else -> UserTypeDisplay(
                 title = "Welcome!",
@@ -138,9 +138,9 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                         iconName = "explore",
                         title = "Explore",
                         description = "Discover volunteer opportunities",
-                        action = HomeAction.BrowseOpportunities
-                    )
-                )
+                        action = HomeAction.BrowseOpportunities,
+                    ),
+                ),
             )
         }
     }

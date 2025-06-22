@@ -32,11 +32,11 @@ fun OnboardingStepOneScreen(
 
     ScreenContainer(modifier = modifier) {
         // Header removed per design
-        
+
         VerticalSpacer(SpacingSize.Small)
-        
+
         ScreenSubtitle("What type of account would you like to create?")
-        
+
         VerticalSpacer(SpacingSize.Large)
         Spacer(modifier = Modifier.height(24.dp)) // Extra space for visual balance
 
@@ -79,9 +79,7 @@ fun OnboardingStepOneScreen(
                     onUserTypeSelected(userType)
                 }
             },
-            enabled = selectedUserType != null
+            enabled = selectedUserType != null,
         )
     }
 }
-
-

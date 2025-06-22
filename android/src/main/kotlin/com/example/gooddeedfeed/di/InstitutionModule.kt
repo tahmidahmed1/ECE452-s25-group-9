@@ -17,7 +17,7 @@ abstract class InstitutionModule {
     @Binds
     @Singleton
     abstract fun bindReviewRepository(impl: ReviewRepositoryImpl): ReviewRepository
-    
+
     companion object {
         @Provides
         fun provideManageReviewsUseCase(repo: ReviewRepository) = ManageReviewsUseCase(repo)

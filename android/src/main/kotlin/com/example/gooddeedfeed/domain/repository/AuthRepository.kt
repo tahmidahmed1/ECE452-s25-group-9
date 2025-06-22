@@ -36,12 +36,12 @@ interface AuthRepository {
         phone: String,
         organizationName: String?,
         institutionName: DomainInstitutionName?,
-        profilePictureUrl: String? = null
+        profilePictureUrl: String? = null,
     ): Result<Unit>
 
     suspend fun completeVolunteerOnboarding(
         volunteerProfile: DomainVolunteerProfile,
-        profilePictureUrl: String? = null
+        profilePictureUrl: String? = null,
     ): Result<Unit>
 
     // Profile picture upload
