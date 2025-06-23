@@ -24,6 +24,9 @@ jobs:
       run: |
         echo "${{ secrets.SHARED_DEBUG_KEYSTORE_BASE64 }}" | base64 --decode > shared-debug.keystore
 
+    - name: Ensure gradlew is executable
+      run: chmod +x ./gradlew
+      
     - name: Build Debug APK
       env:
         GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
