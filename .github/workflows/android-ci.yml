@@ -1,0 +1,36 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Java JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Restore shared debug keystore
+      run: |
+        echo "${{ secrets.SHARED_DEBUG_KEYSTORE_BASE64 }}" | base64 --decode > shared-debug.keystore
+
+    - name: Ensure gradlew is executable
+      run: chmod +x ./gradlew
+      
+    - name: Build Debug APK
+      env:
+        GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        DEBUG_KEYSTORE_PASSWORD: ${{ secrets.DEBUG_KEYSTORE_PASSWORD }}
+      run: |
+        chmod 600 shared-debug.keystore
+        ./gradlew assembleDebug --stacktrace
