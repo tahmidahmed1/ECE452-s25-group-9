@@ -167,3 +167,19 @@ This project uses environment variables for configuration. The main configuratio
 - Use `.env.example` as a template for required variables
 - Generate strong, unique secrets for production
 - The server automatically loads environment variables using `os.getenv()`
+
+## Continuous Integration
+
+We use a GitHub Actions workflow at  
+`.github/workflows/android-ci.yml`  
+to build the Android Debug APK on every push and pull request to `main`.  
+
+**Required repository secrets** (Settings → Secrets → Actions):  
+- `SHARED_DEBUG_KEYSTORE_BASE64` – Base64-encoded contents of `shared-debug.keystore`  
+- `DEBUG_KEYSTORE_PASSWORD` – Keystore password (e.g. `android`)  
+- `GOOGLE_MAPS_API_KEY` – Your Google Maps SDK API key  
+
+Once these are set, the CI will:
+1. Restore the debug keystore  
+2. Inject your `GOOGLE_MAPS_API_KEY`  
+3. Run `./gradlew assembleDebug`
