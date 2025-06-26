@@ -2,10 +2,19 @@ package com.example.gooddeedfeed.presentation.ui.components
 
 import android.content.Context
 import android.util.Log
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonArray
 
 object ToastUtils {
 
     private const val TAG = "ToastUtils"
+
+    private val URL_REGEX = Regex("http[s]?://[^\\s]+")
+    private val URL_INDEX_REGEX = Regex("URL \\d+:")
+    private val MULTI_SPACE_REGEX = Regex("\\s+")
 
     fun showSuccessToast(context: Context, message: String) {
         val cleanMessage = extractActualMessage(message)
@@ -25,78 +34,57 @@ object ToastUtils {
         ToastManager.showInfo(cleanMessage)
     }
 
-    /**
-     * Extract the actual meaningful message from technical error responses
-     */
     private fun extractActualMessage(message: String): String {
         Log.d(TAG, "Original message: $message")
 
-        val cleanMessage = cleanUpMessage(message)
+        val jsonExtracted = extractFromJson(message)
+        val cleanMessage = cleanUpMessage(jsonExtracted)
         val finalMessage = categorizeAndFormatMessage(cleanMessage)
 
         Log.d(TAG, "Cleaned message: $finalMessage")
         return finalMessage
     }
 
-    /**
-     * Clean up message by removing URLs and extra whitespace
-     */
     private fun cleanUpMessage(message: String): String {
         return message
-            .replace(Regex("http[s]?://[^\\s]+"), "") // Remove URLs
-            .replace(Regex("URL \\d+:"), "") // Remove "URL 0:" patterns
-            .replace(Regex("\\s+"), " ") // Replace multiple whitespace with single space
+            .replace(URL_REGEX, "")
+            .replace(URL_INDEX_REGEX, "")
+            .replace(MULTI_SPACE_REGEX, " ")
             .trim()
     }
 
-    /**
-     * Categorize and format error message based on content
-     */
     private fun categorizeAndFormatMessage(cleanMessage: String): String {
         return when {
-            // Direct server validation message (preferred)
-            cleanMessage.contains("valid email address") -> cleanMessage
-
-            // Dev mode specific errors
-            isDevModeError(cleanMessage) -> handleDevModeError(cleanMessage)
-
-            // Server validation errors
             isServerValidationError(cleanMessage) -> handleServerValidationError(cleanMessage)
-
-            // Connection/Network errors
-            isConnectionError(cleanMessage) -> "Unable to connect to server. Please check your internet connection and try again."
-
-            // Authentication errors
-            isAuthenticationError(cleanMessage) -> "Invalid username or password. Please try again."
-
-            // User already exists
-            isConflictError(cleanMessage) -> "An account with this username or email already exists."
-
-            // Server errors
-            isServerError(cleanMessage) -> "Server is temporarily unavailable. Please try again later."
-
-            // Token/Auth errors
-            isTokenError(cleanMessage) -> "Authentication failed. Please try signing in again."
-
-            // Clean, readable message
+            isDevModeError(cleanMessage) -> handleDevModeError(cleanMessage)
             isCleanMessage(cleanMessage) -> cleanMessage
-
-            // Default fallback with more context
-            else -> "Unexpected error occurred: $cleanMessage"
+            isAuthenticationError(cleanMessage) -> "Invalid username or password. Please try again."
+            isTokenError(cleanMessage) -> "Authentication failed. Please try signing in again."
+            isConflictError(cleanMessage) -> "An account with this username or email already exists."
+            isServerError(cleanMessage) -> "Server is temporarily unavailable. Please try again later."
+            isConnectionError(cleanMessage) -> "Unable to connect to server. Please check your internet connection and try again."
+            else -> cleanMessage // fallback: show whatever we have after cleanup
         }
     }
 
     private fun isServerValidationError(message: String): Boolean {
-        return message.contains("illegal input") || message.contains("fields [")
+        return message.contains("illegal input", ignoreCase = true) ||
+            message.contains("fields [", ignoreCase = true) ||
+            message.contains("value is not a valid", ignoreCase = true) ||
+            message.contains("valid email address", ignoreCase = true) ||
+            message.contains("must have an @", ignoreCase = true)
     }
 
     private fun handleServerValidationError(message: String): String {
+        val lower = message.lowercase()
         return when {
-            message.contains("email") || message.contains("@") ->
-                "Please enter a valid email address with an @ sign"
-            message.contains("password") ->
+            (lower.contains("email") && lower.contains("period")) ->
+                "Please enter a valid email address that contains a period after the @ sign (e.g., example@domain.com)"
+            lower.contains("email") || lower.contains("@-sign") || lower.contains("@ sign") ->
+                "Please enter a valid email address with one @ sign"
+            lower.contains("password") ->
                 "Password is required and must meet minimum requirements"
-            message.contains("username") ->
+            lower.contains("username") ->
                 "Username is required and must meet minimum requirements"
             else -> "Please check your input and try again"
         }
@@ -154,5 +142,28 @@ object ToastUtils {
             !message.contains("error") &&
             message.length < 150 &&
             message.split(" ").size < 20
+    }
+
+    private fun extractFromJson(raw: String): String {
+        val trimmed = raw.trim()
+        return try {
+            val element = Json.parseToJsonElement(trimmed)
+            when (element) {
+                is JsonObject -> {
+                    element["message"]?.jsonPrimitive?.content ?: raw
+                }
+                is JsonArray -> {
+                    if (element.isNotEmpty()) {
+                        val first = element[0]
+                        if (first is JsonObject && first["message"] is JsonPrimitive) {
+                            first["message"]!!.jsonPrimitive.content
+                        } else raw
+                    } else raw
+                }
+                else -> raw
+            }
+        } catch (e: Exception) {
+            raw
+        }
     }
 }

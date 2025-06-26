@@ -35,9 +35,7 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.theme.BorderRadius
 import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
-import com.example.gooddeedfeed.presentation.ui.components.CustomToastHost
-import com.example.gooddeedfeed.presentation.ui.components.ToastManager
-import com.example.gooddeedfeed.presentation.ui.components.rememberToastState
+
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
 
@@ -140,7 +138,7 @@ fun TabNavigationScreen(
     // Observe home navigation events to switch bottom bar tabs
     val homeViewModel: HomeViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val toastState by rememberToastState()
+
 
     // Generate tabs based on user type early
     val tabs = NavigationConfig.getTabsForUserType(user.userType)
@@ -171,11 +169,7 @@ fun TabNavigationScreen(
         Box(modifier = Modifier.padding(paddingValues)) {
             tabs[selectedTabIndex].screen(user, onLogout)
 
-            // Add toast overlay
-            CustomToastHost(
-                toastData = toastState,
-                onDismiss = { ToastManager.dismiss() },
-            )
+            // Toast overlay is handled at the app level in AppNavHost
         }
     }
 }

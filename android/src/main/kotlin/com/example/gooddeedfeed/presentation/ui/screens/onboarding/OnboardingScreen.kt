@@ -35,6 +35,9 @@ fun OnboardingScreen(
 ) {
     var currentStep by remember { mutableStateOf(1) }
     var selectedUserType by remember { mutableStateOf<DomainUserType?>(null) }
+    var basicFullName by remember { mutableStateOf("") }
+    var basicPhone by remember { mutableStateOf("") }
+    var basicProfilePicture: java.io.File? by remember { mutableStateOf(null) }
     val context = LocalContext.current
 
     val uiState by viewModel.uiState.collectAsState()
@@ -110,7 +113,9 @@ fun OnboardingScreen(
                                     OnboardingStepTwoBasicScreen(
                                         userType = userType,
                                         onComplete = { fullName, phone, profilePictureFile ->
-                                            // Store basic info and move to detailed volunteer profile
+                                            basicFullName = fullName
+                                            basicPhone = phone
+                                            basicProfilePicture = profilePictureFile
                                             currentStep = 3
                                         },
                                         onBack = {
@@ -144,10 +149,14 @@ fun OnboardingScreen(
                     3 -> {
                         // Detailed volunteer profile (only for volunteers)
                         OnboardingStepThreeVolunteerScreen(
+                            fullName = basicFullName,
+                            phone = basicPhone,
                             onComplete = { volunteerProfile, profilePictureFile ->
+                                // Merge optional profile picture from step 2 if step 3 didn't override
+                                val picture = profilePictureFile ?: basicProfilePicture
                                 viewModel.completeVolunteerOnboarding(
                                     volunteerProfile = volunteerProfile,
-                                    profilePictureFile = profilePictureFile,
+                                    profilePictureFile = picture,
                                 )
                             },
                             onBack = {

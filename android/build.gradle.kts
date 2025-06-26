@@ -10,15 +10,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
-// Load local.properties (if exists) into propsLocal
-val propsLocal =
-    Properties().apply {
-        val localPropsFile = rootProject.file("local.properties")
-        if (localPropsFile.exists()) {
-            localPropsFile.inputStream().use { load(it) }
-        }
-    }
-
 android {
     namespace = "com.example.gooddeedfeed"
     compileSdk = 35
@@ -36,49 +27,15 @@ android {
             envFile.inputStream().use { envProps.load(it) }
         }
 
-        // ==== LOAD MAPS API KEY ====
-        val mapsKeyFromProps: String? = propsLocal.getProperty("MAPS_API_KEY")
-        val mapsKeyFromEnv: String? = System.getenv("GOOGLE_MAPS_API_KEY")
-        val mapsApiKey: String =
-            when {
-                !mapsKeyFromProps.isNullOrBlank() -> mapsKeyFromProps
-                !mapsKeyFromEnv.isNullOrBlank() -> mapsKeyFromEnv
-                else -> throw GradleException("Missing Maps API key. Define MAPS_API_KEY in local.properties or env file.")
-            }
+        val mapsApiKey: String = envProps.getProperty("GOOGLE_MAPS_API_KEY")
+            ?: throw GradleException("Missing Maps API key. Define GOOGLE_MAPS_API_KEY in .env file.")
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$mapsApiKey\"")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
-    }
-
-    signingConfigs {
-        create("sharedDebug") {
-            // Path to the shared debug keystore at project root:
-            val keystoreFile = rootProject.file("shared-debug.keystore")
-            storeFile = keystoreFile
-
-            // Passwords: try read from local properties, or fallback and read from environment or Gradle property
-            // Locally: developer sets environment variable DEBUG_KEYSTORE_PASSWORD=android
-            // In CI: GitHub Actions secrets will set same env var.
-            val storePassFromProps: String? = propsLocal.getProperty("DEBUG_KEYSTORE_PASSWORD")
-            val storePassFromEnv: String? = System.getenv("DEBUG_KEYSTORE_PASSWORD")
-            val storePass: String? =
-                when {
-                    !storePassFromProps.isNullOrBlank() -> storePassFromProps
-                    !storePassFromEnv.isNullOrBlank() -> storePassFromEnv
-                    else -> null
-                }
-            if (storePass.isNullOrBlank()) {
-                throw GradleException("Missing DEBUG_KEYSTORE_PASSWORD. Set it in local.properties or as env var DEBUG_KEYSTORE_PASSWORD.")
-            }
-            storePassword = storePass
-            keyAlias = "androiddebugkey"
-            keyPassword = storePass
-        }
     }
 
     buildTypes {
         debug {
             isDebuggable = true
-            signingConfig = signingConfigs.getByName("sharedDebug")
             buildConfigField("boolean", "DEV_MODE", "true")
             buildConfigField("String", "DEV_BASE_URL", "\"http://10.0.2.2:8000\"")
         }
@@ -137,6 +94,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+    implementation("androidx.compose.ui:ui-text-google-fonts")
     testImplementation("junit:junit:4.13.2")
     testImplementation("app.cash.turbine:turbine:1.0.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")

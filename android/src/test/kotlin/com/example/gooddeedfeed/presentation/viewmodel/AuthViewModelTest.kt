@@ -1,9 +1,9 @@
 package com.example.gooddeedfeed.presentation.viewmodel
 
 import app.cash.turbine.test
-import com.example.gooddeedfeed.data.remote.AuthResponse
-import com.example.gooddeedfeed.data.remote.User
-import com.example.gooddeedfeed.data.remote.UserType
+import com.example.gooddeedfeed.data.remote.dto.AuthResponse
+import com.example.gooddeedfeed.data.remote.dto.User
+import com.example.gooddeedfeed.data.remote.dto.UserType
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase

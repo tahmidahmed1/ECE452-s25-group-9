@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,12 +28,12 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingStepThreeVolunteerScreen(
+    fullName: String,
+    phone: String,
     onComplete: (DomainVolunteerProfile, File?) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var fullName by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
     var selectedSex by remember { mutableStateOf<DomainSex?>(null) }
     var description by remember { mutableStateOf("") }
     var customSkill by remember { mutableStateOf("") }
@@ -56,14 +56,17 @@ fun OnboardingStepThreeVolunteerScreen(
         "Music", "Sports", "Driving",
     )
 
-    val isFormValid = fullName.isNotBlank() &&
-        phone.isNotBlank() &&
-        selectedSex != null &&
-        description.isNotBlank() &&
-        age.isNotBlank() && age.toIntOrNull() != null &&
-        emergencyContactName.isNotBlank() &&
-        emergencyContactPhone.isNotBlank() &&
-        locationArea.isNotBlank()
+    val isFormValid by remember(selectedSex, description, age, emergencyContactName, emergencyContactPhone, locationArea) {
+        derivedStateOf {
+            val ageNumber = age.toIntOrNull() ?: -1
+            selectedSex != null &&
+                description.isNotBlank() &&
+                ageNumber > 0 &&
+                emergencyContactName.isNotBlank() &&
+                emergencyContactPhone.isNotBlank() &&
+                locationArea.isNotBlank()
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -81,7 +84,7 @@ fun OnboardingStepThreeVolunteerScreen(
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Go back",
                     )
                 }

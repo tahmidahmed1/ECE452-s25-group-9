@@ -31,18 +31,6 @@ data class DomainUser(
     val disabilities: String? = null,
 )
 
-enum class DomainUserType {
-    VOLUNTEER, ORGANIZER, INSTITUTION
-}
-
-enum class DomainSex {
-    MALE, FEMALE, NON_BINARY, PREFER_NOT_TO_SAY
-}
-
-enum class DomainInstitutionName {
-    INSTITUTION_1, INSTITUTION_2, INSTITUTION_3
-}
-
 data class DomainAuthResponse(
     val success: Boolean,
     val token: String? = null,
@@ -69,4 +57,9 @@ data class DomainVolunteerProfile(
     val locationArea: String,
     val hasDriversLicense: Boolean,
     val disabilities: String?,
-) 
+)
+
+// Enumerations are defined in DomainEnums.kt to avoid leaking DTO types into the domain layer.
+
+// Duplicate enums removed; DomainUserType, DomainSex, and DomainInstitutionName
+// are now typealiases defined in DomainAliases.kt 

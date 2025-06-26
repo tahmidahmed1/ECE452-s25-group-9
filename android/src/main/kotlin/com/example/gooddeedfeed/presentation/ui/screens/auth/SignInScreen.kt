@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.gooddeedfeed.BuildConfig
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.components.*
@@ -123,7 +124,8 @@ fun SignInScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         DevModeButton(
-                            text = "👤 Volunteer",
+                            icon = "👤",
+                            text = "Volunteer",
                             userType = DomainUserType.VOLUNTEER,
                             onDevModeSignIn = onDevModeSignIn,
                             enabled = !isLoading,
@@ -131,7 +133,8 @@ fun SignInScreen(
                         )
 
                         DevModeButton(
-                            text = "⭐ Organizer",
+                            icon = "⭐",
+                            text = "Organizer",
                             userType = DomainUserType.ORGANIZER,
                             onDevModeSignIn = onDevModeSignIn,
                             enabled = !isLoading,
@@ -139,7 +142,8 @@ fun SignInScreen(
                         )
 
                         DevModeButton(
-                            text = "🏛️ Institution",
+                            icon = "🏛️",
+                            text = "Institution",
                             userType = DomainUserType.INSTITUTION,
                             onDevModeSignIn = onDevModeSignIn,
                             enabled = !isLoading,
@@ -154,6 +158,7 @@ fun SignInScreen(
 
 @Composable
 private fun DevModeButton(
+    icon: String,
     text: String,
     userType: DomainUserType,
     onDevModeSignIn: (DomainUserType) -> Unit,
@@ -168,10 +173,22 @@ private fun DevModeButton(
             contentColor = MaterialTheme.colorScheme.primary,
         ),
         shape = RoundedCornerShape(8.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = icon,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp),
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                fontWeight = FontWeight.Medium,
+            )
+        }
     }
 }

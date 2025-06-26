@@ -2,7 +2,10 @@ package com.example.gooddeedfeed.presentation.navigation
 
 import android.util.Log
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -15,13 +18,18 @@ import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.components.CustomToastHost
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.ui.components.rememberToastState
+import com.example.gooddeedfeed.presentation.ui.screens.SplashScreen
 import com.example.gooddeedfeed.presentation.ui.screens.auth.SignInScreen
 import com.example.gooddeedfeed.presentation.ui.screens.auth.SignUpScreen
 import com.example.gooddeedfeed.presentation.ui.screens.onboarding.OnboardingScreen
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 
+private const val TAG = "AppNavHost"
+
 sealed class Screen(val route: String) {
+    object Splash : Screen("splash")
+    
     object SignIn : Screen("sign_in")
 
     object SignUp : Screen("sign_up")
@@ -40,44 +48,51 @@ fun appNavHost(
     val currentState = uiState // Store in local variable to enable smart cast
     val toastState by rememberToastState()
 
-    // Handle authentication state navigation
+    // Navigate to SignIn on sign out
     LaunchedEffect(currentState) {
-        when (currentState) {
-            is AuthUiState.SignedOut -> {
-                val currentRoute = navController.currentDestination?.route
-                if (currentRoute != Screen.SignIn.route) {
-                    navController.navigate(Screen.SignIn.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
+        if (currentState is AuthUiState.SignedOut) {
+            ToastManager.showSuccess("Signed out successfully")
+            navController.navigate(Screen.SignIn.route) {
+                popUpTo(0) { inclusive = true }
             }
-            is AuthUiState.Success -> {
-                val currentRoute = navController.currentDestination?.route
-                val user = currentState.user
-
-                Log.d("AppNavHost", "AuthUiState.Success - current route: $currentRoute, user: ${user.username}, onboarding: ${user.onboardingCompleted}")
-
-                // If user is authenticated but on auth screens, navigate appropriately
-                if (currentRoute == Screen.SignIn.route || currentRoute == Screen.SignUp.route) {
-                    if (!user.onboardingCompleted) {
-                        Log.d("AppNavHost", "Navigating to onboarding")
-                        navController.navigate(Screen.Onboarding.route) {
-                            popUpTo(currentRoute) { inclusive = true }
-                        }
-                    } else {
-                        Log.d("AppNavHost", "Navigating to authenticated home")
-                        navController.navigate(Screen.AuthenticatedHome.route) {
-                            popUpTo(currentRoute) { inclusive = true }
-                        }
-                    }
-                }
-            }
-            else -> {}
         }
     }
 
-    Box {
-        NavHost(navController, startDestination = Screen.SignIn.route) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        NavHost(navController, startDestination = Screen.Splash.route) {
+            composable(Screen.Splash.route) {
+                SplashScreen(
+                    authState = currentState,
+                    onSplashFinished = {
+                        // Don't navigate yet - let the auth state handler decide
+                        when (currentState) {
+                            is AuthUiState.Success -> {
+                                val user = currentState.user
+                                if (!user.onboardingCompleted) {
+                                    navController.navigate(Screen.Onboarding.route) {
+                                        popUpTo(Screen.Splash.route) { inclusive = true }
+                                    }
+                                } else {
+                                    navController.navigate(Screen.AuthenticatedHome.route) {
+                                        popUpTo(Screen.Splash.route) { inclusive = true }
+                                    }
+                                }
+                            }
+                            is AuthUiState.SignedOut -> {
+                                navController.navigate(Screen.SignIn.route) {
+                                    popUpTo(Screen.Splash.route) { inclusive = true }
+                                }
+                            }
+                            else -> {
+                                // Still loading auth state, stay on splash
+                            }
+                        }
+                    }
+                )
+            }
+            
             composable(Screen.SignIn.route) {
                 SignInScreen(
                     uiState = currentState,
@@ -129,7 +144,7 @@ fun appNavHost(
                 if (user != null) {
                     // Default missing userType to VOLUNTEER for dev preview
                     val userWithType = if (user.userType == null) {
-                        println("AppNavHost: Missing userType, defaulting to VOLUNTEER")
+                        Log.d(TAG, "Missing userType, defaulting to VOLUNTEER")
                         user.copy(userType = DomainUserType.VOLUNTEER)
                     } else {
                         user
@@ -139,10 +154,17 @@ fun appNavHost(
             }
         }
 
-        // Add toast overlay for authentication screens
-        CustomToastHost(
-            toastData = toastState,
-            onDismiss = { ToastManager.dismiss() },
-        )
+        // Global toast overlay positioned at bottom
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .align(Alignment.BottomCenter),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            CustomToastHost(
+                toastData = toastState,
+                onDismiss = { ToastManager.dismiss() },
+            )
+        }
     }
 }

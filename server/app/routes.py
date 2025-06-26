@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 import logging
 from typing import List
+from fastapi.responses import JSONResponse
+from sqlalchemy import or_
 
 from .database import get_db
-from .models import User, UserType, InstitutionName
+from .models import User, UserType, InstitutionName, Sex
 from .schemas import (
     UserCreate, User as UserSchema, Token, OnboardingStepOne, 
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
@@ -29,15 +31,11 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     logger.info(f"Registration request received for username: {user.username}, email: {user.email}")
     
     # Check if user already exists
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if db_user:
-        logger.warning(f"Registration failed: Username {user.username} already exists")
-        raise HTTPException(status_code=400, detail="Username already registered")
-    
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if db_user:
-        logger.warning(f"Registration failed: Email {user.email} already exists")
-        raise HTTPException(status_code=400, detail="Email already registered")
+    dup_user = db.query(User).filter(or_(User.username == user.username, User.email == user.email)).first()
+    if dup_user:
+        message = "Username already registered" if dup_user.username == user.username else "Email already registered"
+        logger.warning(f"Registration failed: {message}")
+        return JSONResponse(status_code=409, content={"success": False, "message": message})
     
     # Create new user (onboarding_completed defaults to False)
     hashed_password = get_password_hash(user.password)
@@ -153,7 +151,13 @@ def complete_onboarding_step_one(
 ):
     logger.info(f"Onboarding step 1 for user {current_user.username}: {step_data.user_type}")
     
-    current_user.user_type = step_data.user_type
+    # Normalize to database enum label (uppercase)
+    try:
+        current_user.user_type = UserType[step_data.user_type.value.upper()]
+    except KeyError:
+        # Fallback to direct assignment (in case enum labels already match)
+        current_user.user_type = step_data.user_type
+    
     db.commit()
     db.refresh(current_user)
     
@@ -198,7 +202,10 @@ def complete_volunteer_onboarding(
     
     # Volunteer-specific fields
     if onboarding_data.sex:
-        current_user.sex = onboarding_data.sex
+        try:
+            current_user.sex = Sex[onboarding_data.sex.value.upper()]
+        except KeyError:
+            current_user.sex = onboarding_data.sex  # fallback
     if onboarding_data.description:
         current_user.description = onboarding_data.description
     if onboarding_data.skills:

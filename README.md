@@ -176,7 +176,6 @@ to build the Android Debug APK on every push and pull request to `main`.
 
 **Required repository secrets** (Settings → Secrets → Actions):  
 - `SHARED_DEBUG_KEYSTORE_BASE64` – Base64-encoded contents of `shared-debug.keystore`  
-- `DEBUG_KEYSTORE_PASSWORD` – Keystore password (e.g. `android`)  
 - `GOOGLE_MAPS_API_KEY` – Your Google Maps SDK API key  
 
 Once these are set, the CI will:

@@ -8,10 +8,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -28,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,13 +38,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 enum class ToastType {
     SUCCESS, ERROR, WARNING, INFO
@@ -50,7 +58,7 @@ enum class ToastType {
 data class ToastData(
     val message: String,
     val type: ToastType,
-    val duration: Long = 4000L,
+    val duration: Long = 3000L, // Changed default to 3 seconds
 )
 
 @Composable
@@ -73,22 +81,33 @@ fun CustomToastHost(
     AnimatedVisibility(
         visible = visible && toastData != null,
         enter = slideInVertically(
-            initialOffsetY = { -it },
+            initialOffsetY = { it },
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
                 stiffness = Spring.StiffnessLow,
             ),
         ) + fadeIn(),
         exit = slideOutVertically(
-            targetOffsetY = { -it },
+            targetOffsetY = { it },
             animationSpec = tween(300),
         ) + fadeOut(),
     ) {
         if (toastData != null) {
-            CustomToast(
-                message = toastData.message,
-                type = toastData.type,
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 48.dp, start = 24.dp, end = 24.dp), // Increased spacing from edges
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                CustomToast(
+                    message = toastData.message,
+                    type = toastData.type,
+                    onDismiss = {
+                        visible = false
+                        onDismiss()
+                    }
+                )
+            }
         }
     }
 }
@@ -97,10 +116,16 @@ fun CustomToastHost(
 private fun CustomToast(
     message: String,
     type: ToastType,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
     val screenWidth = configuration.screenWidthDp.dp
     val maxWidth = (screenWidth * 0.9f).coerceAtMost(400.dp)
+
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    val dismissThreshold = with(density) { 100.dp.toPx() }
 
     val (backgroundColor, contentColor, icon) = when (type) {
         ToastType.SUCCESS -> Triple(
@@ -126,15 +151,28 @@ private fun CustomToast(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
             .zIndex(999f),
         contentAlignment = Alignment.Center,
     ) {
         Card(
             modifier = Modifier
                 .widthIn(min = 200.dp, max = maxWidth)
+                .offset { IntOffset(offsetX.roundToInt(), 0) }
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragEnd = {
+                            if (abs(offsetX) > dismissThreshold) {
+                                onDismiss()
+                            } else {
+                                offsetX = 0f
+                            }
+                        }
+                    ) { _, dragAmount ->
+                        offsetX += dragAmount.x
+                    }
+                }
                 .shadow(
                     elevation = 8.dp,
                     shape = RoundedCornerShape(12.dp),

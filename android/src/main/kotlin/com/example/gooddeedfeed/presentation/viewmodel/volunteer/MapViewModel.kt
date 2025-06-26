@@ -15,15 +15,22 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Simple contract interface for Map UI state */
+interface MapUiContract {
+    val currentLocation: Location?
+    val filteredEvents: List<VolunteerEvent>
+    val radiusKm: Float
+}
+
 data class MapUiState(
-    val currentLocation: Location? = null,
+    override val currentLocation: Location? = null,
     val allEvents: List<VolunteerEvent> = emptyList(),
-    val filteredEvents: List<VolunteerEvent> = emptyList(),
-    val radiusKm: Float = 10f,
+    override val filteredEvents: List<VolunteerEvent> = emptyList(),
+    override val radiusKm: Float = 10f,
     val isLocationPermissionGranted: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-)
+) : MapUiContract
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
