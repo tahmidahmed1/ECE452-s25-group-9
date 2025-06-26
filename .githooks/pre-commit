@@ -11,3 +11,15 @@ if [ $? -ne 0 ]; then
   echo "\n❌ Lint errors detected. Please fix them before committing."
   exit 1
 fi
+
+echo "📄 Checking for missing EOF newlines..."
+
+for file in $(git diff --cached --name-only --diff-filter=ACM); do
+  if [ -f "$file" ] && file "$file" | grep -q text; then
+    if [ -n "$(tail -c1 "$file" | tr -d '\n')" ]; then
+      echo "↪️  Appending EOF newline to $file"
+      echo >> "$file"
+      git add "$file"
+    fi
+  fi
+done

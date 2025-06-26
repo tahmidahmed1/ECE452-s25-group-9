@@ -89,4 +89,13 @@ def read_root():
 # Health check endpoint
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"} 
+    return {"status": "healthy"}
+
+# Custom HTTPException handler to standardize error schema
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    logger.error(f"HTTPException {exc.status_code} at {request.url}: {exc.detail}")
+    return JSONResponse(status_code=exc.status_code, content={
+        "success": False,
+        "message": exc.detail or "Unexpected server error"
+    }) 

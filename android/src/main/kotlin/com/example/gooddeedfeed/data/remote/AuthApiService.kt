@@ -2,6 +2,7 @@ package com.example.gooddeedfeed.data.remote
 
 import android.util.Log
 import com.example.gooddeedfeed.data.mapper.toData
+import com.example.gooddeedfeed.data.remote.dto.*
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -14,155 +15,18 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import java.io.File
 
-@Serializable
-data class SignUpRequest(val username: String, val email: String, val password: String)
-
-@Serializable
-data class SignInRequest(val username: String, val password: String)
-
-@Serializable
-data class AuthResponse(val success: Boolean, val token: String? = null, val message: String? = null)
-
-@Serializable
-data class TokenResponse(val access_token: String, val token_type: String)
-
-@Serializable
-data class ValidationError(
-    val type: String,
-    val loc: List<String>,
-    val msg: String,
-    val input: String? = null,
-)
-
-@Serializable
-data class ErrorResponse(val success: Boolean = false, val message: String, val errors: List<ValidationError>? = null)
-
-// User types
-@Serializable
-enum class UserType {
-    @SerialName("volunteer")
-    VOLUNTEER,
-
-    @SerialName("organizer")
-    ORGANIZER,
-
-    @SerialName("institution")
-    INSTITUTION,
-}
-
-@Serializable
-enum class InstitutionName {
-    @SerialName("Institution 1")
-    INSTITUTION_1,
-
-    @SerialName("Institution 2")
-    INSTITUTION_2,
-
-    @SerialName("Institution 3")
-    INSTITUTION_3,
-}
-
-@Serializable
-enum class Sex {
-    @SerialName("male")
-    MALE,
-
-    @SerialName("female")
-    FEMALE,
-
-    @SerialName("non_binary")
-    NON_BINARY,
-
-    @SerialName("prefer_not_to_say")
-    PREFER_NOT_TO_SAY,
-}
-
-@Serializable
-data class User(
-    val id: Int,
-    val username: String,
-    val email: String,
-    val is_active: Boolean,
-    val user_type: UserType? = null,
-    val onboarding_completed: Boolean = false,
-    val full_name: String? = null,
-    val phone: String? = null,
-    val profile_picture_url: String? = null,
-    val organization_name: String? = null,
-    val institution_name: InstitutionName? = null,
-    val created_at: String? = null,
-
-    // Enhanced volunteer profile fields
-    val sex: Sex? = null,
-    val description: String? = null,
-    val skills: List<String>? = null,
-    val age: Int? = null,
-    val emergency_contact_name: String? = null,
-    val emergency_contact_phone: String? = null,
-    val location_area: String? = null,
-    val has_drivers_license: Boolean? = null,
-    val disabilities: String? = null,
-)
-
-// Onboarding requests
-@Serializable
-data class OnboardingStepOneRequest(val user_type: UserType)
-
-@Serializable
-data class OnboardingCompleteRequest(
-    val user_type: UserType,
-    val full_name: String,
-    val phone: String,
-    val organization_name: String? = null,
-    val institution_name: InstitutionName? = null,
-    // Volunteer-specific fields
-    val sex: Sex? = null,
-    val description: String? = null,
-    val skills: List<String>? = null,
-    val age: Int? = null,
-    val emergency_contact_name: String? = null,
-    val emergency_contact_phone: String? = null,
-    val location_area: String? = null,
-    val has_drivers_license: Boolean? = null,
-    val disabilities: String? = null,
-)
-
-@Serializable
-data class InstitutionOption(val value: String, val label: String)
-
-@Serializable
-data class ProfilePictureUploadResponse(
-    val profile_picture_url: String,
-    val message: String,
-)
-
-@Serializable
-data class OnboardingResponse(val message: String, val user_type: UserType? = null)
-
-class AuthApiService(private val client: HttpClient) {
+class AuthApiService(client: HttpClient) : BaseApiService(client) {
     companion object {
         private const val TAG = "AuthApiService"
     }
-
-    // Try different IP addresses for various network configurations
-    // 10.0.2.2 is for emulator to host, WSL IPs for WSL environments
-    private val possibleUrls = listOf(
-        "http://10.0.2.2:9000/api", // Android emulator to Windows host
-        "http://172.28.7.154:9000/api", // Current WSL IP address
-        "http://172.28.0.1:9000/api", // Windows host from WSL perspective
-        "http://localhost:9000/api", // Local host
-        "http://127.0.0.1:9000/api", // Loopback
-    )
-    private val baseUrl = possibleUrls[0] // Use first one by default
 
     suspend fun signUp(
         username: String,
@@ -182,15 +46,33 @@ class AuthApiService(private val client: HttpClient) {
                 val requestBody = SignUpRequest(username, email, password)
                 Log.d(TAG, "Request body: $requestBody")
 
-                val response: TokenResponse = client.post("$url/register") {
+                val httpResponse = client.post("$url/register") {
                     headers {
                         append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                     }
                     setBody(requestBody)
-                }.body()
+                }
 
-                Log.d(TAG, "Registration successful with URL: $url")
-                return AuthResponse(success = true, token = response.access_token, message = "Registration successful")
+                Log.d(TAG, "Received response with status ${httpResponse.status} from $url")
+
+                // Success case (created or ok) – parse token
+                if (httpResponse.status == HttpStatusCode.Created || httpResponse.status == HttpStatusCode.OK) {
+                    val tokenResp: TokenResponse = httpResponse.body()
+                    Log.d(TAG, "Registration successful with URL: $url")
+                    return AuthResponse(success = true, token = tokenResp.access_token, message = "Registration successful")
+                }
+
+                // Failure case – try to parse structured error first
+                try {
+                    val error = httpResponse.body<ErrorResponse>()
+                    Log.e(TAG, "Server returned error: ${error.message}")
+                    return AuthResponse(false, message = error.message)
+                } catch (ex: Exception) {
+                    // Fallback to raw text
+                    val rawError = httpResponse.bodyAsText()
+                    Log.e(TAG, "Unable to parse structured error. Raw: $rawError")
+                    return AuthResponse(false, message = rawError)
+                }
             } catch (e: ClientRequestException) {
                 Log.e(TAG, "Client error with URL $url: ${e.response.status} - ${e.message}")
 
@@ -224,17 +106,8 @@ class AuthApiService(private val client: HttpClient) {
                             val rawBody = lastResponseBody ?: "Unknown validation error"
                             Log.d(TAG, "Raw error response: $rawBody")
 
-                            // Look for email validation patterns in raw response
-                            when {
-                                rawBody.contains("email") && rawBody.contains("@") ->
-                                    return AuthResponse(false, message = "Please enter a valid email address with an @ sign")
-                                rawBody.contains("password") ->
-                                    return AuthResponse(false, message = "Password is required")
-                                rawBody.contains("username") ->
-                                    return AuthResponse(false, message = "Username is required")
-                                else ->
-                                    return AuthResponse(false, message = "Please check your input and try again")
-                            }
+                            // pass raw server message to be formatted client side
+                            return AuthResponse(false, message = rawBody)
                         } catch (ex: Exception) {
                             return AuthResponse(false, message = "Please check your input and try again")
                         }

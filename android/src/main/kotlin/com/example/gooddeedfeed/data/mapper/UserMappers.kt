@@ -1,11 +1,7 @@
 package com.example.gooddeedfeed.data.mapper
 
-import com.example.gooddeedfeed.data.remote.AuthResponse
-import com.example.gooddeedfeed.data.remote.InstitutionName
-import com.example.gooddeedfeed.data.remote.ProfilePictureUploadResponse
-import com.example.gooddeedfeed.data.remote.Sex
-import com.example.gooddeedfeed.data.remote.User
-import com.example.gooddeedfeed.data.remote.UserType
+import com.example.gooddeedfeed.data.remote.dto.*
+import com.example.gooddeedfeed.data.remote.dto.AuthResponse
 import com.example.gooddeedfeed.domain.model.DomainAuthResponse
 import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse

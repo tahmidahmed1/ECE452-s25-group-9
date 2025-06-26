@@ -2,30 +2,19 @@ package com.example.gooddeedfeed.presentation.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-
-// Use system fonts for now to avoid crashes
-// TODO: Fix custom font loading issue
-val dmSansFontFamily = FontFamily.Default
-
-/*
-// Alternative: Safe custom font loading (uncomment to re-enable custom fonts)
-import androidx.compose.ui.text.font.Font
 import com.example.gooddeedfeed.R
 
-val dmSansFontFamily = try {
-    FontFamily(
-        Font(R.font.dm_sans_light, FontWeight.Light),
-        Font(R.font.dm_sans_regular, FontWeight.Normal),
-        Font(R.font.dm_sans_medium, FontWeight.Medium),
-        Font(R.font.dm_sans_bold, FontWeight.Bold)
-    )
-} catch (e: Exception) {
-    FontFamily.Default
-}
-*/
+// DM Sans FontFamily using local TTF files
+val dmSansFontFamily = FontFamily(
+    Font(R.font.dm_sans_light, FontWeight.Light),
+    Font(R.font.dm_sans_regular, FontWeight.Normal),
+    Font(R.font.dm_sans_medium, FontWeight.Medium),
+    Font(R.font.dm_sans_bold, FontWeight.Bold),
+)
 
 // Modern Typography System
 val AppTypography = Typography(
@@ -143,4 +132,34 @@ val AppTypography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
     ),
-) 
+)
+
+/*
+Usage Examples:
+
+1. Using Material Typography (recommended - automatically uses DM Sans):
+Text(
+    text = "Your text here",
+    style = MaterialTheme.typography.headlineLarge
+)
+
+2. Using DM Sans FontFamily directly:
+Text(
+    text = "Custom styled text",
+    fontFamily = dmSansFontFamily,
+    fontWeight = FontWeight.Bold,
+    fontSize = 18.sp
+)
+
+3. Available font weights:
+- FontWeight.Light (dm_sans_light.ttf)
+- FontWeight.Normal (dm_sans_regular.ttf)
+- FontWeight.Medium (dm_sans_medium.ttf)
+- FontWeight.Bold (dm_sans_bold.ttf)
+
+4. Font weights available:
+   - Light: Perfect for captions and fine print
+   - Regular: Standard body text and content
+   - Medium: Section headers and emphasized text
+   - Bold: Headlines and important UI elements
+*/ 

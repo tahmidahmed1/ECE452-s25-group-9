@@ -1,8 +1,8 @@
 package com.example.gooddeedfeed.data.repository
 
 import com.example.gooddeedfeed.data.remote.AuthApiService
-import com.example.gooddeedfeed.data.remote.AuthResponse
-import com.example.gooddeedfeed.data.remote.User
+import com.example.gooddeedfeed.data.remote.dto.AuthResponse
+import com.example.gooddeedfeed.data.remote.dto.User
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
