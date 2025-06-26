@@ -20,10 +20,6 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Restore shared debug keystore
-      run: |
-        echo "${{ secrets.SHARED_DEBUG_KEYSTORE_BASE64 }}" | base64 --decode > shared-debug.keystore
-
     - name: Ensure gradlew is executable
       run: chmod +x ./gradlew
       
@@ -31,5 +27,4 @@ jobs:
       env:
         GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
       run: |
-        chmod 600 shared-debug.keystore
         ./gradlew assembleDebug --stacktrace
