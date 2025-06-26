@@ -3,10 +3,10 @@ package com.example.gooddeedfeed.presentation.ui.components
 import android.content.Context
 import android.util.Log
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonArray
 
 object ToastUtils {
 
@@ -157,8 +157,12 @@ object ToastUtils {
                         val first = element[0]
                         if (first is JsonObject && first["message"] is JsonPrimitive) {
                             first["message"]!!.jsonPrimitive.content
-                        } else raw
-                    } else raw
+                        } else {
+                            raw
+                        }
+                    } else {
+                        raw
+                    }
                 }
                 else -> raw
             }

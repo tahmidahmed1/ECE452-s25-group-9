@@ -2,11 +2,10 @@ package com.example.gooddeedfeed.data.remote
 
 import android.util.Log
 import com.example.gooddeedfeed.data.mapper.toData
-import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.data.remote.dto.*
+import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.statement.bodyAsText
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ServerResponseException
@@ -16,12 +15,11 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import java.io.File
 

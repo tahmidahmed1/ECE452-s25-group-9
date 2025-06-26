@@ -6,7 +6,6 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-
 import com.example.gooddeedfeed.R
 
 // DM Sans FontFamily using local TTF files
@@ -16,8 +15,6 @@ val dmSansFontFamily = FontFamily(
     Font(R.font.dm_sans_medium, FontWeight.Medium),
     Font(R.font.dm_sans_bold, FontWeight.Bold),
 )
-
-
 
 // Modern Typography System
 val AppTypography = Typography(
@@ -156,13 +153,13 @@ Text(
 
 3. Available font weights:
 - FontWeight.Light (dm_sans_light.ttf)
-- FontWeight.Normal (dm_sans_regular.ttf)  
+- FontWeight.Normal (dm_sans_regular.ttf)
 - FontWeight.Medium (dm_sans_medium.ttf)
 - FontWeight.Bold (dm_sans_bold.ttf)
 
 4. Font weights available:
    - Light: Perfect for captions and fine print
    - Regular: Standard body text and content
-   - Medium: Section headers and emphasized text  
+   - Medium: Section headers and emphasized text
    - Bold: Headlines and important UI elements
 */ 

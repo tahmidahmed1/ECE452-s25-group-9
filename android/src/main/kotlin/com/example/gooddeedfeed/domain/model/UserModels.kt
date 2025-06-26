@@ -62,4 +62,4 @@ data class DomainVolunteerProfile(
 // Enumerations are defined in DomainEnums.kt to avoid leaking DTO types into the domain layer.
 
 // Duplicate enums removed; DomainUserType, DomainSex, and DomainInstitutionName
-// are now typealiases defined in DomainAliases.kt 
+// are now typealiases defined in DomainAliases.kt

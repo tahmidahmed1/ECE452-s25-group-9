@@ -10,8 +10,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.MapViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable

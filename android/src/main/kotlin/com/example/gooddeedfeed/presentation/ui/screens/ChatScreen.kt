@@ -85,7 +85,7 @@ data class ChatItem(
     val unreadCount: Int = 0,
     val isStarred: Boolean = false,
     val participantCount: Int = 0,
-    val eventType: String = "Community Event"
+    val eventType: String = "Community Event",
 )
 
 data class ChatMessage(
@@ -94,7 +94,7 @@ data class ChatMessage(
     val senderName: String,
     val senderType: String, // "volunteer", "organizer", "institution"
     val timestamp: String,
-    val isFromCurrentUser: Boolean = false
+    val isFromCurrentUser: Boolean = false,
 )
 
 // Sample chat data
@@ -122,24 +122,24 @@ private val sampleMessages = listOf(
 @Composable
 fun ChatScreen(
     user: DomainUser,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var selectedChatId by remember { mutableStateOf<String?>(null) }
-    
+
     if (selectedChatId != null) {
         val selectedChat = sampleChats.find { it.id == selectedChatId }
         if (selectedChat != null) {
             ChatMessagesScreen(
                 chat = selectedChat,
                 user = user,
-                onBackClick = { selectedChatId = null }
+                onBackClick = { selectedChatId = null },
             )
         }
     } else {
         ChatListScreen(
             user = user,
             onChatClick = { chatId -> selectedChatId = chatId },
-            modifier = modifier
+            modifier = modifier,
         )
     }
 }
@@ -149,20 +149,20 @@ fun ChatScreen(
 private fun ChatListScreen(
     user: DomainUser,
     onChatClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var chats by remember { mutableStateOf(sampleChats) }
     var chatToDelete by remember { mutableStateOf<ChatItem?>(null) }
-    
+
     val filteredChats = remember(chats, searchQuery) {
         if (searchQuery.isBlank()) {
             chats
         } else {
             chats.filter { chat ->
                 chat.title.contains(searchQuery, ignoreCase = true) ||
-                chat.lastMessage.contains(searchQuery, ignoreCase = true)
+                    chat.lastMessage.contains(searchQuery, ignoreCase = true)
             }
         }
     }
@@ -170,12 +170,12 @@ private fun ChatListScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         // Header with icon and title (similar to ListScreen)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Chat,
@@ -192,7 +192,7 @@ private fun ChatListScreen(
         // Search bar
         OutlinedTextField(
             value = searchQuery,
-            onValueChange = { 
+            onValueChange = {
                 searchQuery = it
                 isSearchActive = it.isNotBlank()
             },
@@ -200,18 +200,18 @@ private fun ChatListScreen(
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Search"
+                    contentDescription = "Search",
                 )
             },
             trailingIcon = {
                 if (searchQuery.isNotBlank()) {
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         searchQuery = ""
                         isSearchActive = false
                     }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = "Clear search"
+                            contentDescription = "Clear search",
                         )
                     }
                 }
@@ -220,17 +220,17 @@ private fun ChatListScreen(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
             shape = RoundedCornerShape(CornerRadius.large),
-            singleLine = true
+            singleLine = true,
         )
 
         // Chat list
         if (filteredChats.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Chat,
@@ -254,19 +254,22 @@ private fun ChatListScreen(
             }
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(filteredChats, key = { it.id }) { chat ->
                     SwipeableChatItem(
                         chat = chat,
                         onClick = { onChatClick(chat.id) },
                         onStar = { chatId ->
-                            chats = chats.map { 
-                                if (it.id == chatId) it.copy(isStarred = !it.isStarred)
-                                else it
+                            chats = chats.map {
+                                if (it.id == chatId) {
+                                    it.copy(isStarred = !it.isStarred)
+                                } else {
+                                    it
+                                }
                             }
                         },
-                        onDelete = { chatToDelete = it }
+                        onDelete = { chatToDelete = it },
                     )
                 }
             }
@@ -278,7 +281,7 @@ private fun ChatListScreen(
         AlertDialog(
             onDismissRequest = { chatToDelete = null },
             title = { Text("Delete Chat") },
-            text = { 
+            text = {
                 Text("Are you sure you want to delete the chat \"${chatToDelete!!.title}\"? This action cannot be undone.")
             },
             confirmButton = {
@@ -286,7 +289,7 @@ private fun ChatListScreen(
                     onClick = {
                         chats = chats.filter { it.id != chatToDelete!!.id }
                         chatToDelete = null
-                    }
+                    },
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
@@ -295,7 +298,7 @@ private fun ChatListScreen(
                 TextButton(onClick = { chatToDelete = null }) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 }
@@ -306,25 +309,25 @@ private fun SwipeableChatItem(
     onClick: () -> Unit,
     onStar: (String) -> Unit,
     onDelete: (ChatItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     var offsetX by remember { mutableFloatStateOf(0f) }
-    
+
     val swipeThreshold = with(density) { 100.dp.toPx() }
     val maxSwipe = with(density) { 200.dp.toPx() }
-    
+
     val animatedOffsetX by animateFloatAsState(
         targetValue = offsetX,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
+            stiffness = Spring.StiffnessLow,
         ),
-        label = "swipe_offset"
+        label = "swipe_offset",
     )
 
     Box(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         // Background actions
         Row(
@@ -332,54 +335,54 @@ private fun SwipeableChatItem(
                 .fillMaxWidth()
                 .height(80.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Star action (left side)
             AnimatedVisibility(
                 visible = offsetX > swipeThreshold,
                 enter = scaleIn() + fadeIn(),
-                exit = scaleOut() + fadeOut()
+                exit = scaleOut() + fadeOut(),
             ) {
                 Box(
                     modifier = Modifier
                         .size(60.dp)
                         .background(
                             MaterialTheme.colorScheme.secondary,
-                            CircleShape
+                            CircleShape,
                         ),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = if (chat.isStarred) Icons.Default.Star else Icons.Default.StarBorder,
                         contentDescription = if (chat.isStarred) "Unstar" else "Star",
                         tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             // Delete action (right side)
             AnimatedVisibility(
                 visible = offsetX < -swipeThreshold,
                 enter = scaleIn() + fadeIn(),
-                exit = scaleOut() + fadeOut()
+                exit = scaleOut() + fadeOut(),
             ) {
                 Box(
                     modifier = Modifier
                         .size(60.dp)
                         .background(
                             MaterialTheme.colorScheme.error,
-                            CircleShape
+                            CircleShape,
                         ),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
                         tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
@@ -409,25 +412,25 @@ private fun SwipeableChatItem(
                                     offsetX = 0f
                                 }
                             }
-                        }
+                        },
                     ) { _, dragAmount ->
                         val newOffset = offsetX + dragAmount.x
                         offsetX = newOffset.coerceIn(-maxSwipe, maxSwipe)
                     }
-                }
+                },
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Chat info
                 Column(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = chat.title,
@@ -435,56 +438,56 @@ private fun SwipeableChatItem(
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
-                        
+
                         if (chat.isStarred) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = "Starred",
                                 tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     Text(
                         text = chat.subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     Text(
                         text = chat.lastMessage,
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                
+
                 // Timestamp and unread count
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
                         text = chat.timestamp,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    
+
                     if (chat.unreadCount > 0) {
                         Badge(
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         ) {
                             Text(
                                 text = chat.unreadCount.toString(),
-                                fontSize = 10.sp
+                                fontSize = 10.sp,
                             )
                         }
                     }
@@ -500,15 +503,15 @@ fun ChatMessagesScreen(
     chat: ChatItem,
     user: DomainUser,
     onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
     ) {
         // Top bar
         TopAppBar(
@@ -518,12 +521,12 @@ fun ChatMessagesScreen(
                         text = chat.title,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = chat.subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
@@ -531,37 +534,37 @@ fun ChatMessagesScreen(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back"
+                        contentDescription = "Back",
                     )
                 }
-            }
+            },
         )
 
         // Messages List
         Box(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         ) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(Spacing.medium),
                 verticalArrangement = Arrangement.spacedBy(Spacing.small),
-                reverseLayout = true // Show newest messages at bottom
+                reverseLayout = true, // Show newest messages at bottom
             ) {
                 items(sampleMessages.reversed()) { message ->
                     ChatMessageItem(
                         message = message,
-                        currentUserType = user.userType?.name?.lowercase() ?: "volunteer"
+                        currentUserType = user.userType?.name?.lowercase() ?: "volunteer",
                     )
                 }
-                
+
                 // Pagination loading indicator (for future implementation)
                 item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(Spacing.medium),
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         Text(
                             text = "Load earlier messages",
@@ -570,9 +573,9 @@ fun ChatMessagesScreen(
                             modifier = Modifier
                                 .background(
                                     MaterialTheme.colorScheme.surfaceVariant,
-                                    RoundedCornerShape(CornerRadius.medium)
+                                    RoundedCornerShape(CornerRadius.medium),
                                 )
-                                .padding(horizontal = Spacing.medium, vertical = Spacing.small)
+                                .padding(horizontal = Spacing.medium, vertical = Spacing.small),
                         )
                     }
                 }
@@ -584,42 +587,42 @@ fun ChatMessagesScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(Spacing.medium),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(Spacing.medium),
                 verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.small)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.small),
             ) {
                 OutlinedTextField(
                     value = messageText,
                     onValueChange = { messageText = it },
-                    placeholder = { 
+                    placeholder = {
                         Text(
                             text = "Type your message...",
-                            style = MaterialTheme.typography.bodyMedium
-                        ) 
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(CornerRadius.large),
-                    maxLines = 4
+                    maxLines = 4,
                 )
-                
+
                 FilledIconButton(
-                    onClick = { 
+                    onClick = {
                         // TODO: Implement send message functionality
                         if (messageText.isNotBlank()) {
                             messageText = ""
                         }
                     },
                     modifier = Modifier.size(48.dp),
-                    enabled = messageText.isNotBlank()
+                    enabled = messageText.isNotBlank(),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Send,
-                        contentDescription = "Send message"
+                        contentDescription = "Send message",
                     )
                 }
             }
@@ -631,14 +634,14 @@ fun ChatMessagesScreen(
 private fun ChatMessageItem(
     message: ChatMessage,
     currentUserType: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val isFromCurrentUser = message.isFromCurrentUser
     val alignment = if (isFromCurrentUser) Alignment.CenterEnd else Alignment.CenterStart
-    
+
     Box(
         modifier = modifier.fillMaxWidth(),
-        contentAlignment = alignment
+        contentAlignment = alignment,
     ) {
         Card(
             modifier = Modifier.widthIn(max = 280.dp),
@@ -646,23 +649,23 @@ private fun ChatMessageItem(
                 topStart = CornerRadius.medium,
                 topEnd = CornerRadius.medium,
                 bottomStart = if (isFromCurrentUser) CornerRadius.medium else CornerRadius.small,
-                bottomEnd = if (isFromCurrentUser) CornerRadius.small else CornerRadius.medium
+                bottomEnd = if (isFromCurrentUser) CornerRadius.small else CornerRadius.medium,
             ),
             colors = CardDefaults.cardColors(
                 containerColor = if (isFromCurrentUser) {
                     MaterialTheme.colorScheme.primary
                 } else {
                     MaterialTheme.colorScheme.surfaceVariant
-                }
-            )
+                },
+            ),
         ) {
             Column(
-                modifier = Modifier.padding(Spacing.medium)
+                modifier = Modifier.padding(Spacing.medium),
             ) {
                 if (!isFromCurrentUser) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.small)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.small),
                     ) {
                         // User type indicator
                         Box(
@@ -674,26 +677,26 @@ private fun ChatMessageItem(
                                         "volunteer" -> MaterialTheme.colorScheme.secondary
                                         "organizer" -> MaterialTheme.colorScheme.tertiary
                                         else -> MaterialTheme.colorScheme.outline
-                                    }
-                                )
+                                    },
+                                ),
                         )
-                        
+
                         Text(
                             text = message.senderName,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        
+
                         Text(
                             text = message.senderType.replaceFirstChar { it.uppercase() },
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )
                     }
                     Spacer(modifier = Modifier.height(Spacing.extraSmall))
                 }
-                
+
                 Text(
                     text = message.content,
                     style = MaterialTheme.typography.bodyMedium,
@@ -701,11 +704,11 @@ private fun ChatMessageItem(
                         MaterialTheme.colorScheme.onPrimary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    },
                 )
-                
+
                 Spacer(modifier = Modifier.height(Spacing.extraSmall))
-                
+
                 Text(
                     text = message.timestamp,
                     style = MaterialTheme.typography.labelSmall,
@@ -714,7 +717,7 @@ private fun ChatMessageItem(
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     },
-                    modifier = Modifier.align(if (isFromCurrentUser) Alignment.End else Alignment.Start)
+                    modifier = Modifier.align(if (isFromCurrentUser) Alignment.End else Alignment.Start),
                 )
             }
         }

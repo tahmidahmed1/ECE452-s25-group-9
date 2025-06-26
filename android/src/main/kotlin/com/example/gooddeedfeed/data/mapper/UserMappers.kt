@@ -1,7 +1,7 @@
 package com.example.gooddeedfeed.data.mapper
 
-import com.example.gooddeedfeed.data.remote.dto.AuthResponse
 import com.example.gooddeedfeed.data.remote.dto.*
+import com.example.gooddeedfeed.data.remote.dto.AuthResponse
 import com.example.gooddeedfeed.domain.model.DomainAuthResponse
 import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse

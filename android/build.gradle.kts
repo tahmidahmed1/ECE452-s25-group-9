@@ -27,8 +27,9 @@ android {
             envFile.inputStream().use { envProps.load(it) }
         }
 
-        val mapsApiKey: String = envProps.getProperty("GOOGLE_MAPS_API_KEY")
-            ?: throw GradleException("Missing Maps API key. Define GOOGLE_MAPS_API_KEY in .env file.")
+        val mapsApiKey: String =
+            envProps.getProperty("GOOGLE_MAPS_API_KEY")
+                ?: throw GradleException("Missing Maps API key. Define GOOGLE_MAPS_API_KEY in .env file.")
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$mapsApiKey\"")
         manifestPlaceholders["googleMapsApiKey"] = mapsApiKey
     }

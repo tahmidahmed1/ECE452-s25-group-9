@@ -4,11 +4,11 @@ import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -29,7 +29,7 @@ private const val TAG = "AppNavHost"
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
-    
+
     object SignIn : Screen("sign_in")
 
     object SignUp : Screen("sign_up")
@@ -59,7 +59,7 @@ fun appNavHost(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         NavHost(navController, startDestination = Screen.Splash.route) {
             composable(Screen.Splash.route) {
@@ -89,10 +89,10 @@ fun appNavHost(
                                 // Still loading auth state, stay on splash
                             }
                         }
-                    }
+                    },
                 )
             }
-            
+
             composable(Screen.SignIn.route) {
                 SignInScreen(
                     uiState = currentState,
@@ -159,7 +159,7 @@ fun appNavHost(
             modifier = Modifier
                 .fillMaxSize()
                 .align(Alignment.BottomCenter),
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.BottomCenter,
         ) {
             CustomToastHost(
                 toastData = toastState,

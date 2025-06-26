@@ -105,7 +105,7 @@ fun CustomToastHost(
                     onDismiss = {
                         visible = false
                         onDismiss()
-                    }
+                    },
                 )
             }
         }
@@ -168,7 +168,7 @@ private fun CustomToast(
                             } else {
                                 offsetX = 0f
                             }
-                        }
+                        },
                     ) { _, dragAmount ->
                         offsetX += dragAmount.x
                     }

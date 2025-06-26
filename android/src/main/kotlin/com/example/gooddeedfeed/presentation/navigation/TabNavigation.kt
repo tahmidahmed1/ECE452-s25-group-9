@@ -35,7 +35,6 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.theme.BorderRadius
 import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
-
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
 
@@ -138,7 +137,6 @@ fun TabNavigationScreen(
     // Observe home navigation events to switch bottom bar tabs
     val homeViewModel: HomeViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-
 
     // Generate tabs based on user type early
     val tabs = NavigationConfig.getTabsForUserType(user.userType)

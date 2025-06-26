@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
@@ -75,7 +74,10 @@ fun MapView(
                     state = MarkerState(position = LatLng(event.latitude, event.longitude)),
                     title = event.title,
                     snippet = event.organizationName,
-                    onClick = { onEventSelected(event); true },
+                    onClick = {
+                        onEventSelected(event)
+                        true
+                    },
                     icon = BitmapDescriptorFactory.defaultMarker(event.category.hue()),
                 )
             }

@@ -13,8 +13,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.gooddeedfeed.presentation.ui.theme.Spacing
 import com.example.gooddeedfeed.presentation.ui.theme.CornerRadius
+import com.example.gooddeedfeed.presentation.ui.theme.Spacing
 import kotlinx.coroutines.delay
 
 @Composable
@@ -29,9 +29,9 @@ fun SplashScreen(
         targetValue = progress,
         animationSpec = tween(
             durationMillis = 2000,
-            easing = FastOutSlowInEasing
+            easing = FastOutSlowInEasing,
         ),
-        label = "progress"
+        label = "progress",
     )
 
     // Animated gradient background
@@ -41,16 +41,16 @@ fun SplashScreen(
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "gradient"
+        label = "gradient",
     )
 
     // Text fade in animation
     val textAlpha by animateFloatAsState(
         targetValue = if (progress > 0.1f) 1f else 0f,
         animationSpec = tween(800),
-        label = "textAlpha"
+        label = "textAlpha",
     )
 
     LaunchedEffect(Unit) {
@@ -65,7 +65,8 @@ fun SplashScreen(
         if (progress >= 1f) { // Only proceed if animation has started
             when (authState) {
                 is com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState.Success,
-                is com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState.SignedOut -> {
+                is com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState.SignedOut,
+                -> {
                     // Auth state is determined, finish splash
                     delay(300) // Small delay to let user see completed animation
                     onSplashFinished()
@@ -85,29 +86,29 @@ fun SplashScreen(
                     colors = listOf(
                         MaterialTheme.colorScheme.background,
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        MaterialTheme.colorScheme.background
+                        MaterialTheme.colorScheme.background,
                     ),
                     startY = gradientOffset * 1000f,
-                    endY = (gradientOffset + 0.5f) * 1000f
-                )
+                    endY = (gradientOffset + 0.5f) * 1000f,
+                ),
             ),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(Spacing.extraLarge)
+            modifier = Modifier.padding(Spacing.extraLarge),
         ) {
             // App Title
             Text(
                 text = "GoodDeedFeed",
                 style = MaterialTheme.typography.displayMedium.copy(
                     fontSize = 42.sp,
-                    letterSpacing = (-0.5).sp
+                    letterSpacing = (-0.5).sp,
                 ),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = textAlpha),
-                modifier = Modifier.padding(bottom = Spacing.small)
+                modifier = Modifier.padding(bottom = Spacing.small),
             )
 
             // Subtitle
@@ -115,7 +116,7 @@ fun SplashScreen(
                 text = "Making the world better, one deed at a time",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = textAlpha * 0.8f),
-                modifier = Modifier.padding(bottom = Spacing.xxLarge)
+                modifier = Modifier.padding(bottom = Spacing.xxLarge),
             )
 
             Spacer(modifier = Modifier.height(Spacing.xxLarge))
@@ -123,7 +124,7 @@ fun SplashScreen(
             // Loading Section
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.width(240.dp)
+                modifier = Modifier.width(240.dp),
             ) {
                 // Loading Bar
                 Box(
@@ -131,7 +132,7 @@ fun SplashScreen(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(CornerRadius.small))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     Box(
                         modifier = Modifier
@@ -143,10 +144,10 @@ fun SplashScreen(
                                     colors = listOf(
                                         MaterialTheme.colorScheme.primary,
                                         MaterialTheme.colorScheme.secondary,
-                                        MaterialTheme.colorScheme.tertiary
-                                    )
-                                )
-                            )
+                                        MaterialTheme.colorScheme.tertiary,
+                                    ),
+                                ),
+                            ),
                     )
                 }
 
@@ -157,7 +158,7 @@ fun SplashScreen(
                     text = "Loading...",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = textAlpha),
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
