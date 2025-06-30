@@ -194,7 +194,6 @@ class AuthRepositoryImpl(
         }
     }
 
-
     override suspend fun updateUserProfile(update: DomainUserUpdate): Result<Unit> {
         return try {
             val token = getTokenString()

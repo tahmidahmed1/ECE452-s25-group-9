@@ -49,14 +49,12 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         email: String,
         password: String,
     ): AuthResponse {
-
         val allErrors = mutableListOf<String>()
         var lastResponseBody: String? = null
 
         // Try each URL until one works
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 val requestBody = SignUpRequest(username, email, password)
 
                 val httpResponse = client.post("$url/register") {
@@ -65,7 +63,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     }
                     setBody(requestBody)
                 }
-
 
                 // Success case (created or ok) – parse token
                 if (httpResponse.status == HttpStatusCode.Created || httpResponse.status == HttpStatusCode.OK) {
@@ -83,7 +80,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     return AuthResponse(false, message = rawError)
                 }
             } catch (e: ClientRequestException) {
-
                 // Try to get detailed error response
                 try {
                     lastResponseBody = e.response.body<String>()
@@ -150,7 +146,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                 allErrors.add("URL $index: Connection failed - ${e.message}")
                 continue
             } catch (e: ServerResponseException) {
-
                 try {
                     lastResponseBody = e.response.body<String>()
                 } catch (bodyException: Exception) {
@@ -192,14 +187,12 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         username: String,
         password: String,
     ): AuthResponse {
-
         val allErrors = mutableListOf<String>()
         var lastResponseBody: String? = null
 
         // Try each URL until one works
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 val response: TokenResponse = client.post("$url/token") {
                     headers {
                         append(HttpHeaders.ContentType, ContentType.Application.FormUrlEncoded.toString())
@@ -209,7 +202,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
 
                 return AuthResponse(success = true, token = response.access_token, message = "Login successful")
             } catch (e: ClientRequestException) {
-
                 // Try to get detailed error response
                 try {
                     lastResponseBody = e.response.body<String>()
@@ -272,7 +264,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                 allErrors.add("URL $index: Connection failed - ${e.message}")
                 continue
             } catch (e: ServerResponseException) {
-
                 try {
                     lastResponseBody = e.response.body<String>()
                 } catch (bodyException: Exception) {
@@ -311,18 +302,15 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
     }
 
     suspend fun getCurrentUser(token: String): User {
-
         // Try each URL until one works
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 return client.get("$url/users/me") {
                     headers {
                         append(HttpHeaders.Authorization, "Bearer $token")
                     }
                 }.body()
             } catch (e: ClientRequestException) {
-
                 // Handle 401 unauthorized specifically
                 if (e.response.status == HttpStatusCode.Unauthorized) {
                     throw Exception("Invalid or expired token")
@@ -345,10 +333,8 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
 
     // Onboarding API calls
     suspend fun completeOnboardingStepOne(token: String, userType: UserType): Boolean {
-
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 val response: OnboardingResponse = client.post("$url/onboarding/step-one") {
                     headers {
                         append(HttpHeaders.Authorization, "Bearer $token")
@@ -374,10 +360,8 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         organizationName: String? = null,
         institutionName: InstitutionName? = null,
     ): Boolean {
-
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 val requestBody = OnboardingCompleteRequest(
                     user_type = userType,
                     full_name = fullName,
@@ -404,10 +388,8 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
     }
 
     suspend fun getInstitutions(): List<InstitutionOption> {
-
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 return client.get("$url/institutions").body()
             } catch (e: Exception) {
                 continue
@@ -418,10 +400,8 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
     }
 
     suspend fun uploadProfilePicture(token: String, imageFile: File): ProfilePictureUploadResponse? {
-
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 val response: ProfilePictureUploadResponse = client.post("$url/upload-profile-picture") {
                     headers {
                         append(HttpHeaders.Authorization, "Bearer $token")
@@ -456,10 +436,8 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         volunteerProfile: DomainVolunteerProfile,
         profilePictureUrl: String? = null,
     ): Boolean {
-
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 val requestBody = OnboardingCompleteRequest(
                     user_type = UserType.VOLUNTEER,
                     full_name = volunteerProfile.fullName,
@@ -495,10 +473,8 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
     // ------------------ Profile Update ------------------
 
     suspend fun updateUserProfile(token: String, update: DomainUserUpdate): Boolean {
-
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-
                 // Prepare payload with snake_case keys expected by backend
                 val payload = buildJsonObject {
                     update.fullName?.let { put("full_name", it) }

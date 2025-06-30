@@ -1,7 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.components
 
 import android.content.Context
-import android.util.Log
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -32,7 +31,6 @@ object ToastUtils {
     }
 
     private fun extractActualMessage(message: String): String {
-
         val jsonExtracted = extractFromJson(message)
         val cleanMessage = cleanUpMessage(jsonExtracted)
         val finalMessage = categorizeAndFormatMessage(cleanMessage)

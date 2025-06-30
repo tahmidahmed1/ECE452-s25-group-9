@@ -2,10 +2,10 @@ package com.example.gooddeedfeed.presentation.ui.components
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.net.Uri
-import android.provider.MediaStore
 import android.graphics.ImageDecoder
+import android.net.Uri
 import android.os.Build
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -38,17 +38,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import java.io.File
-import java.io.FileOutputStream
-import androidx.compose.ui.text.input.TextFieldValue
-import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.domain.model.DomainInstitutionName
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import java.io.File
+import java.io.FileOutputStream
 
 object ImageUtils {
     fun saveBitmapToFile(context: Context, bitmap: Bitmap): File? {
@@ -142,13 +142,17 @@ object ImageUtils {
         fun validateOrganization(organizationName: String, userType: DomainUserType?): String? {
             return if (userType == DomainUserType.ORGANIZER && organizationName.isBlank()) {
                 "Organization name is required"
-            } else null
+            } else {
+                null
+            }
         }
 
         fun validateInstitution(selectedInstitution: DomainInstitutionName?, userType: DomainUserType?): String? {
             return if (userType == DomainUserType.INSTITUTION && selectedInstitution == null) {
                 "Institution is required"
-            } else null
+            } else {
+                null
+            }
         }
 
         fun validateAge(age: String): String? {
@@ -158,7 +162,9 @@ object ImageUtils {
                 val ageInt = age.toIntOrNull()
                 if (ageInt == null || ageInt < 13 || ageInt > 120) {
                     "Please enter a valid age (13-120)"
-                } else null
+                } else {
+                    null
+                }
             }
         }
 
@@ -169,7 +175,7 @@ object ImageUtils {
         fun validateEmergencyContact(name: String, phone: String): Map<String, String?> {
             return mapOf(
                 "emergencyName" to if (name.isBlank()) "Emergency contact name is required" else null,
-                "emergencyPhone" to if (phone.isBlank()) "Emergency contact phone is required" else null
+                "emergencyPhone" to if (phone.isBlank()) "Emergency contact phone is required" else null,
             )
         }
 

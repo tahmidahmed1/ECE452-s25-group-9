@@ -83,9 +83,9 @@ fun SignInScreen(
                     colors = listOf(
                         MaterialTheme.colorScheme.surface,
                         MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                )
-            )
+                    ),
+                ),
+            ),
     ) {
         Column(
             modifier = Modifier
@@ -145,98 +145,98 @@ fun SignInScreen(
                         .padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-        FormTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = "Username",
-            enabled = !isLoading,
-        )
+                    FormTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        label = "Username",
+                        enabled = !isLoading,
+                    )
 
-        FormTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = "Password",
-            enabled = !isLoading,
-            isPassword = true,
-        )
+                    FormTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Password",
+                        enabled = !isLoading,
+                        isPassword = true,
+                    )
 
-        PrimaryButton(
-            text = "Sign In",
-            onClick = { onSignIn(username, password) },
-            enabled = username.isNotBlank() && password.isNotBlank(),
-            isLoading = isLoading,
+                    PrimaryButton(
+                        text = "Sign In",
+                        onClick = { onSignIn(username, password) },
+                        enabled = username.isNotBlank() && password.isNotBlank(),
+                        isLoading = isLoading,
                         modifier = Modifier.fillMaxWidth(),
-        )
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-        SecondaryButton(
-            text = "Don't have an account? Sign Up",
-            onClick = onNavigateToSignUp,
-            enabled = !isLoading,
-        )
+            SecondaryButton(
+                text = "Don't have an account? Sign Up",
+                onClick = onNavigateToSignUp,
+                enabled = !isLoading,
+            )
 
-        // Development Mode Section
-        if (BuildConfig.DEV_MODE) {
+            // Development Mode Section
+            if (BuildConfig.DEV_MODE) {
                 Spacer(modifier = Modifier.height(32.dp))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                ),
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
                     shape = RoundedCornerShape(16.dp),
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        text = "🚀 Development Mode",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-
-                    Text(
-                        text = "Quick sign-in with auto-generated accounts",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp),
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        DevModeButton(
-                            icon = "👤",
-                            text = "Volunteer",
-                            userType = DomainUserType.VOLUNTEER,
-                            onDevModeSignIn = onDevModeSignIn,
-                            enabled = !isLoading,
-                            modifier = Modifier.weight(1f),
+                        Text(
+                            text = "🚀 Development Mode",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
                         )
 
-                        DevModeButton(
-                            icon = "⭐",
-                            text = "Organizer",
-                            userType = DomainUserType.ORGANIZER,
-                            onDevModeSignIn = onDevModeSignIn,
-                            enabled = !isLoading,
-                            modifier = Modifier.weight(1f),
+                        Text(
+                            text = "Quick sign-in with auto-generated accounts",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp),
                         )
 
-                        DevModeButton(
-                            icon = "🏛️",
-                            text = "Institution",
-                            userType = DomainUserType.INSTITUTION,
-                            onDevModeSignIn = onDevModeSignIn,
-                            enabled = !isLoading,
-                            modifier = Modifier.weight(1f),
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            DevModeButton(
+                                icon = "👤",
+                                text = "Volunteer",
+                                userType = DomainUserType.VOLUNTEER,
+                                onDevModeSignIn = onDevModeSignIn,
+                                enabled = !isLoading,
+                                modifier = Modifier.weight(1f),
+                            )
+
+                            DevModeButton(
+                                icon = "⭐",
+                                text = "Organizer",
+                                userType = DomainUserType.ORGANIZER,
+                                onDevModeSignIn = onDevModeSignIn,
+                                enabled = !isLoading,
+                                modifier = Modifier.weight(1f),
+                            )
+
+                            DevModeButton(
+                                icon = "🏛️",
+                                text = "Institution",
+                                userType = DomainUserType.INSTITUTION,
+                                onDevModeSignIn = onDevModeSignIn,
+                                enabled = !isLoading,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                 }

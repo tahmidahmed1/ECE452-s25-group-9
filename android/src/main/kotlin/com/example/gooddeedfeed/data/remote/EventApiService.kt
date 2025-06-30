@@ -13,7 +13,7 @@ import io.ktor.http.contentType
 class EventApiService(private val client: HttpClient) {
     companion object {
         private val possibleUrls = listOf(
-            "http://10.0.2.2:8000",  // Android emulator
+            "http://10.0.2.2:8000", // Android emulator
             "http://127.0.0.1:8000", // local
         )
     }

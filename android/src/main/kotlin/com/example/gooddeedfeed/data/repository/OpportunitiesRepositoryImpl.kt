@@ -10,8 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class OpportunitiesRepositoryImpl @Inject constructor(
-) : OpportunitiesRepository {
+class OpportunitiesRepositoryImpl @Inject constructor() : OpportunitiesRepository {
 
     override suspend fun getOpportunities(): Flow<List<VolunteerOpportunity>> = flow {
         emit(getMockOpportunities())

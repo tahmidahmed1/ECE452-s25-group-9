@@ -78,9 +78,9 @@ fun SignUpScreen(
                     colors = listOf(
                         MaterialTheme.colorScheme.surface,
                         MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                )
-            )
+                    ),
+                ),
+            ),
     ) {
         Column(
             modifier = Modifier
@@ -140,45 +140,45 @@ fun SignUpScreen(
                         .padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-        FormTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = "Username",
-            enabled = !isLoading,
-        )
+                    FormTextField(
+                        value = username,
+                        onValueChange = { username = it },
+                        label = "Username",
+                        enabled = !isLoading,
+                    )
 
-        FormTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = "Email",
-            enabled = !isLoading,
-        )
+                    FormTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = "Email",
+                        enabled = !isLoading,
+                    )
 
-        FormTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = "Password",
-            enabled = !isLoading,
-            isPassword = true,
-        )
+                    FormTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = "Password",
+                        enabled = !isLoading,
+                        isPassword = true,
+                    )
 
-        PrimaryButton(
-            text = "Sign Up",
-            onClick = { onSignUp(username, email, password) },
-            enabled = username.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
-            isLoading = isLoading,
+                    PrimaryButton(
+                        text = "Sign Up",
+                        onClick = { onSignUp(username, email, password) },
+                        enabled = username.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
+                        isLoading = isLoading,
                         modifier = Modifier.fillMaxWidth(),
-        )
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-        SecondaryButton(
-            text = "Already have an account? Sign In",
-            onClick = onNavigateToSignIn,
-            enabled = !isLoading,
-        )
+            SecondaryButton(
+                text = "Already have an account? Sign In",
+                onClick = onNavigateToSignIn,
+                enabled = !isLoading,
+            )
         }
     }
 }

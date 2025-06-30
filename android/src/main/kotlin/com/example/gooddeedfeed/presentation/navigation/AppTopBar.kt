@@ -61,7 +61,7 @@ fun AppTopBar(
     var showProfileMenu by remember { mutableStateOf(false) }
 
     val onEditPrivacy: () -> Unit = {}
-    
+
     val density = LocalDensity.current
     val statusBarHeight = with(density) {
         WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -75,12 +75,12 @@ fun AppTopBar(
         shadowElevation = 4.dp,
         shape = RoundedCornerShape(
             bottomStart = 16.dp,
-            bottomEnd = 16.dp
+            bottomEnd = 16.dp,
         ),
     ) {
         Column {
             Spacer(modifier = Modifier.height(statusBarHeight))
-            
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,7 +142,7 @@ fun AppTopBar(
                                 )
                             }
                         }
-                        
+
                         Surface(
                             modifier = Modifier
                                 .size(8.dp)
@@ -215,25 +215,25 @@ fun AppTopBar(
                             ModernDropdownMenuItem(
                                 text = "Preview Profile",
                                 icon = Icons.Default.Person,
-                                onClick = { 
+                                onClick = {
                                     onPreviewProfile()
-                                    showProfileMenu = false 
+                                    showProfileMenu = false
                                 },
                             )
                             ModernDropdownMenuItem(
                                 text = "Edit Profile",
                                 icon = Icons.Default.Edit,
-                                onClick = { 
+                                onClick = {
                                     onEditProfile()
-                                    showProfileMenu = false 
+                                    showProfileMenu = false
                                 },
                             )
                             ModernDropdownMenuItem(
                                 text = "Privacy & Notifications",
                                 icon = Icons.Default.Notifications,
-                                onClick = { 
+                                onClick = {
                                     onEditPrivacy()
-                                    showProfileMenu = false 
+                                    showProfileMenu = false
                                 },
                             )
                             HorizontalDivider(
@@ -243,9 +243,9 @@ fun AppTopBar(
                             ModernDropdownMenuItem(
                                 text = "Log Out",
                                 icon = null,
-                                onClick = { 
+                                onClick = {
                                     onLogout()
-                                    showProfileMenu = false 
+                                    showProfileMenu = false
                                 },
                                 isDestructive = true,
                             )

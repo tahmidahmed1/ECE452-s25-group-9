@@ -6,14 +6,13 @@ import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.repository.EventRepository
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
-class EventRepositoryImpl @Inject constructor(
-) : EventRepository {
+class EventRepositoryImpl @Inject constructor() : EventRepository {
 
     override suspend fun getMyEvents(): Flow<List<VolunteerEvent>> = flow {
         emit(getMockEvents())

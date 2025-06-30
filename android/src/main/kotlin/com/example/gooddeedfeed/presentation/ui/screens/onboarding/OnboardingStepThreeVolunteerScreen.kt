@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -43,19 +43,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
+import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.ProfileSectionHeader
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.SkillChip
-import java.io.File
-import androidx.compose.foundation.layout.statusBarsPadding
-import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +96,7 @@ fun OnboardingStepThreeVolunteerScreen(
                 "age" to ImageUtils.FormValidation.validateAge(age),
                 "emergencyName" to emergencyValidation["emergencyName"],
                 "emergencyPhone" to emergencyValidation["emergencyPhone"],
-                "location" to ImageUtils.FormValidation.validateLocation(locationArea)
+                "location" to ImageUtils.FormValidation.validateLocation(locationArea),
             )
         }
     }
@@ -195,7 +193,7 @@ fun OnboardingStepThreeVolunteerScreen(
                                             DomainSex.FEMALE -> "Female"
                                             DomainSex.NON_BINARY -> "Non-binary"
                                             DomainSex.PREFER_NOT_TO_SAY -> "Prefer not to say"
-                                        }
+                                        },
                                     )
                                 },
                                 onClick = {
@@ -264,28 +262,28 @@ fun OnboardingStepThreeVolunteerScreen(
 
                 VerticalSpacer(SpacingSize.Medium)
 
-                    OutlinedTextField(
-                        value = customSkill,
-                        onValueChange = { customSkill = it },
-                        label = { Text("Add custom skill") },
+                OutlinedTextField(
+                    value = customSkill,
+                    onValueChange = { customSkill = it },
+                    label = { Text("Add custom skill") },
                     placeholder = { Text("Enter a skill not listed above") },
                     modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(12.dp),
                     trailingIcon = {
                         if (customSkill.isNotBlank()) {
                             IconButton(
-                        onClick = {
+                                onClick = {
                                     selectedSkills = selectedSkills + customSkill.trim()
-                                customSkill = ""
-                                }
+                                    customSkill = ""
+                                },
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
-                                    contentDescription = "Add skill"
+                                    contentDescription = "Add skill",
                                 )
                             }
                         }
-                    }
+                    },
                 )
 
                 VerticalSpacer(SpacingSize.Large)
@@ -345,10 +343,10 @@ fun OnboardingStepThreeVolunteerScreen(
                             .fillMaxWidth()
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = hasDriversLicense,
-                        onCheckedChange = { hasDriversLicense = it },
+                    ) {
+                        Checkbox(
+                            checked = hasDriversLicense,
+                            onCheckedChange = { hasDriversLicense = it },
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
@@ -356,8 +354,8 @@ fun OnboardingStepThreeVolunteerScreen(
                                 text = "I have a valid driver's license",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
-                    )
-                    Text(
+                            )
+                            Text(
                                 text = "This helps us match you with opportunities that may require transportation",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

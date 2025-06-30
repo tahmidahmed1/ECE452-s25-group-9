@@ -5,20 +5,20 @@ import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.BuildConfig
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase
 import com.example.gooddeedfeed.domain.usecase.SignOutUseCase
 import com.example.gooddeedfeed.domain.usecase.SignUpUseCase
-import com.example.gooddeedfeed.domain.model.DomainUserUpdate
-import com.example.gooddeedfeed.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 import java.io.File
+import javax.inject.Inject
 
 sealed class AuthUiState {
     object Idle : AuthUiState()

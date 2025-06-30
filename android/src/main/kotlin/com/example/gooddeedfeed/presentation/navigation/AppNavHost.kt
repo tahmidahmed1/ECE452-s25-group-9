@@ -1,6 +1,5 @@
 package com.example.gooddeedfeed.presentation.navigation
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -58,7 +57,7 @@ fun appNavHost(
         if (currentState is AuthUiState.SignedOut) {
             if (hasProcessedInitialSignedOut.value) {
                 // Real sign-out triggered in-app – show confirmation
-            ToastManager.showSuccess("Signed out successfully")
+                ToastManager.showSuccess("Signed out successfully")
             } else {
                 // Initial SignedOut (no prior user session)
                 hasProcessedInitialSignedOut.value = true

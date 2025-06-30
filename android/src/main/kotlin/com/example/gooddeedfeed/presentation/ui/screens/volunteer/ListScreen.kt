@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,50 +16,46 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
-import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.presentation.common.UiState
-import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesData
-import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
-import androidx.compose.foundation.clickable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.IconButton
 import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
+import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesData
+import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -341,11 +338,13 @@ private fun OrganizerProfileScreen(profile: AppConstants.OrganizerProfile, onBac
         VerticalSpacer()
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(profile.events) { event ->
-                Card(modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        // TODO: navigate to event detail
-                    }) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            // TODO: navigate to event detail
+                        },
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(event.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                         Text(event.date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

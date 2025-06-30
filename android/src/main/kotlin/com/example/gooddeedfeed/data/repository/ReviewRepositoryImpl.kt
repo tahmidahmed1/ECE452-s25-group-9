@@ -10,8 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ReviewRepositoryImpl @Inject constructor(
-) : ReviewRepository {
+class ReviewRepositoryImpl @Inject constructor() : ReviewRepository {
 
     override suspend fun getPendingReviews(): Flow<List<ActivityReview>> = flow {
         emit(getMockReviews().filter { it.status == ReviewStatus.PENDING })

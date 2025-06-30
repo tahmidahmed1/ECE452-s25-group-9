@@ -13,7 +13,6 @@ import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 
-
 // User mappers
 fun User.toDomain(): DomainUser = DomainUser(
     id = id,
