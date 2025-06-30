@@ -1,6 +1,5 @@
 package com.example.gooddeedfeed.presentation.viewmodel.auth
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.BuildConfig
@@ -10,14 +9,16 @@ import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase
 import com.example.gooddeedfeed.domain.usecase.SignOutUseCase
 import com.example.gooddeedfeed.domain.usecase.SignUpUseCase
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.io.File
 
 sealed class AuthUiState {
     object Idle : AuthUiState()
@@ -35,6 +36,7 @@ constructor(
     private val signIn: SignInUseCase,
     private val signOut: SignOutUseCase,
     private val getCurrentUser: GetCurrentUserUseCase,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -55,28 +57,17 @@ constructor(
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             try {
-                // Create a unique dev username for each user type
                 val timestamp = System.currentTimeMillis().toString().takeLast(6)
                 val devUsername = "dev_${userType.name.lowercase()}_$timestamp"
                 val responseFlow = this@AuthViewModel.signUp.invoke(devUsername, "$devUsername@example.com", "dev_password_123")
                 val result = responseFlow.first()
                 result.onSuccess { response ->
-                    Log.d("AuthViewModel", "Dev sign up successful, token received: ${response.token != null}")
-                    Log.d("AuthViewModel", "Response: success=${response.success}, message=${response.message}")
-                    // For dev users, onboarding is completed automatically on the server
-                    // Add a small delay to ensure token is saved before fetching user
-                    delay(100)
                     fetchUser()
                 }.onFailure { error ->
-                    Log.e("AuthViewModel", "Dev sign up failed: ${error.message}")
-                    Log.e("AuthViewModel", "Error type: ${error.javaClass.simpleName}")
                     val detailedMessage = "Dev mode sign-in failed: ${error.message ?: "Unknown error"}"
                     _uiState.value = AuthUiState.Error(detailedMessage)
                 }
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Dev mode exception: ${e.message}")
-                Log.e("AuthViewModel", "Exception type: ${e.javaClass.simpleName}")
-                e.printStackTrace()
                 _uiState.value = AuthUiState.Error("Dev mode error: ${e.message ?: "Unknown exception"}")
             }
         }
@@ -132,28 +123,57 @@ constructor(
         }
     }
 
-    fun fetchUser() {
-        _uiState.value = AuthUiState.Loading
+    private fun fetchUser() {
         viewModelScope.launch {
             try {
-                Log.d("AuthViewModel", "Fetching user...")
                 val userFlow = this@AuthViewModel.getCurrentUser.invoke()
                 val result = userFlow.first()
                 result.onSuccess { user ->
-                    Log.d("AuthViewModel", "User fetched successfully: ${user.username}, onboarding: ${user.onboardingCompleted}")
                     _uiState.value = AuthUiState.Success(user)
                 }.onFailure { error ->
-                    Log.e("AuthViewModel", "Failed to fetch user: ${error.message}")
-                    _uiState.value = AuthUiState.SignedOut
+                    _uiState.value = AuthUiState.Error(error.message ?: "Failed to fetch user")
                 }
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Exception fetching user: ${e.message}")
-                _uiState.value = AuthUiState.Error("Failed to fetch user: ${e.message}")
+                _uiState.value = AuthUiState.Error(e.message ?: "Failed to fetch user")
             }
         }
     }
 
     fun refreshUser() = fetchUser()
+
+    // ------------------ Profile Update ------------------
+
+    fun updateUserProfile(update: DomainUserUpdate) {
+        // keep current UI state but show loading maybe
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            val result = authRepository.updateUserProfile(update)
+            result.onSuccess {
+                // Fetch updated user
+                fetchUser()
+            }.onFailure { error ->
+                _uiState.value = AuthUiState.Error(error.message ?: "Failed to update profile")
+            }
+        }
+    }
+
+    // ------------------ Profile Picture ------------------
+
+    fun uploadProfilePicture(file: File) {
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                authRepository.uploadProfilePicture(file).first().onSuccess {
+                    // Refresh user after successful upload
+                    fetchUser()
+                }.onFailure { err ->
+                    _uiState.value = AuthUiState.Error(err.message ?: "Failed to upload picture")
+                }
+            } catch (e: Exception) {
+                _uiState.value = AuthUiState.Error(e.message ?: "Failed to upload picture")
+            }
+        }
+    }
 
     private fun checkCurrentUser() {
         viewModelScope.launch {

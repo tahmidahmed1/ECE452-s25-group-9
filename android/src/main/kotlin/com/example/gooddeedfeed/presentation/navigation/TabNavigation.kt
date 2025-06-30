@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -13,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +37,7 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.theme.BorderRadius
 import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
+import com.example.gooddeedfeed.presentation.navigation.AppTopBar
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
 
@@ -75,10 +78,7 @@ fun FloatingNavBarItem(
                     MaterialTheme.colorScheme.surface
                 },
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { onClick() },
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -137,6 +137,8 @@ fun TabNavigationScreen(
     // Observe home navigation events to switch bottom bar tabs
     val homeViewModel: HomeViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var showEditProfile by remember { mutableStateOf(false) }
+    var showPreviewProfile by remember { mutableStateOf(false) }
 
     // Generate tabs based on user type early
     val tabs = NavigationConfig.getTabsForUserType(user.userType)
@@ -153,21 +155,59 @@ fun TabNavigationScreen(
         }
     }
 
-    Scaffold(
-        bottomBar = {
-            FloatingNavigationBar(
-                tabs = tabs,
-                selectedTabIndex = selectedTabIndex,
-                onTabSelected = { selectedTabIndex = it },
-                modifier = Modifier.padding(bottom = Spacing.md),
-            )
-        },
-        modifier = Modifier.fillMaxSize(),
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            tabs[selectedTabIndex].screen(user, onLogout)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                AppTopBar(
+                    user = user,
+                    onEditProfile = { showEditProfile = true },
+                    onPreviewProfile = { showPreviewProfile = true },
+                    onLogout = onLogout,
+                )
+            },
+            bottomBar = {
+                FloatingNavigationBar(
+                    tabs = tabs,
+                    selectedTabIndex = selectedTabIndex,
+                    onTabSelected = { selectedTabIndex = it },
+                    modifier = Modifier.padding(bottom = Spacing.md),
+                )
+            },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            modifier = Modifier.fillMaxSize(),
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                tabs[selectedTabIndex].screen(user, onLogout)
+            }
+        }
 
-            // Toast overlay is handled at the app level in AppNavHost
+        // Toast overlay is handled at the app level in AppNavHost
+
+        // Edit Profile Overlay - appears over everything including bottom bar
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showEditProfile,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+        ) {
+            com.example.gooddeedfeed.presentation.ui.screens.EditProfileScreen(
+                user = user,
+                onCancel = { showEditProfile = false },
+                onSave = { showEditProfile = false },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // Preview Profile Overlay - appears over everything including bottom bar
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showPreviewProfile,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+        ) {
+            com.example.gooddeedfeed.presentation.ui.screens.PreviewProfileScreen(
+                user = user,
+                onBack = { showPreviewProfile = false },
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }

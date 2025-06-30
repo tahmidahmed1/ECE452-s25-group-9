@@ -4,10 +4,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.example.gooddeedfeed.domain.model.DomainUser
-import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
-import com.example.gooddeedfeed.presentation.ui.components.ScreenContainer
-import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 
 @Composable
 fun ProfileScreen(

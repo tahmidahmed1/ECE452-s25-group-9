@@ -612,7 +612,6 @@ fun ChatMessagesScreen(
 
                 FilledIconButton(
                     onClick = {
-                        // TODO: Implement send message functionality
                         if (messageText.isNotBlank()) {
                             messageText = ""
                         }

@@ -37,6 +37,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,13 +49,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
-import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import java.io.File
 import java.io.FileOutputStream
 
@@ -81,7 +84,7 @@ fun OnboardingStepTwoScreen(
         contract = ActivityResultContracts.TakePicturePreview(),
     ) { bitmap: Bitmap? ->
         bitmap?.let {
-            val file = saveBitmapToFile(context, it)
+            val file = ImageUtils.saveBitmapToFile(context, it)
             if (file != null) {
                 profilePictureFile = file
                 selectedImageUri = Uri.fromFile(file)
@@ -95,18 +98,30 @@ fun OnboardingStepTwoScreen(
     ) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
-            val file = saveUriToFile(context, it)
+            val file = ImageUtils.saveUriToFile(context, it)
             if (file != null) {
                 profilePictureFile = file
             }
         }
     }
 
-    val isFormValid = fullName.isNotBlank() && phone.isNotBlank() && when (userType) {
-        DomainUserType.VOLUNTEER -> true
-        DomainUserType.ORGANIZER -> organizationName.isNotBlank()
-        DomainUserType.INSTITUTION -> selectedInstitution != null
+    val fullNameError: String? by remember(fullName) {
+        derivedStateOf { ImageUtils.FormValidation.validateFullName(fullName) }
     }
+
+    val phoneError: String? by remember(phone) {
+        derivedStateOf { ImageUtils.FormValidation.validatePhone(phone) }
+    }
+
+    val organizationError: String? by remember(organizationName, userType) {
+        derivedStateOf { ImageUtils.FormValidation.validateOrganization(organizationName, userType) }
+    }
+
+    val institutionError: String? by remember(selectedInstitution, userType) {
+        derivedStateOf { ImageUtils.FormValidation.validateInstitution(selectedInstitution, userType) }
+    }
+
+    val isFormValid = fullNameError == null && phoneError == null && organizationError == null && institutionError == null
 
     Column(
         modifier = modifier
@@ -209,22 +224,53 @@ fun OnboardingStepTwoScreen(
             value = fullName,
             onValueChange = { fullName = it },
             label = { Text("Full Name") },
+            isError = fullNameError != null,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
         )
 
+        if (fullNameError != null) {
+            Text(
+                text = fullNameError!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.Start),
+            )
+        }
+
         VerticalSpacer(SpacingSize.Medium)
 
-        // Phone Field
+        // Phone Field (+1 numbers, auto-formatted as XXX-XXX-XXXX)
         OutlinedTextField(
             value = phone,
-            onValueChange = { phone = it },
+            onValueChange = { input ->
+                val digits = input.filter { it.isDigit() }
+                phone = ImageUtils.formatPhoneNumber(digits)
+            },
             label = { Text("Phone Number") },
+            isError = phoneError != null,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+        )
+
+        if (phoneError != null) {
+            Text(
+                text = phoneError!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.Start),
+            )
+        }
+
+        Text(
+            text = "Only +1 North American phone numbers are supported",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Start,
         )
 
         VerticalSpacer(SpacingSize.Medium)
@@ -236,10 +282,20 @@ fun OnboardingStepTwoScreen(
                     value = organizationName,
                     onValueChange = { organizationName = it },
                     label = { Text("Organization Name") },
+                    isError = organizationError != null,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                 )
+
+                if (organizationError != null) {
+                    Text(
+                        text = organizationError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.align(Alignment.Start),
+                    )
+                }
             }
             DomainUserType.INSTITUTION -> {
                 ExposedDropdownMenuBox(
@@ -274,6 +330,15 @@ fun OnboardingStepTwoScreen(
                             )
                         }
                     }
+                }
+
+                if (institutionError != null) {
+                    Text(
+                        text = institutionError!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.align(Alignment.Start),
+                    )
                 }
             }
             DomainUserType.VOLUNTEER -> {
@@ -349,30 +414,5 @@ fun OnboardingStepTwoScreen(
                 }
             },
         )
-    }
-}
-
-private fun saveBitmapToFile(context: Context, bitmap: Bitmap): File? {
-    return try {
-        val file = File(context.cacheDir, "profile_picture_${System.currentTimeMillis()}.jpg")
-        val outputStream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
-        outputStream.flush()
-        outputStream.close()
-        file
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
-private fun saveUriToFile(context: Context, uri: Uri): File? {
-    return try {
-        @Suppress("DEPRECATION")
-        val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-        saveBitmapToFile(context, bitmap)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
     }
 } 

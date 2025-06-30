@@ -130,4 +130,63 @@ class EventSchema(BaseModel):
     created_at: str
     updated_at: str
     latitude: float = 0.0
-    longitude: float = 0.0 
+    longitude: float = 0.0
+
+# ------------------ Profile Update ------------------
+
+# Reuse same fields but make them all optional so users can update any subset.
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+
+    # Organizer / Institution specific
+    organization_name: Optional[str] = None
+    institution_name: Optional[InstitutionName] = None
+
+    # Volunteer-specific optional fields
+    sex: Optional[Sex] = None
+    description: Optional[str] = None
+    skills: Optional[List[str]] = None
+    age: Optional[int] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    location_area: Optional[str] = None
+    has_drivers_license: Optional[bool] = None
+    disabilities: Optional[str] = None
+
+class EventBase(BaseModel):
+    title: str
+    description: str | None = None
+    date: str | None = None
+    location: str | None = None
+    image_url: str | None = None
+
+
+class EventCreate(EventBase):
+    pass
+
+
+class EventOut(EventBase):
+    id: int
+    organizer_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class MessageBase(BaseModel):
+    receiver_id: int
+    content: str
+
+
+class MessageCreate(MessageBase):
+    pass
+
+
+class MessageOut(MessageBase):
+    id: int
+    sender_id: int
+    sent_at: datetime
+
+    class Config:
+        orm_mode = True 

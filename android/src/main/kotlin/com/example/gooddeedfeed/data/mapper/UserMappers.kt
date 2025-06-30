@@ -1,7 +1,11 @@
 package com.example.gooddeedfeed.data.mapper
 
-import com.example.gooddeedfeed.data.remote.dto.*
 import com.example.gooddeedfeed.data.remote.dto.AuthResponse
+import com.example.gooddeedfeed.data.remote.dto.InstitutionName
+import com.example.gooddeedfeed.data.remote.dto.ProfilePictureUploadResponse
+import com.example.gooddeedfeed.data.remote.dto.Sex
+import com.example.gooddeedfeed.data.remote.dto.User
+import com.example.gooddeedfeed.data.remote.dto.UserType
 import com.example.gooddeedfeed.domain.model.DomainAuthResponse
 import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse
@@ -9,9 +13,6 @@ import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 
-/**
- * Mappers to convert between data layer DTOs and domain models
- */
 
 // User mappers
 fun User.toDomain(): DomainUser = DomainUser(
@@ -27,6 +28,7 @@ fun User.toDomain(): DomainUser = DomainUser(
     organizationName = organization_name,
     institutionName = institution_name?.toDomain(),
     createdAt = created_at,
+    karmaPoints = karma_points,
     sex = sex?.toDomain(),
     description = description,
     skills = skills,

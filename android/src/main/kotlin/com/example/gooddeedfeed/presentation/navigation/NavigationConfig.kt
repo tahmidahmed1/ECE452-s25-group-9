@@ -8,11 +8,12 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
 import com.example.gooddeedfeed.presentation.ui.screens.HomeScreen
-import com.example.gooddeedfeed.presentation.ui.screens.SettingsScreen
+import com.example.gooddeedfeed.presentation.ui.screens.LeaderboardScreen
 import com.example.gooddeedfeed.presentation.ui.screens.institution.ReviewScreen
 import com.example.gooddeedfeed.presentation.ui.screens.organizer.EventManagementScreen
 import com.example.gooddeedfeed.presentation.ui.screens.volunteer.ListScreen
@@ -35,10 +36,10 @@ object NavigationConfig {
     )
 
     @Composable
-    private fun createSettingsTab(): TabItem = TabItem(
-        title = "Settings",
-        icon = Icons.Default.Settings,
-        screen = { user, onLogout -> SettingsScreen(user, onLogout) },
+    private fun createLeaderboardTab(): TabItem = TabItem(
+        title = "Leaderboard",
+        icon = Icons.Default.Star,
+        screen = { _, _ -> LeaderboardScreen() },
     )
 
     @Composable
@@ -50,7 +51,7 @@ object NavigationConfig {
 
     /**
      * Tab configuration for volunteer users
-     * Features: Home, List of opportunities, Map view, Chat, Settings
+     * Features: Home, List of opportunities, Map view, Chat, Leaderboard
      */
     @Composable
     fun getVolunteerTabs(): List<TabItem> {
@@ -59,21 +60,21 @@ object NavigationConfig {
             TabItem(
                 title = "Opportunities",
                 icon = Icons.AutoMirrored.Filled.List,
-                screen = { user, _ -> ListScreen(user) },
+                screen = { user, onLogout -> ListScreen(user, onLogout) },
             ),
             TabItem(
                 title = "Map",
                 icon = Icons.Default.LocationOn,
-                screen = { _, _ -> MapScreen() },
+                screen = { user, onLogout -> MapScreen(user, onLogout) },
             ),
             createChatTab(),
-            createSettingsTab(),
+            createLeaderboardTab(),
         )
     }
 
     /**
      * Tab configuration for organization users
-     * Features: Home, Event Management (CRUD), Chat, Settings
+     * Features: Home, Event Management (CRUD), Chat
      */
     @Composable
     fun getOrganizerTabs(): List<TabItem> {
@@ -85,13 +86,12 @@ object NavigationConfig {
                 screen = { user, _ -> EventManagementScreen(user) },
             ),
             createChatTab(),
-            createSettingsTab(),
         )
     }
 
     /**
      * Tab configuration for institution users
-     * Features: Home, Review and approval system, Settings
+     * Features: Home, Review and approval system
      */
     @Composable
     fun getInstitutionTabs(): List<TabItem> {
@@ -102,19 +102,6 @@ object NavigationConfig {
                 icon = Icons.Default.CheckCircle,
                 screen = { _, _ -> ReviewScreen() },
             ),
-            createSettingsTab(),
-        )
-    }
-
-    /**
-     * Default tab configuration for users without a defined type
-     * Features: Basic Home and Settings only
-     */
-    @Composable
-    fun getDefaultTabs(): List<TabItem> {
-        return listOf(
-            createHomeTab(),
-            createSettingsTab(),
         )
     }
 
@@ -128,7 +115,7 @@ object NavigationConfig {
             DomainUserType.VOLUNTEER -> getVolunteerTabs()
             DomainUserType.ORGANIZER -> getOrganizerTabs()
             DomainUserType.INSTITUTION -> getInstitutionTabs()
-            null -> getDefaultTabs()
+            null -> getVolunteerTabs()
         }
     }
 }
@@ -142,9 +129,9 @@ fun DomainUserType?.getDisplayName(): String {
 
 fun DomainUserType?.getTabCount(): Int {
     return when (this) {
-        DomainUserType.VOLUNTEER -> 5 // Home, List, Map, Chat, Settings
-        DomainUserType.ORGANIZER -> 4 // Home, Events, Chat, Settings
-        DomainUserType.INSTITUTION -> 3 // Home, Reviews, Settings
-        null -> 2 // Home, Settings
+        DomainUserType.VOLUNTEER -> 5 // Home, List, Map, Chat, Leaderboard
+        DomainUserType.ORGANIZER -> 4 // Home, Events, Chat, Leaderboard
+        DomainUserType.INSTITUTION -> 3 // Home, Reviews, Leaderboard
+        null -> 2 // Home, Leaderboard
     }
 } 

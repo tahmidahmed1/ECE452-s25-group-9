@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -48,10 +50,20 @@ fun appNavHost(
     val currentState = uiState // Store in local variable to enable smart cast
     val toastState by rememberToastState()
 
-    // Navigate to SignIn on sign out
+    // Navigate to SignIn on sign-out
+    // Skip the toast on first launch when the user is already signed out
+    val hasProcessedInitialSignedOut = remember { mutableStateOf(false) }
+
     LaunchedEffect(currentState) {
         if (currentState is AuthUiState.SignedOut) {
+            if (hasProcessedInitialSignedOut.value) {
+                // Real sign-out triggered in-app – show confirmation
             ToastManager.showSuccess("Signed out successfully")
+            } else {
+                // Initial SignedOut (no prior user session)
+                hasProcessedInitialSignedOut.value = true
+            }
+
             navController.navigate(Screen.SignIn.route) {
                 popUpTo(0) { inclusive = true }
             }
@@ -144,7 +156,6 @@ fun appNavHost(
                 if (user != null) {
                     // Default missing userType to VOLUNTEER for dev preview
                     val userWithType = if (user.userType == null) {
-                        Log.d(TAG, "Missing userType, defaulting to VOLUNTEER")
                         user.copy(userType = DomainUserType.VOLUNTEER)
                     } else {
                         user

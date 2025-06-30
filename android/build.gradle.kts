@@ -7,7 +7,7 @@ plugins {
     id("dagger.hilt.android.plugin")
     id("org.jlleitschuh.gradle.ktlint")
     id("com.diffplug.spotless")
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
 }
 
 android {
@@ -63,6 +63,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -96,6 +97,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation("androidx.compose.ui:ui-text-google-fonts")
+    implementation("com.kizitonwose.calendar:compose:2.5.3")
+    implementation("io.ktor:ktor-client-websockets:2.3.7")
     testImplementation("junit:junit:4.13.2")
     testImplementation("app.cash.turbine:turbine:1.0.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
@@ -108,6 +111,7 @@ dependencies {
             because("Avoid using 1.7.x which requires Kotlin 2.0")
         }
     }
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
 configurations.all {

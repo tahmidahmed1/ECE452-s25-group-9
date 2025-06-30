@@ -1,6 +1,15 @@
 package com.example.gooddeedfeed.presentation.ui.screens.onboarding
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -9,21 +18,44 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
-import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
-import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.ProfileSectionHeader
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.SkillChip
 import java.io.File
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
+import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,42 +76,47 @@ fun OnboardingStepThreeVolunteerScreen(
     var locationArea by remember { mutableStateOf("") }
     var hasDriversLicense by remember { mutableStateOf(false) }
     var disabilities by remember { mutableStateOf("") }
-
     var sexDropdownExpanded by remember { mutableStateOf(false) }
 
-    // Predefined skill options
-    val predefinedSkills = listOf(
-        "First Aid", "CPR", "Teaching", "Cooking", "Construction",
-        "Gardening", "Event Planning", "Photography", "Translation",
-        "Computer Skills", "Social Media", "Leadership", "Customer Service",
-        "Animal Care", "Child Care", "Senior Care", "Art & Crafts",
-        "Music", "Sports", "Driving",
-    )
+    val predefinedSkills = AppConstants.PREDEFINED_SKILLS
 
-    val isFormValid by remember(selectedSex, description, age, emergencyContactName, emergencyContactPhone, locationArea) {
+    val displayedSkills by remember(selectedSkills) {
         derivedStateOf {
-            val ageNumber = age.toIntOrNull() ?: -1
-            selectedSex != null &&
-                description.isNotBlank() &&
-                ageNumber > 0 &&
-                emergencyContactName.isNotBlank() &&
-                emergencyContactPhone.isNotBlank() &&
-                locationArea.isNotBlank()
+            buildList {
+                addAll(selectedSkills)
+                addAll(predefinedSkills.filter { it !in selectedSkills })
+            }
         }
+    }
+
+    val validationErrors by remember(selectedSex, description, age, emergencyContactName, emergencyContactPhone, locationArea) {
+        derivedStateOf {
+            val emergencyValidation = ImageUtils.FormValidation.validateEmergencyContact(emergencyContactName, emergencyContactPhone)
+            mapOf(
+                "sex" to if (selectedSex == null) "Sex is required" else null,
+                "description" to ImageUtils.FormValidation.validateDescription(description),
+                "age" to ImageUtils.FormValidation.validateAge(age),
+                "emergencyName" to emergencyValidation["emergencyName"],
+                "emergencyPhone" to emergencyValidation["emergencyPhone"],
+                "location" to ImageUtils.FormValidation.validateLocation(locationArea)
+            )
+        }
+    }
+
+    val isFormValid by remember(validationErrors) {
+        derivedStateOf { validationErrors.values.all { it == null } }
     }
 
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            // Top bar with back button
+        Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
+                    .statusBarsPadding()
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.Start,
             ) {
                 IconButton(onClick = onBack) {
@@ -90,7 +127,6 @@ fun OnboardingStepThreeVolunteerScreen(
                 }
             }
 
-            // Scrollable content
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -115,11 +151,9 @@ fun OnboardingStepThreeVolunteerScreen(
 
                 VerticalSpacer(SpacingSize.Large)
 
-                // Personal Information Section
                 ProfileSectionHeader("Personal Information")
                 VerticalSpacer(SpacingSize.Medium)
 
-                // Sex Selection
                 ExposedDropdownMenuBox(
                     expanded = sexDropdownExpanded,
                     onExpandedChange = { sexDropdownExpanded = !sexDropdownExpanded },
@@ -161,7 +195,7 @@ fun OnboardingStepThreeVolunteerScreen(
                                             DomainSex.FEMALE -> "Female"
                                             DomainSex.NON_BINARY -> "Non-binary"
                                             DomainSex.PREFER_NOT_TO_SAY -> "Prefer not to say"
-                                        },
+                                        }
                                     )
                                 },
                                 onClick = {
@@ -175,85 +209,50 @@ fun OnboardingStepThreeVolunteerScreen(
 
                 VerticalSpacer(SpacingSize.Medium)
 
-                // Age Field
-                OutlinedTextField(
-                    value = age,
-                    onValueChange = { age = it },
-                    label = { Text("Age") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    ),
-                )
-
-                VerticalSpacer(SpacingSize.Medium)
-
-                // Location Area
-                OutlinedTextField(
-                    value = locationArea,
-                    onValueChange = { locationArea = it },
-                    label = { Text("Location/Area") },
-                    placeholder = { Text("e.g., Downtown Toronto, North York") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    ),
-                )
-
-                VerticalSpacer(SpacingSize.Large)
-
-                // About You Section
-                ProfileSectionHeader("About You")
-                VerticalSpacer(SpacingSize.Medium)
-
-                // Description
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text("Tell us about yourself") },
-                    placeholder = { Text("Share your interests, motivation for volunteering, or any relevant experience...") },
+                    placeholder = { Text("Share your interests, background, or motivation for volunteering...") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
                     minLines = 3,
                     maxLines = 5,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    isError = validationErrors["description"] != null,
+                    supportingText = validationErrors["description"]?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                )
+
+                VerticalSpacer(SpacingSize.Medium)
+
+                OutlinedTextField(
+                    value = age,
+                    onValueChange = { newValue ->
+                        if (newValue.all { it.isDigit() } && newValue.length <= 3) {
+                            age = newValue
+                        }
+                    },
+                    label = { Text("Age") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    isError = validationErrors["age"] != null,
+                    supportingText = validationErrors["age"]?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                 )
 
                 VerticalSpacer(SpacingSize.Large)
-
-                // Skills Section
                 ProfileSectionHeader("Skills & Abilities")
                 VerticalSpacer(SpacingSize.Medium)
 
-                Text(
-                    text = "Select your skills or add custom ones:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                VerticalSpacer(SpacingSize.Small)
-
-                // Skills Selection
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    items(predefinedSkills) { skill ->
+                    items(displayedSkills) { skill ->
                         SkillChip(
                             text = skill,
-                            isSelected = selectedSkills.contains(skill),
+                            isSelected = skill in selectedSkills,
                             onToggle = {
-                                selectedSkills = if (selectedSkills.contains(skill)) {
+                                selectedSkills = if (skill in selectedSkills) {
                                     selectedSkills - skill
                                 } else {
                                     selectedSkills + skill
@@ -265,41 +264,31 @@ fun OnboardingStepThreeVolunteerScreen(
 
                 VerticalSpacer(SpacingSize.Medium)
 
-                // Custom skill input
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
                     OutlinedTextField(
                         value = customSkill,
                         onValueChange = { customSkill = it },
                         label = { Text("Add custom skill") },
-                        modifier = Modifier.weight(1f),
+                    placeholder = { Text("Enter a skill not listed above") },
+                    modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-
-                    Button(
+                    trailingIcon = {
+                        if (customSkill.isNotBlank()) {
+                            IconButton(
                         onClick = {
-                            if (customSkill.isNotBlank() && !selectedSkills.contains(customSkill)) {
-                                selectedSkills = selectedSkills + customSkill
+                                    selectedSkills = selectedSkills + customSkill.trim()
                                 customSkill = ""
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add skill"
+                                )
                             }
-                        },
-                        enabled = customSkill.isNotBlank(),
-                    ) {
-                        Text("Add")
+                        }
                     }
-                }
+                )
 
                 VerticalSpacer(SpacingSize.Large)
-
-                // Emergency Contact Section
                 ProfileSectionHeader("Emergency Contact")
                 VerticalSpacer(SpacingSize.Medium)
 
@@ -307,13 +296,11 @@ fun OnboardingStepThreeVolunteerScreen(
                     value = emergencyContactName,
                     onValueChange = { emergencyContactName = it },
                     label = { Text("Emergency Contact Name") },
+                    placeholder = { Text("Full name of emergency contact") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    ),
+                    isError = validationErrors["emergencyName"] != null,
+                    supportingText = validationErrors["emergencyName"]?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                 )
 
                 VerticalSpacer(SpacingSize.Medium)
@@ -322,72 +309,88 @@ fun OnboardingStepThreeVolunteerScreen(
                     value = emergencyContactPhone,
                     onValueChange = { emergencyContactPhone = it },
                     label = { Text("Emergency Contact Phone") },
+                    placeholder = { Text("Phone number") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    ),
+                    isError = validationErrors["emergencyPhone"] != null,
+                    supportingText = validationErrors["emergencyPhone"]?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                 )
 
                 VerticalSpacer(SpacingSize.Large)
-
-                // Additional Information Section
-                ProfileSectionHeader("Additional Information")
+                ProfileSectionHeader("Location & Accessibility")
                 VerticalSpacer(SpacingSize.Medium)
 
-                // Driver's License Checkbox
-                Row(
+                OutlinedTextField(
+                    value = locationArea,
+                    onValueChange = { locationArea = it },
+                    label = { Text("Preferred Location/Area") },
+                    placeholder = { Text("City, neighborhood, or area where you'd like to volunteer") },
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
+                    shape = RoundedCornerShape(12.dp),
+                    isError = validationErrors["location"] != null,
+                    supportingText = validationErrors["location"]?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                )
+
+                VerticalSpacer(SpacingSize.Medium)
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Checkbox(
                         checked = hasDriversLicense,
                         onCheckedChange = { hasDriversLicense = it },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = MaterialTheme.colorScheme.primary,
-                        ),
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "I have a valid driver's license",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
                     )
                     Text(
-                        text = "I have a valid G driver's license",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
+                                text = "This helps us match you with opportunities that may require transportation",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
 
                 VerticalSpacer(SpacingSize.Medium)
 
-                // Disabilities/Accommodations
                 OutlinedTextField(
                     value = disabilities,
                     onValueChange = { disabilities = it },
-                    label = { Text("Disabilities or Accommodations Needed (Optional)") },
-                    placeholder = { Text("Please describe any accommodations you may need...") },
+                    label = { Text("Accessibility needs (optional)") },
+                    placeholder = { Text("Any accommodations or accessibility requirements") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
                     minLines = 2,
-                    maxLines = 4,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    ),
+                    maxLines = 3,
+                    shape = RoundedCornerShape(12.dp),
                 )
 
                 VerticalSpacer(SpacingSize.ExtraLarge)
             }
 
-            // Fixed bottom button
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.background,
-                shadowElevation = 8.dp,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
             ) {
                 PrimaryButton(
                     text = "Complete Profile",
                     onClick = {
-                        val volunteerProfile = DomainVolunteerProfile(
+                        val profile = DomainVolunteerProfile(
                             fullName = fullName,
                             phone = phone,
                             sex = selectedSex!!,
@@ -400,12 +403,10 @@ fun OnboardingStepThreeVolunteerScreen(
                             hasDriversLicense = hasDriversLicense,
                             disabilities = disabilities.ifBlank { null },
                         )
-                        onComplete(volunteerProfile, null)
+                        onComplete(profile, null)
                     },
                     enabled = isFormValid,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

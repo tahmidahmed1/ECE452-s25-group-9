@@ -15,12 +15,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
-import com.example.gooddeedfeed.presentation.ui.components.ScreenContainer
-import com.example.gooddeedfeed.presentation.ui.components.ScreenSubtitle
-import com.example.gooddeedfeed.presentation.ui.components.SelectableOptionCard
-import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
+import com.example.gooddeedfeed.presentation.ui.components.base.ScreenSubtitle
+import com.example.gooddeedfeed.presentation.ui.components.base.SelectableOptionCard
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

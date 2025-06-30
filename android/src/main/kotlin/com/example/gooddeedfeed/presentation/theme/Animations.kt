@@ -33,6 +33,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.debugInspectorInfo
+import kotlin.math.sin
 
 // Animation presets
 object AppAnimations {
@@ -252,7 +253,7 @@ fun Modifier.shake(
     )
 
     this.graphicsLayer {
-        translationX = shakeOffset * 10f * kotlin.math.sin(shakeOffset * 20f)
+        translationX = shakeOffset * 10f * sin(shakeOffset * 20f)
     }
 }
 

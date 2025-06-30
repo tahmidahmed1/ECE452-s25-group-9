@@ -18,30 +18,25 @@ object ToastUtils {
 
     fun showSuccessToast(context: Context, message: String) {
         val cleanMessage = extractActualMessage(message)
-        Log.d(TAG, "Success toast: $cleanMessage")
         ToastManager.showSuccess(cleanMessage)
     }
 
     fun showErrorToast(context: Context, message: String) {
         val cleanMessage = extractActualMessage(message)
-        Log.d(TAG, "Error toast: $cleanMessage")
         ToastManager.showError(cleanMessage)
     }
 
     fun showInfoToast(context: Context, message: String) {
         val cleanMessage = extractActualMessage(message)
-        Log.d(TAG, "Info toast: $cleanMessage")
         ToastManager.showInfo(cleanMessage)
     }
 
     private fun extractActualMessage(message: String): String {
-        Log.d(TAG, "Original message: $message")
 
         val jsonExtracted = extractFromJson(message)
         val cleanMessage = cleanUpMessage(jsonExtracted)
         val finalMessage = categorizeAndFormatMessage(cleanMessage)
 
-        Log.d(TAG, "Cleaned message: $finalMessage")
         return finalMessage
     }
 

@@ -24,7 +24,7 @@ object UserTypeUtils {
      */
     private fun isUserTypeSpecificDataComplete(user: DomainUser): Boolean {
         return when (user.userType) {
-            DomainUserType.VOLUNTEER -> true // No additional fields required
+            DomainUserType.VOLUNTEER -> true
             DomainUserType.ORGANIZER -> user.organizationName?.isNotBlank() == true
             DomainUserType.INSTITUTION -> user.institutionName != null
             null -> false
@@ -86,5 +86,17 @@ object UserTypeUtils {
             DomainUserType.ORGANIZER -> "Create and manage volunteer opportunities for your organization"
             DomainUserType.INSTITUTION -> "Review and approve volunteer activities for institutional credit"
         }
+    }
+
+    fun requiresOrganizationName(userType: DomainUserType?): Boolean {
+        return userType == DomainUserType.ORGANIZER
+    }
+
+    fun requiresInstitutionName(userType: DomainUserType?): Boolean {
+        return userType == DomainUserType.INSTITUTION
+    }
+
+    fun isVolunteer(userType: DomainUserType?): Boolean {
+        return userType == DomainUserType.VOLUNTEER
     }
 } 

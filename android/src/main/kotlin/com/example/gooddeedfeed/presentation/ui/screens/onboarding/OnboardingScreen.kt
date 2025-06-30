@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -21,8 +22,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.presentation.ui.components.LoadingIndicator
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
+import com.example.gooddeedfeed.presentation.ui.components.base.LoadingIndicator
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.OnboardingDotIndicators
 import com.example.gooddeedfeed.presentation.viewmodel.onboarding.OnboardingViewModel
 
@@ -33,7 +34,7 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel<OnboardingViewModel>(),
     modifier: Modifier = Modifier,
 ) {
-    var currentStep by remember { mutableStateOf(1) }
+    var currentStep by remember { mutableIntStateOf(1) }
     var selectedUserType by remember { mutableStateOf<DomainUserType?>(null) }
     var basicFullName by remember { mutableStateOf("") }
     var basicPhone by remember { mutableStateOf("") }

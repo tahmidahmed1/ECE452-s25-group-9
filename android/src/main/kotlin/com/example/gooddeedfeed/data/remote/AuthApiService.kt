@@ -1,8 +1,19 @@
 package com.example.gooddeedfeed.data.remote
 
-import android.util.Log
 import com.example.gooddeedfeed.data.mapper.toData
-import com.example.gooddeedfeed.data.remote.dto.*
+import com.example.gooddeedfeed.data.remote.dto.AuthResponse
+import com.example.gooddeedfeed.data.remote.dto.ErrorResponse
+import com.example.gooddeedfeed.data.remote.dto.InstitutionName
+import com.example.gooddeedfeed.data.remote.dto.InstitutionOption
+import com.example.gooddeedfeed.data.remote.dto.OnboardingCompleteRequest
+import com.example.gooddeedfeed.data.remote.dto.OnboardingResponse
+import com.example.gooddeedfeed.data.remote.dto.OnboardingStepOneRequest
+import com.example.gooddeedfeed.data.remote.dto.ProfilePictureUploadResponse
+import com.example.gooddeedfeed.data.remote.dto.SignUpRequest
+import com.example.gooddeedfeed.data.remote.dto.TokenResponse
+import com.example.gooddeedfeed.data.remote.dto.User
+import com.example.gooddeedfeed.data.remote.dto.UserType
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -14,6 +25,7 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -21,6 +33,10 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.put
 import java.io.File
 
 class AuthApiService(client: HttpClient) : BaseApiService(client) {
@@ -33,7 +49,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         email: String,
         password: String,
     ): AuthResponse {
-        Log.d(TAG, "Starting signUp request for username: $username, email: $email")
 
         val allErrors = mutableListOf<String>()
         var lastResponseBody: String? = null
@@ -41,10 +56,8 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         // Try each URL until one works
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-                Log.d(TAG, "Trying URL $index: $url/register")
 
                 val requestBody = SignUpRequest(username, email, password)
-                Log.d(TAG, "Request body: $requestBody")
 
                 val httpResponse = client.post("$url/register") {
                     headers {
@@ -53,35 +66,28 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     setBody(requestBody)
                 }
 
-                Log.d(TAG, "Received response with status ${httpResponse.status} from $url")
 
                 // Success case (created or ok) – parse token
                 if (httpResponse.status == HttpStatusCode.Created || httpResponse.status == HttpStatusCode.OK) {
                     val tokenResp: TokenResponse = httpResponse.body()
-                    Log.d(TAG, "Registration successful with URL: $url")
                     return AuthResponse(success = true, token = tokenResp.access_token, message = "Registration successful")
                 }
 
                 // Failure case – try to parse structured error first
                 try {
                     val error = httpResponse.body<ErrorResponse>()
-                    Log.e(TAG, "Server returned error: ${error.message}")
                     return AuthResponse(false, message = error.message)
                 } catch (ex: Exception) {
                     // Fallback to raw text
                     val rawError = httpResponse.bodyAsText()
-                    Log.e(TAG, "Unable to parse structured error. Raw: $rawError")
                     return AuthResponse(false, message = rawError)
                 }
             } catch (e: ClientRequestException) {
-                Log.e(TAG, "Client error with URL $url: ${e.response.status} - ${e.message}")
 
                 // Try to get detailed error response
                 try {
                     lastResponseBody = e.response.body<String>()
-                    Log.e(TAG, "Full error response body: $lastResponseBody")
                 } catch (bodyException: Exception) {
-                    Log.e(TAG, "Could not read error response body: ${bodyException.message}")
                 }
 
                 // Handle 422 validation errors specifically
@@ -89,22 +95,17 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     try {
                         // Try to parse as ErrorResponse first
                         val errorResponse = e.response.body<ErrorResponse>()
-                        Log.e(TAG, "Validation error details: ${errorResponse.message}")
                         if (!errorResponse.errors.isNullOrEmpty()) {
-                            Log.e(TAG, "Validation errors: ${errorResponse.errors}")
                             // Extract the first detailed validation message
                             val firstError = errorResponse.errors.first()
                             val detailedMessage = firstError.msg
-                            Log.d(TAG, "Using detailed validation message: $detailedMessage")
                             return AuthResponse(false, message = detailedMessage)
                         }
                         return AuthResponse(false, message = errorResponse.message)
                     } catch (bodyException: Exception) {
-                        Log.e(TAG, "Could not parse validation error response: ${bodyException.message}")
                         // Try to get raw response text to extract the actual error
                         try {
                             val rawBody = lastResponseBody ?: "Unknown validation error"
-                            Log.d(TAG, "Raw error response: $rawBody")
 
                             // pass raw server message to be formatted client side
                             return AuthResponse(false, message = rawBody)
@@ -118,7 +119,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                 if (e.response.status == HttpStatusCode.Conflict) {
                     try {
                         val errorResponse = e.response.body<ErrorResponse>()
-                        Log.e(TAG, "Conflict error: ${errorResponse.message}")
                         return AuthResponse(false, message = errorResponse.message)
                     } catch (bodyException: Exception) {
                         return AuthResponse(false, message = "User with this username or email already exists.")
@@ -129,7 +129,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                 if (e.response.status.value in 400..499) {
                     try {
                         val errorResponse = e.response.body<ErrorResponse>()
-                        Log.e(TAG, "4xx error response: ${errorResponse.message}")
                         allErrors.add("URL $index (${e.response.status}): ${errorResponse.message}")
 
                         // If this is the last URL, return the error
@@ -139,7 +138,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     } catch (bodyException: Exception) {
                         val errorMsg = "Registration failed with status ${e.response.status}"
                         allErrors.add("URL $index: $errorMsg")
-                        Log.e(TAG, errorMsg)
 
                         // If this is the last URL, return a generic error
                         if (index == possibleUrls.size - 1) {
@@ -152,13 +150,10 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                 allErrors.add("URL $index: Connection failed - ${e.message}")
                 continue
             } catch (e: ServerResponseException) {
-                Log.e(TAG, "Server error with URL $url: ${e.response.status} - ${e.message}")
 
                 try {
                     lastResponseBody = e.response.body<String>()
-                    Log.e(TAG, "Server error response body: $lastResponseBody")
                 } catch (bodyException: Exception) {
-                    Log.e(TAG, "Could not read server error response body: ${bodyException.message}")
                 }
 
                 val errorMsg = "Server error (${e.response.status}): ${e.message}"
@@ -172,22 +167,18 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     return AuthResponse(false, message = errorMsg)
                 }
             } catch (e: RedirectResponseException) {
-                Log.e(TAG, "Redirect error with URL $url: ${e.response.status} - ${e.message}")
                 allErrors.add("URL $index: Unexpected redirect - ${e.message}")
                 continue
             } catch (e: SerializationException) {
-                Log.e(TAG, "Serialization error with URL $url: ${e.message}")
                 allErrors.add("URL $index: Response format error - ${e.message}")
                 continue
             } catch (e: Exception) {
-                Log.e(TAG, "General error with URL $url: ${e.message}")
                 allErrors.add("URL $index: ${e.message}")
                 continue
             }
         }
 
         // All URLs failed - create detailed error message
-        Log.e(TAG, "All URLs failed for signUp. Errors: $allErrors")
         val detailedError = if (allErrors.isNotEmpty()) {
             "Connection failed. Attempted servers:\n${allErrors.joinToString("\n")}"
         } else {
@@ -201,7 +192,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         username: String,
         password: String,
     ): AuthResponse {
-        Log.d(TAG, "Starting signIn request for username: $username")
 
         val allErrors = mutableListOf<String>()
         var lastResponseBody: String? = null
@@ -209,7 +199,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         // Try each URL until one works
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-                Log.d(TAG, "Trying URL $index: $url/token")
 
                 val response: TokenResponse = client.post("$url/token") {
                     headers {
@@ -218,24 +207,19 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     setBody("username=$username&password=$password")
                 }.body()
 
-                Log.d(TAG, "Login successful with URL: $url")
                 return AuthResponse(success = true, token = response.access_token, message = "Login successful")
             } catch (e: ClientRequestException) {
-                Log.e(TAG, "Client error with URL $url: ${e.response.status} - ${e.message}")
 
                 // Try to get detailed error response
                 try {
                     lastResponseBody = e.response.body<String>()
-                    Log.e(TAG, "Full error response body: $lastResponseBody")
                 } catch (bodyException: Exception) {
-                    Log.e(TAG, "Could not read error response body: ${bodyException.message}")
                 }
 
                 // Handle 401 unauthorized specifically
                 if (e.response.status == HttpStatusCode.Unauthorized) {
                     try {
                         val errorResponse = e.response.body<ErrorResponse>()
-                        Log.e(TAG, "Authentication error details: ${errorResponse.message}")
                         return AuthResponse(false, message = errorResponse.message)
                     } catch (bodyException: Exception) {
                         return AuthResponse(false, message = "Invalid username or password")
@@ -246,13 +230,10 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                 if (e.response.status == HttpStatusCode.UnprocessableEntity) {
                     try {
                         val errorResponse = e.response.body<ErrorResponse>()
-                        Log.e(TAG, "Validation error details: ${errorResponse.message}")
                         if (!errorResponse.errors.isNullOrEmpty()) {
-                            Log.e(TAG, "Validation errors: ${errorResponse.errors}")
                             // Extract the first detailed validation message
                             val firstError = errorResponse.errors.first()
                             val detailedMessage = firstError.msg
-                            Log.d(TAG, "Using detailed validation message: $detailedMessage")
                             return AuthResponse(false, message = detailedMessage)
                         }
                         return AuthResponse(false, message = errorResponse.message)
@@ -270,7 +251,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                 if (e.response.status.value in 400..499) {
                     try {
                         val errorResponse = e.response.body<ErrorResponse>()
-                        Log.e(TAG, "4xx error response: ${errorResponse.message}")
                         allErrors.add("URL $index (${e.response.status}): ${errorResponse.message}")
 
                         // If this is the last URL, return the error
@@ -280,7 +260,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     } catch (bodyException: Exception) {
                         val errorMsg = "Login failed with status ${e.response.status}"
                         allErrors.add("URL $index: $errorMsg")
-                        Log.e(TAG, errorMsg)
 
                         // If this is the last URL, return a generic error
                         if (index == possibleUrls.size - 1) {
@@ -293,13 +272,10 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                 allErrors.add("URL $index: Connection failed - ${e.message}")
                 continue
             } catch (e: ServerResponseException) {
-                Log.e(TAG, "Server error with URL $url: ${e.response.status} - ${e.message}")
 
                 try {
                     lastResponseBody = e.response.body<String>()
-                    Log.e(TAG, "Server error response body: $lastResponseBody")
                 } catch (bodyException: Exception) {
-                    Log.e(TAG, "Could not read server error response body: ${bodyException.message}")
                 }
 
                 val errorMsg = "Server error (${e.response.status}): ${e.message}"
@@ -313,22 +289,18 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     return AuthResponse(false, message = errorMsg)
                 }
             } catch (e: RedirectResponseException) {
-                Log.e(TAG, "Redirect error with URL $url: ${e.response.status} - ${e.message}")
                 allErrors.add("URL $index: Unexpected redirect - ${e.message}")
                 continue
             } catch (e: SerializationException) {
-                Log.e(TAG, "Serialization error with URL $url: ${e.message}")
                 allErrors.add("URL $index: Response format error - ${e.message}")
                 continue
             } catch (e: Exception) {
-                Log.e(TAG, "General error with URL $url: ${e.message}")
                 allErrors.add("URL $index: ${e.message}")
                 continue
             }
         }
 
         // All URLs failed - create detailed error message
-        Log.e(TAG, "All URLs failed for signIn. Errors: $allErrors")
         val detailedError = if (allErrors.isNotEmpty()) {
             "Connection failed. Attempted servers:\n${allErrors.joinToString("\n")}"
         } else {
@@ -339,12 +311,10 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
     }
 
     suspend fun getCurrentUser(token: String): User {
-        Log.d(TAG, "Getting current user with token: ${token.take(10)}...")
 
         // Try each URL until one works
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-                Log.d(TAG, "Trying URL $index: $url/users/me")
 
                 return client.get("$url/users/me") {
                     headers {
@@ -352,7 +322,6 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     }
                 }.body()
             } catch (e: ClientRequestException) {
-                Log.e(TAG, "Client error with URL $url: ${e.response.status} - ${e.message}")
 
                 // Handle 401 unauthorized specifically
                 if (e.response.status == HttpStatusCode.Unauthorized) {
@@ -361,31 +330,24 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
 
                 continue
             } catch (e: ServerResponseException) {
-                Log.e(TAG, "Server error with URL $url: ${e.response.status} - ${e.message}")
                 throw Exception("Server error: ${e.response.status}")
             } catch (e: RedirectResponseException) {
-                Log.e(TAG, "Redirect error with URL $url: ${e.response.status} - ${e.message}")
                 continue
             } catch (e: SerializationException) {
-                Log.e(TAG, "Serialization error with URL $url: ${e.message}")
                 continue
             } catch (e: Exception) {
-                Log.e(TAG, "General error with URL $url: ${e.message}")
                 continue
             }
         }
 
-        Log.e(TAG, "All URLs failed for getCurrentUser")
         throw Exception("Could not connect to server")
     }
 
     // Onboarding API calls
     suspend fun completeOnboardingStepOne(token: String, userType: UserType): Boolean {
-        Log.d(TAG, "Completing onboarding step one: $userType")
 
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-                Log.d(TAG, "Trying URL $index: $url/onboarding/step-one")
 
                 val response: OnboardingResponse = client.post("$url/onboarding/step-one") {
                     headers {
@@ -395,15 +357,12 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     setBody(OnboardingStepOneRequest(userType))
                 }.body()
 
-                Log.d(TAG, "Step one completed successfully")
                 return true
             } catch (e: Exception) {
-                Log.e(TAG, "Error completing step one with URL $url: ${e.message}")
                 continue
             }
         }
 
-        Log.e(TAG, "All URLs failed for onboarding step one")
         return false
     }
 
@@ -415,11 +374,9 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         organizationName: String? = null,
         institutionName: InstitutionName? = null,
     ): Boolean {
-        Log.d(TAG, "Completing onboarding for user type: $userType")
 
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-                Log.d(TAG, "Trying URL $index: $url/onboarding/complete")
 
                 val requestBody = OnboardingCompleteRequest(
                     user_type = userType,
@@ -437,42 +394,33 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     setBody(requestBody)
                 }.body()
 
-                Log.d(TAG, "Onboarding completed successfully")
                 return true
             } catch (e: Exception) {
-                Log.e(TAG, "Error completing onboarding with URL $url: ${e.message}")
                 continue
             }
         }
 
-        Log.e(TAG, "All URLs failed for completing onboarding")
         return false
     }
 
     suspend fun getInstitutions(): List<InstitutionOption> {
-        Log.d(TAG, "Getting available institutions")
 
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-                Log.d(TAG, "Trying URL $index: $url/institutions")
 
                 return client.get("$url/institutions").body()
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting institutions with URL $url: ${e.message}")
                 continue
             }
         }
 
-        Log.e(TAG, "All URLs failed for getting institutions")
         return emptyList()
     }
 
     suspend fun uploadProfilePicture(token: String, imageFile: File): ProfilePictureUploadResponse? {
-        Log.d(TAG, "Uploading profile picture: ${imageFile.name}")
 
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-                Log.d(TAG, "Trying URL $index: $url/upload-profile-picture")
 
                 val response: ProfilePictureUploadResponse = client.post("$url/upload-profile-picture") {
                     headers {
@@ -494,15 +442,12 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     )
                 }.body()
 
-                Log.d(TAG, "Profile picture uploaded successfully: ${response.profile_picture_url}")
                 return response
             } catch (e: Exception) {
-                Log.e(TAG, "Error uploading profile picture with URL $url: ${e.message}")
                 continue
             }
         }
 
-        Log.e(TAG, "All URLs failed for uploading profile picture")
         return null
     }
 
@@ -511,11 +456,9 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
         volunteerProfile: DomainVolunteerProfile,
         profilePictureUrl: String? = null,
     ): Boolean {
-        Log.d(TAG, "Completing volunteer onboarding")
 
         for ((index, url) in possibleUrls.withIndex()) {
             try {
-                Log.d(TAG, "Trying URL $index: $url/onboarding/volunteer-complete")
 
                 val requestBody = OnboardingCompleteRequest(
                     user_type = UserType.VOLUNTEER,
@@ -540,15 +483,54 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     setBody(requestBody)
                 }.body()
 
-                Log.d(TAG, "Volunteer onboarding completed successfully")
                 return true
             } catch (e: Exception) {
-                Log.e(TAG, "Error completing volunteer onboarding with URL $url: ${e.message}")
                 continue
             }
         }
 
-        Log.e(TAG, "All URLs failed for completing volunteer onboarding")
+        return false
+    }
+
+    // ------------------ Profile Update ------------------
+
+    suspend fun updateUserProfile(token: String, update: DomainUserUpdate): Boolean {
+
+        for ((index, url) in possibleUrls.withIndex()) {
+            try {
+
+                // Prepare payload with snake_case keys expected by backend
+                val payload = buildJsonObject {
+                    update.fullName?.let { put("full_name", it) }
+                    update.phone?.let { put("phone", it) }
+                    update.organizationName?.let { put("organization_name", it) }
+                    update.institutionName?.let { put("institution_name", it.name) }
+
+                    update.sex?.let { put("sex", it.name.lowercase()) }
+                    update.description?.let { put("description", it) }
+                    update.skills?.let { put("skills", Json.encodeToJsonElement(it)) }
+                    update.age?.let { put("age", it) }
+                    update.emergencyContactName?.let { put("emergency_contact_name", it) }
+                    update.emergencyContactPhone?.let { put("emergency_contact_phone", it) }
+                    update.locationArea?.let { put("location_area", it) }
+                    update.hasDriversLicense?.let { put("has_drivers_license", it) }
+                    update.disabilities?.let { put("disabilities", it) }
+                }
+
+                client.put("$url/users/me") {
+                    headers {
+                        append(HttpHeaders.Authorization, "Bearer $token")
+                        append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    }
+                    setBody(payload)
+                }.body<User>()
+
+                return true
+            } catch (e: Exception) {
+                continue
+            }
+        }
+
         return false
     }
 }
