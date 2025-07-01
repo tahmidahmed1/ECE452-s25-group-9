@@ -4,44 +4,35 @@ import com.example.gooddeedfeed.domain.model.ActivityReview
 import com.example.gooddeedfeed.domain.model.ReviewStatus
 import com.example.gooddeedfeed.domain.repository.ReviewRepository
 import com.example.gooddeedfeed.domain.repository.ReviewStats
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ReviewRepositoryImpl @Inject constructor(
-    // TODO: Inject API service when available
-) : ReviewRepository {
+class ReviewRepositoryImpl @Inject constructor() : ReviewRepository {
 
     override suspend fun getPendingReviews(): Flow<List<ActivityReview>> = flow {
-        delay(500)
         emit(getMockReviews().filter { it.status == ReviewStatus.PENDING })
     }
 
     override suspend fun getCompletedReviews(): Flow<List<ActivityReview>> = flow {
-        delay(500)
         emit(getMockReviews().filter { it.status != ReviewStatus.PENDING })
     }
 
     override suspend fun approveReview(reviewId: Int, feedback: String?): Result<Unit> {
-        delay(500)
         return Result.success(Unit)
     }
 
     override suspend fun rejectReview(reviewId: Int, reason: String?): Result<Unit> {
-        delay(500)
         return Result.success(Unit)
     }
 
     override suspend fun requestMoreInfo(reviewId: Int, message: String?): Result<Unit> {
-        delay(500)
         return Result.success(Unit)
     }
 
     override suspend fun getReviewById(reviewId: Int): Result<ActivityReview> {
-        delay(500)
         val review = getMockReviews().find { it.id == reviewId }
         return if (review != null) {
             Result.success(review)
@@ -51,12 +42,10 @@ class ReviewRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getReviewsByStatus(status: ReviewStatus): Flow<List<ActivityReview>> = flow {
-        delay(500)
         emit(getMockReviews().filter { it.status == status })
     }
 
     override suspend fun getReviewStats(): Result<ReviewStats> {
-        delay(500)
         val reviews = getMockReviews()
         val stats = ReviewStats(
             totalReviews = reviews.size,

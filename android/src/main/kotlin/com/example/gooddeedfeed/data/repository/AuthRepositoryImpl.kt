@@ -12,6 +12,7 @@ import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
@@ -33,35 +34,17 @@ class AuthRepositoryImpl(
         email: String,
         password: String,
     ): Flow<Result<DomainAuthResponse>> = flow {
-        android.util.Log.d("AuthRepositoryImpl", "Starting signUp for username: $username")
-
         val result = try {
             val resp = api.signUp(username, email, password)
-            android.util.Log.d("AuthRepositoryImpl", "API response: success=${resp.success}, token=${resp.token?.take(10)}..., message=${resp.message}")
-
-            // Check if the API response indicates failure
-            if (!resp.success) {
-                android.util.Log.e("AuthRepositoryImpl", "API returned failure: ${resp.message}")
-                Result.failure(Exception(resp.message ?: "Sign up failed"))
-            } else if (resp.token == null) {
-                android.util.Log.e("AuthRepositoryImpl", "No token received from successful response")
-                Result.failure(Exception("No authentication token received"))
-            } else {
-                // Save token before returning success
-                android.util.Log.d("AuthRepositoryImpl", "Saving token...")
+            if (resp?.success == true && resp.token != null) {
                 saveToken(resp.token)
-                // Add a small delay to ensure DataStore write completes
-                kotlinx.coroutines.delay(50)
-                android.util.Log.d("AuthRepositoryImpl", "Token saved successfully")
                 Result.success(resp.toDomain())
+            } else {
+                Result.failure(Exception(resp?.message ?: "Sign up failed"))
             }
         } catch (e: Exception) {
-            android.util.Log.e("AuthRepositoryImpl", "SignUp failed: ${e.message}")
-            android.util.Log.e("AuthRepositoryImpl", "Exception type: ${e.javaClass.simpleName}")
-            e.printStackTrace()
             Result.failure(e)
         }
-
         emit(result)
     }
 
@@ -90,27 +73,18 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun getCurrentUser(): Flow<Result<DomainUser>> = flow {
-        android.util.Log.d("AuthRepositoryImpl", "Getting current user...")
-
         val result = try {
             val token = getTokenString()
-            android.util.Log.d("AuthRepositoryImpl", "Token retrieved: ${token?.take(10)}...")
             if (token.isNullOrBlank()) {
-                android.util.Log.e("AuthRepositoryImpl", "No authentication token found")
                 Result.failure(Exception("No authentication token found"))
             } else {
-                android.util.Log.d("AuthRepositoryImpl", "Making API call to get user...")
                 val user = api.getCurrentUser(token)
-                android.util.Log.d("AuthRepositoryImpl", "User retrieved: ${user.username}, onboarding: ${user.onboarding_completed}")
                 Result.success(user.toDomain())
             }
         } catch (e: Exception) {
-            android.util.Log.e("AuthRepositoryImpl", "getCurrentUser failed: ${e.message}")
-            android.util.Log.e("AuthRepositoryImpl", "Exception type: ${e.javaClass.simpleName}")
             e.printStackTrace()
             Result.failure(e)
         }
-
         emit(result)
     }
 
@@ -212,12 +186,25 @@ class AuthRepositoryImpl(
         preferences[TOKEN_KEY]
     }
 
-    // Helper method to get token as String for API calls
     private suspend fun getTokenString(): String? = getToken().firstOrNull()
 
     private suspend fun saveToken(token: String) {
         context.dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = token
+        }
+    }
+
+    override suspend fun updateUserProfile(update: DomainUserUpdate): Result<Unit> {
+        return try {
+            val token = getTokenString()
+            if (token.isNullOrBlank()) {
+                Result.failure(Exception("No authentication token found"))
+            } else {
+                val success = api.updateUserProfile(token, update)
+                if (success) Result.success(Unit) else Result.failure(Exception("Failed to update profile"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }

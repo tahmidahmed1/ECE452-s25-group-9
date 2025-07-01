@@ -6,24 +6,19 @@ import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.repository.EventRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class EventRepositoryImpl @Inject constructor(
-    // TODO: Inject API service when available
-) : EventRepository {
+class EventRepositoryImpl @Inject constructor() : EventRepository {
 
     override suspend fun getMyEvents(): Flow<List<VolunteerEvent>> = flow {
-        delay(500) // Simulate network delay
         emit(getMockEvents())
     }
 
     override suspend fun createEvent(eventData: CreateEventData): Result<VolunteerEvent> {
-        delay(500)
         val newEvent = VolunteerEvent(
             id = (1..1000).random(),
             title = eventData.title,
@@ -46,7 +41,6 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateEvent(eventId: Int, eventData: CreateEventData): Result<VolunteerEvent> {
-        delay(500)
         val updatedEvent = VolunteerEvent(
             id = eventId,
             title = eventData.title,
@@ -69,12 +63,10 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteEvent(eventId: Int): Result<Unit> {
-        delay(500)
         return Result.success(Unit)
     }
 
     override suspend fun getEventById(eventId: Int): Result<VolunteerEvent> {
-        delay(500)
         val event = getMockEvents().find { it.id == eventId }
         return if (event != null) {
             Result.success(event)
@@ -84,13 +76,11 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun toggleEventStatus(eventId: Int, isPublished: Boolean): Result<Unit> {
-        delay(500)
         return Result.success(Unit)
     }
 
     override suspend fun getEventApplications(eventId: Int): Flow<List<VolunteerApplicationForOrganizer>> = flow {
-        delay(500)
-        emit(emptyList()) // TODO: Implement when API is available
+        emit(emptyList())
     }
 
     private fun getMockEvents(): List<VolunteerEvent> {

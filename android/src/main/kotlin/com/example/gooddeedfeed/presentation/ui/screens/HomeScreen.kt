@@ -1,13 +1,16 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -28,20 +31,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.common.UiState
-import com.example.gooddeedfeed.presentation.ui.components.ActionCard
-import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
-import com.example.gooddeedfeed.presentation.ui.components.ScreenContainer
-import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.base.ActionCard
+import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.common.UserTypeDisplay
+import com.kizitonwose.calendar.compose.VerticalCalendar
+import com.kizitonwose.calendar.compose.rememberCalendarState
+import com.kizitonwose.calendar.core.DayPosition
+import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +81,7 @@ fun HomeScreen(
                 user = homeData.user,
                 userTypeDisplay = homeData.userTypeDisplay,
                 onActionClick = { action -> viewModel.handleAction(action) },
+                onLogout = onLogout,
             )
         }
         is UiState.Error -> {
@@ -101,6 +112,7 @@ private fun HomeContent(
     user: DomainUser,
     userTypeDisplay: UserTypeDisplay,
     onActionClick: (HomeAction) -> Unit,
+    onLogout: () -> Unit,
 ) {
     ScreenContainer {
         // Welcome header
@@ -162,6 +174,12 @@ private fun HomeContent(
             VerticalSpacer(SpacingSize.Small)
         }
 
+        // Volunteer-specific calendar
+        if (user.userType == DomainUserType.VOLUNTEER) {
+            VolunteerCalendarView()
+            VerticalSpacer(SpacingSize.Large)
+        }
+
         VerticalSpacer()
     }
 }
@@ -172,4 +190,51 @@ private fun getIconForAction(iconName: String) = when (iconName) {
     "star" -> Icons.Default.Star
     "info" -> Icons.Default.Info
     else -> Icons.AutoMirrored.Filled.List
+}
+
+@SuppressLint("NewApi")
+@Composable
+private fun VolunteerCalendarView() {
+    val startMonth = YearMonth.now().minusMonths(12)
+    val endMonth = YearMonth.now().plusMonths(12)
+    val calendarState = rememberCalendarState(
+        startMonth = startMonth,
+        endMonth = endMonth,
+        firstVisibleMonth = YearMonth.now(),
+        firstDayOfWeek = firstDayOfWeekFromLocale(),
+    )
+
+    VerticalCalendar(
+        state = calendarState,
+        monthHeader = { month ->
+            Text(
+                text = month.yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        },
+        dayContent = { day ->
+            val dayColor = if (day.position == DayPosition.MonthDate) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Box(
+                modifier = Modifier
+                    .aspectRatio(1f)
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = day.date.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = dayColor,
+                )
+            }
+        },
+    )
 }

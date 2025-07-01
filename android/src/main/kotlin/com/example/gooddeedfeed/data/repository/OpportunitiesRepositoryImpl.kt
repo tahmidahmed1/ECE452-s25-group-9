@@ -4,29 +4,23 @@ import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class OpportunitiesRepositoryImpl @Inject constructor(
-    // TODO: Inject API service when available
-) : OpportunitiesRepository {
+class OpportunitiesRepositoryImpl @Inject constructor() : OpportunitiesRepository {
 
     override suspend fun getOpportunities(): Flow<List<VolunteerOpportunity>> = flow {
-        delay(500)
         emit(getMockOpportunities())
     }
 
     override suspend fun getOpportunitiesByCategory(category: OpportunityCategory): Flow<List<VolunteerOpportunity>> = flow {
-        delay(500)
         emit(getMockOpportunities().filter { it.category == category })
     }
 
     override suspend fun searchOpportunities(query: String): Flow<List<VolunteerOpportunity>> = flow {
-        delay(500)
         emit(
             getMockOpportunities().filter {
                 it.title.contains(query, ignoreCase = true) ||
@@ -41,28 +35,22 @@ class OpportunitiesRepositoryImpl @Inject constructor(
         longitude: Double,
         radiusKm: Double,
     ): Flow<List<VolunteerOpportunity>> = flow {
-        delay(500)
-        // TODO: Implement location-based filtering when location data is available
         emit(getMockOpportunities())
     }
 
     override suspend fun applyForOpportunity(opportunityId: Int, message: String?): Result<Unit> {
-        delay(500)
         return Result.success(Unit)
     }
 
     override suspend fun getMyApplications(): Flow<List<VolunteerApplicationForVolunteer>> = flow {
-        delay(500)
-        emit(emptyList()) // TODO: Implement when API is available
+        emit(emptyList())
     }
 
     override suspend fun cancelApplication(opportunityId: Int): Result<Unit> {
-        delay(500)
         return Result.success(Unit)
     }
 
     override suspend fun getOpportunityById(opportunityId: Int): Result<VolunteerOpportunity> {
-        delay(500)
         val opportunity = getMockOpportunities().find { it.id == opportunityId }
         return if (opportunity != null) {
             Result.success(opportunity)

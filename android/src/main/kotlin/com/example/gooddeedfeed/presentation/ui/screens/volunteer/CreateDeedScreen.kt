@@ -10,11 +10,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.example.gooddeedfeed.domain.model.DomainUser
-import com.example.gooddeedfeed.presentation.ui.components.FormTextField
-import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
-import com.example.gooddeedfeed.presentation.ui.components.ScreenContainer
-import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.base.FormTextField
+import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 
 @Composable
 fun CreateDeedScreen(

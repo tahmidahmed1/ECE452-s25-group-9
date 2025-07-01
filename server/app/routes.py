@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 import logging
-from typing import List
+from typing import List, Dict
 from fastapi.responses import JSONResponse
 from sqlalchemy import or_
 
@@ -12,7 +12,8 @@ from .models import User, UserType, InstitutionName, Sex
 from .schemas import (
     UserCreate, User as UserSchema, Token, OnboardingStepOne, 
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
-    InstitutionName as SchemaInstitutionName
+    InstitutionName as SchemaInstitutionName,
+    UserUpdate
 )
 from .auth import (
     authenticate_user, create_access_token, get_password_hash, 
@@ -25,6 +26,24 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active: Dict[int, List[WebSocket]] = {}
+
+    async def connect(self, room: int, websocket: WebSocket):
+        await websocket.accept()
+        self.active.setdefault(room, []).append(websocket)
+
+    def disconnect(self, room: int, websocket: WebSocket):
+        self.active.get(room, []).remove(websocket)
+
+    async def broadcast(self, room: int, message: dict):
+        for ws in list(self.active.get(room, [])):
+            await ws.send_json(message)
+
+manager = ConnectionManager()
 
 @router.post("/register", response_model=Token)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -251,3 +270,97 @@ def update_event_stub(event_id: int, event: EventSchema):
 @router.delete("/events/{event_id}", status_code=204)
 def delete_event_stub(event_id: int):
     return None 
+
+# ------------------ Profile Edit ------------------
+
+@router.put("/users/me", response_model=UserSchema)
+def update_user_profile(
+    updates: UserUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Update fields of the currently authenticated user. Only provided fields are updated."""
+    logger.info(f"Profile update requested by {current_user.username}")
+
+    # Iterate over update fields and set attributes if not None
+    update_dict = updates.dict(exclude_unset=True)
+    for field, value in update_dict.items():
+        # Convert Enum values to correct DB enums if necessary
+        if field == "sex" and value is not None:
+            try:
+                value = Sex[value.upper()]
+            except KeyError:
+                pass
+        if field == "institution_name" and value is not None:
+            try:
+                value = InstitutionName[value]
+            except KeyError:
+                pass
+
+        setattr(current_user, field, value)
+
+    db.commit()
+    db.refresh(current_user)
+
+    logger.info(f"Profile updated successfully for {current_user.username}")
+    return current_user 
+
+@router.post("/events", response_model=EventSchema)
+async def create_event(event: EventSchema, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    if current_user.user_type != UserType.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can create events")
+    db_event = EventSchema(**event.dict(), organizer_id=current_user.id)
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+    return db_event
+
+@router.get("/events/{event_id}", response_model=EventSchema)
+async def get_event(event_id: int, db: Session = Depends(get_db)):
+    event = db.get(EventSchema, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
+
+@router.patch("/events/{event_id}", response_model=EventSchema)
+async def update_event(event_id: int, payload: EventSchema, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    event = db.get(EventSchema, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    for k, v in payload.dict(exclude_unset=True).items():
+        setattr(event, k, v)
+    db.commit()
+    db.refresh(event)
+    return event
+
+@router.delete("/events/{event_id}")
+async def delete_event(event_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    event = db.get(EventSchema, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    db.delete(event)
+    db.commit()
+    return {"detail": "deleted"}
+
+@router.get("/organizers/{organizer_id}/events", response_model=list[EventSchema])
+async def list_events(organizer_id: int, db: Session = Depends(get_db)):
+    return db.query(EventSchema).filter(EventSchema.organizer_id == organizer_id).all()
+
+@router.websocket("/ws/chat/{room_id}")
+async def chat_endpoint(websocket: WebSocket, room_id: int, db: Session = Depends(get_db)):
+    await manager.connect(room_id, websocket)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            # data: {"sender_id":.., "receiver_id":.., "content":..}
+            msg = EventSchema(**data)
+            db.add(msg)
+            db.commit()
+            db.refresh(msg)
+            await manager.broadcast(room_id, msg.dict())
+    except WebSocketDisconnect:
+        manager.disconnect(room_id, websocket) 

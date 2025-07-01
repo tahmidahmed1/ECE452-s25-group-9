@@ -5,6 +5,7 @@ import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import kotlinx.coroutines.flow.Flow
 import java.io.File
@@ -46,4 +47,7 @@ interface AuthRepository {
 
     // Profile picture upload
     suspend fun uploadProfilePicture(file: File): Flow<Result<DomainProfilePictureUploadResponse>>
+
+    // Profile editing
+    suspend fun updateUserProfile(update: DomainUserUpdate): Result<Unit>
 }

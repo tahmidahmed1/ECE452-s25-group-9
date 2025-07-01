@@ -58,6 +58,3 @@ __pycache__/
 .minio.sys/
 .mc/
 .minio/
-.minio.sys/
-.mc/
-.minio/

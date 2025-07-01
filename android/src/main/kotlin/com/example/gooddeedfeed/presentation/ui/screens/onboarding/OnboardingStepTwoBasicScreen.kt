@@ -1,6 +1,5 @@
 package com.example.gooddeedfeed.presentation.ui.screens.onboarding
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -8,7 +7,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,8 +26,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,14 +49,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.presentation.ui.components.PrimaryButton
-import com.example.gooddeedfeed.presentation.ui.components.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.components.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
+import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import java.io.File
-import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,12 +74,22 @@ fun OnboardingStepTwoBasicScreen(
     var profilePictureFile by remember { mutableStateOf<File?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
 
+    val fullNameError: String? by remember(fullName) {
+        derivedStateOf { ImageUtils.FormValidation.validateFullName(fullName) }
+    }
+
+    val phoneError: String? by remember(phone) {
+        derivedStateOf { ImageUtils.FormValidation.validatePhone(phone) }
+    }
+
+    val isFormValid = fullNameError == null && phoneError == null
+
     // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
     ) { bitmap: Bitmap? ->
         bitmap?.let {
-            val file = saveBitmapToFile(context, it)
+            val file = ImageUtils.saveBitmapToFile(context, it)
             if (file != null) {
                 profilePictureFile = file
                 selectedImageUri = Uri.fromFile(file)
@@ -70,14 +103,12 @@ fun OnboardingStepTwoBasicScreen(
     ) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
-            val file = saveUriToFile(context, it)
+            val file = ImageUtils.saveUriToFile(context, it)
             if (file != null) {
                 profilePictureFile = file
             }
         }
     }
-
-    val isFormValid = fullName.isNotBlank() && phone.isNotBlank()
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -92,7 +123,9 @@ fun OnboardingStepTwoBasicScreen(
         ) {
             // Back button
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Start,
             ) {
                 IconButton(onClick = onBack) {
@@ -196,22 +229,37 @@ fun OnboardingStepTwoBasicScreen(
                 value = fullName,
                 onValueChange = { fullName = it },
                 label = { Text("Full Name") },
+                isError = fullNameError != null,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
                 ),
             )
 
+            if (fullNameError != null) {
+                Text(
+                    text = fullNameError!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start),
+                )
+            }
+
             VerticalSpacer(SpacingSize.Medium)
 
-            // Phone Field
+            // Phone Field (+1 numbers, auto-formatted as XXX-XXX-XXXX)
             OutlinedTextField(
                 value = phone,
-                onValueChange = { phone = it },
+                onValueChange = { input ->
+                    val digits = input.filter { it.isDigit() }
+                    phone = ImageUtils.formatPhoneNumber(digits)
+                },
                 label = { Text("Phone Number") },
+                isError = phoneError != null,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
@@ -219,7 +267,25 @@ fun OnboardingStepTwoBasicScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
                 ),
+            )
+
+            if (phoneError != null) {
+                Text(
+                    text = phoneError!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start),
+                )
+            }
+
+            Text(
+                text = "Only +1 North American phone numbers are supported",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Start,
             )
 
             VerticalSpacer(SpacingSize.ExtraLarge)
@@ -261,31 +327,5 @@ fun OnboardingStepTwoBasicScreen(
             },
             containerColor = MaterialTheme.colorScheme.surface,
         )
-    }
-}
-
-// Helper functions (same as in original OnboardingStepTwoScreen)
-private fun saveBitmapToFile(context: Context, bitmap: Bitmap): File? {
-    return try {
-        val file = File(context.cacheDir, "profile_picture_${System.currentTimeMillis()}.jpg")
-        val outputStream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
-        outputStream.flush()
-        outputStream.close()
-        file
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
-private fun saveUriToFile(context: Context, uri: Uri): File? {
-    return try {
-        @Suppress("DEPRECATION")
-        val bitmap = android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-        saveBitmapToFile(context, bitmap)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
     }
 } 

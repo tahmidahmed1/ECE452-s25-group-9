@@ -58,4 +58,29 @@ class User(Base):
     disabilities = Column(Text, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, nullable=False)
+    receiver_id = Column(Integer, nullable=False)
+    content = Column(Text, nullable=False)
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organizer_id = Column(Integer, nullable=False)
+
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    date = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 

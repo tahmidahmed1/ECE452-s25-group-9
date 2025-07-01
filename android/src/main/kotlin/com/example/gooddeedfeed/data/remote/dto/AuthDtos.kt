@@ -81,6 +81,7 @@ data class User(
     val organization_name: String? = null,
     val institution_name: InstitutionName? = null,
     val created_at: String? = null,
+    val karma_points: Int? = null,
 
     // Enhanced volunteer profile fields
     val sex: Sex? = null,

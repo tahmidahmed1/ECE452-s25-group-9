@@ -18,6 +18,7 @@ data class DomainUser(
     val organizationName: String? = null,
     val institutionName: DomainInstitutionName? = null,
     val createdAt: String? = null,
+    val karmaPoints: Int? = null,
 
     // Enhanced volunteer profile fields
     val sex: DomainSex? = null,
@@ -57,6 +58,26 @@ data class DomainVolunteerProfile(
     val locationArea: String,
     val hasDriversLicense: Boolean,
     val disabilities: String?,
+)
+
+/**
+ * Data class for updating any subset of user profile fields
+ */
+data class DomainUserUpdate(
+    val fullName: String? = null,
+    val phone: String? = null,
+    val organizationName: String? = null,
+    val institutionName: DomainInstitutionName? = null,
+
+    val sex: DomainSex? = null,
+    val description: String? = null,
+    val skills: List<String>? = null,
+    val age: Int? = null,
+    val emergencyContactName: String? = null,
+    val emergencyContactPhone: String? = null,
+    val locationArea: String? = null,
+    val hasDriversLicense: Boolean? = null,
+    val disabilities: String? = null,
 )
 
 // Enumerations are defined in DomainEnums.kt to avoid leaking DTO types into the domain layer.
