@@ -14,6 +14,8 @@ data class VolunteerOpportunity(
     val requiredVolunteers: Int,
     val currentVolunteers: Int,
     val category: OpportunityCategory,
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
     val isActive: Boolean = true,
 )
 

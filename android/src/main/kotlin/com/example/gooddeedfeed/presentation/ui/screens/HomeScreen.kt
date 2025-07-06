@@ -1,6 +1,9 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,11 +13,17 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -28,8 +37,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,6 +53,7 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.base.ActionCard
+import com.example.gooddeedfeed.presentation.ui.components.base.InfoCard
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
@@ -50,6 +65,7 @@ import com.kizitonwose.calendar.compose.VerticalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
@@ -115,72 +131,69 @@ private fun HomeContent(
     onLogout: () -> Unit,
 ) {
     ScreenContainer {
-        // Welcome header
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(
-                imageVector = when (user.userType) {
-                    DomainUserType.VOLUNTEER -> Icons.Default.Person
-                    DomainUserType.ORGANIZER -> Icons.Default.Star
-                    DomainUserType.INSTITUTION -> Icons.Default.Home
-                    null -> Icons.Default.Person
-                },
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp),
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column {
-                Text(
-                    text = "Welcome, ${user.fullName ?: user.username}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
+        Column {
+            // Welcome header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = when (user.userType) {
+                        DomainUserType.VOLUNTEER -> Icons.Default.Person
+                        DomainUserType.ORGANIZER -> Icons.Default.Star
+                        DomainUserType.INSTITUTION -> Icons.Default.Home
+                        null -> Icons.Default.Person
+                    },
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
                 )
-                Text(
-                    text = userTypeDisplay.subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = "Welcome, ${user.fullName ?: user.username}",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = userTypeDisplay.subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Action items (skip Browse Opportunities / My Activities for volunteers)
+            val filteredItems = userTypeDisplay.actionItems.filterNot {
+                it.title.contains("Browse Opportunities") || it.title.contains("My Activities")
+            }
+
+            filteredItems.forEach { actionItem ->
+                ActionCard(
+                    icon = when (actionItem.iconName) {
+                        "list" -> Icons.AutoMirrored.Filled.List
+                        else -> getIconForAction(actionItem.iconName)
+                    },
+                    title = actionItem.title,
+                    description = actionItem.description,
+                    onClick = { onActionClick(actionItem.action) },
+                )
+                VerticalSpacer(SpacingSize.Small)
+            }
+
+            // Volunteer-specific calendar
+            if (user.userType == DomainUserType.VOLUNTEER) {
+                VolunteerCalendarView()
+                VerticalSpacer(SpacingSize.Large)
+            }
+
+            VerticalSpacer()
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // User type specific content
-        Text(
-            text = userTypeDisplay.title,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        VerticalSpacer(SpacingSize.Small)
-
-        // Action items
-        userTypeDisplay.actionItems.forEach { actionItem ->
-            ActionCard(
-                icon = when (actionItem.iconName) {
-                    "list" -> Icons.AutoMirrored.Filled.List
-                    else -> getIconForAction(actionItem.iconName)
-                },
-                title = actionItem.title,
-                description = actionItem.description,
-                onClick = { onActionClick(actionItem.action) },
-            )
-            VerticalSpacer(SpacingSize.Small)
-        }
-
-        // Volunteer-specific calendar
-        if (user.userType == DomainUserType.VOLUNTEER) {
-            VolunteerCalendarView()
-            VerticalSpacer(SpacingSize.Large)
-        }
-
-        VerticalSpacer()
     }
 }
 
@@ -195,6 +208,21 @@ private fun getIconForAction(iconName: String) = when (iconName) {
 @SuppressLint("NewApi")
 @Composable
 private fun VolunteerCalendarView() {
+    // Mock events: 3 tomorrow
+    data class EventItem(val title: String, val time: String)
+    val tomorrow = LocalDate.now().plusDays(1)
+    val eventsMap = remember {
+        mapOf(
+            tomorrow to listOf(
+                EventItem("Beach Cleanup", "10:00 AM"),
+                EventItem("Food Drive", "1:00 PM"),
+                EventItem("Tree Planting", "4:00 PM"),
+            ),
+        )
+    }
+
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+
     val startMonth = YearMonth.now().minusMonths(12)
     val endMonth = YearMonth.now().plusMonths(12)
     val calendarState = rememberCalendarState(
@@ -204,37 +232,78 @@ private fun VolunteerCalendarView() {
         firstDayOfWeek = firstDayOfWeekFromLocale(),
     )
 
-    VerticalCalendar(
-        state = calendarState,
-        monthHeader = { month ->
-            Text(
-                text = month.yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        },
-        dayContent = { day ->
-            val dayColor = if (day.position == DayPosition.MonthDate) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .padding(2.dp),
-                contentAlignment = Alignment.Center,
-            ) {
+    // Calendar with border
+    Box(
+        modifier = Modifier
+            .height(300.dp)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(4.dp)),
+    ) {
+        VerticalCalendar(
+            modifier = Modifier.fillMaxSize(),
+            state = calendarState,
+            monthHeader = { month ->
                 Text(
-                    text = day.date.dayOfMonth.toString(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = dayColor,
+                    text = month.yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
-            }
-        },
+            },
+            dayContent = { day ->
+                val isSelected = selectedDate == day.date
+                val hasEvents = eventsMap.containsKey(day.date)
+                val background = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+                val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else if (day.position == DayPosition.MonthDate) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+
+                Box(
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .padding(2.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(background)
+                        .clickable { selectedDate = day.date },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = day.date.dayOfMonth.toString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = textColor,
+                        )
+                        if (hasEvents) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Box(
+                                modifier = Modifier.size(4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                            )
+                        }
+                    }
+                }
+            },
+        )
+    }
+
+    // Events below calendar
+    VerticalSpacer(SpacingSize.Medium)
+    val events = eventsMap[selectedDate] ?: emptyList()
+    InfoCard(
+        title = selectedDate.format(DateTimeFormatter.ofPattern("EEE, MMM d")),
+        content = if (events.isEmpty()) "No events scheduled for this day" else "${events.size} event(s)",
+        icon = Icons.Default.Event,
     )
+    if (events.isNotEmpty()) {
+        VerticalSpacer(SpacingSize.Small)
+        val eventScroll = rememberScrollState()
+        Column(
+            modifier = Modifier
+                .heightIn(max = 200.dp)
+                .verticalScroll(eventScroll),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            events.forEach {
+                InfoCard(title = it.title, content = it.time, icon = Icons.Default.Event)
+            }
+        }
+    }
 }

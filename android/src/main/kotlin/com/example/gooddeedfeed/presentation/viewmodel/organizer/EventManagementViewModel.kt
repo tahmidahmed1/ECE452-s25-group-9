@@ -67,16 +67,15 @@ class EventManagementViewModel @Inject constructor(
         }
     }
 
-    fun createEvent(eventData: CreateEventData) {
-        viewModelScope.launch {
-            manageEventsUseCase.createEvent(eventData)
-                .onSuccess {
-                    loadEvents() // Refresh the list
-                }
-                .onFailure { e ->
-                    _uiState.value = UiState.Error("Failed to create event: ${e.message}")
-                }
-        }
+    suspend fun createEvent(eventData: CreateEventData): VolunteerEvent {
+        return manageEventsUseCase.createEvent(eventData)
+            .onSuccess {
+                loadEvents()
+            }
+            .onFailure { e ->
+                _uiState.value = UiState.Error("Failed to create event: ${e.message}")
+            }
+            .getOrThrow()
     }
 
     fun updateEvent(eventId: Int, eventData: CreateEventData) {
@@ -101,5 +100,11 @@ class EventManagementViewModel @Inject constructor(
                     _uiState.value = UiState.Error("Failed to update event status: ${e.message}")
                 }
         }
+    }
+
+    suspend fun uploadEventImage(eventId: Int, file: java.io.File) {
+        manageEventsUseCase.uploadEventImage(eventId, file)
+            .onSuccess { loadEvents() }
+            .onFailure { e -> _uiState.value = UiState.Error("Failed to upload image: ${e.message}") }
     }
 } 

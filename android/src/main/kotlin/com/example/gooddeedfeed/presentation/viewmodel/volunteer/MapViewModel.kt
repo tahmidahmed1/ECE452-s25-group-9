@@ -67,7 +67,13 @@ class MapViewModel @Inject constructor(
                                 isLocationPermissionGranted = location != null,
                                 errorMessage = if (location == null) "Location permission denied" else null,
                             )
-                            filterEventsByRadius(newState)
+                            val resState = filterEventsByRadius(newState)
+
+                            // Refresh events from backend with current location
+                            location?.let { loc ->
+                                loadEvents(loc.latitude, loc.longitude)
+                            }
+                            resState
                         }
                     }
             } catch (e: Exception) {
@@ -84,7 +90,13 @@ class MapViewModel @Inject constructor(
     fun updateRadius(radiusKm: Float) {
         _uiState.update { currentState ->
             val newState = currentState.copy(radiusKm = radiusKm)
-            filterEventsByRadius(newState)
+            val resState = filterEventsByRadius(newState)
+
+            // Re-fetch events with updated radius and location
+            val loc = resState.currentLocation
+            loadEvents(loc?.latitude, loc?.longitude)
+
+            resState
         }
     }
 
@@ -102,14 +114,11 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    private fun loadEvents() {
+    private fun loadEvents(lat: Double? = null, lon: Double? = null) {
         viewModelScope.launch {
             try {
-                val events = getMapEventsUseCase()
-
-                val finalEvents = if (events.isEmpty()) generateMockEvents() else events
-
-                _uiState.update { currentState -> filterEventsByRadius(currentState.copy(allEvents = finalEvents)) }
+                val events = getMapEventsUseCase(lat, lon, _uiState.value.radiusKm)
+                _uiState.update { currentState -> filterEventsByRadius(currentState.copy(allEvents = events)) }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(errorMessage = "Failed to load events: ${e.message}")
@@ -155,72 +164,5 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    /** Creates a small hard-coded set of events near downtown Toronto for demo purposes */
-    private fun generateMockEvents(): List<VolunteerEvent> {
-        val baseLat = 37.422131
-        val baseLng = -122.084801
-
-        return listOf(
-            VolunteerEvent(
-                id = 1,
-                title = "Park Clean-up",
-                description = "Help clean litter in the waterfront park.",
-                organizationId = 100,
-                organizationName = "Green Toronto",
-                location = "Harbourfront Park",
-                date = "2025-05-18",
-                startTime = "09:00",
-                endTime = "12:00",
-                maxVolunteers = 25,
-                currentVolunteers = 10,
-                category = com.example.gooddeedfeed.domain.model.OpportunityCategory.ENVIRONMENTAL,
-                requirements = listOf("Gloves provided"),
-                status = com.example.gooddeedfeed.domain.model.EventStatus.PUBLISHED,
-                createdAt = "2025-05-01",
-                updatedAt = "2025-05-01",
-                latitude = baseLat + 0.01,
-                longitude = baseLng - 0.005,
-            ),
-            VolunteerEvent(
-                id = 2,
-                title = "Food Bank Sorting",
-                description = "Sort and package food donations.",
-                organizationId = 101,
-                organizationName = "Toronto Food Bank",
-                location = "Bathurst Warehouse",
-                date = "2025-05-20",
-                startTime = "13:00",
-                endTime = "16:00",
-                maxVolunteers = 15,
-                currentVolunteers = 5,
-                category = com.example.gooddeedfeed.domain.model.OpportunityCategory.SOCIAL_SERVICES,
-                requirements = listOf("Closed-toe shoes"),
-                status = com.example.gooddeedfeed.domain.model.EventStatus.PUBLISHED,
-                createdAt = "2025-05-02",
-                updatedAt = "2025-05-02",
-                latitude = baseLat - 0.015,
-                longitude = baseLng + 0.008,
-            ),
-            VolunteerEvent(
-                id = 3,
-                title = "Community Tutoring",
-                description = "Tutor elementary students after school.",
-                organizationId = 102,
-                organizationName = "Learning Bridge",
-                location = "Spadina Community Centre",
-                date = "2025-05-22",
-                startTime = "16:00",
-                endTime = "18:00",
-                maxVolunteers = 10,
-                currentVolunteers = 2,
-                category = com.example.gooddeedfeed.domain.model.OpportunityCategory.EDUCATION,
-                requirements = emptyList(),
-                status = com.example.gooddeedfeed.domain.model.EventStatus.PUBLISHED,
-                createdAt = "2025-05-03",
-                updatedAt = "2025-05-03",
-                latitude = baseLat + 0.007,
-                longitude = baseLng + 0.012,
-            ),
-        )
-    }
+    // Mock generation removed – relies solely on backend data now.
 } 

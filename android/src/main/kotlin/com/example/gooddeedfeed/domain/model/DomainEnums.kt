@@ -23,4 +23,12 @@ enum class DomainInstitutionName {
     INSTITUTION_1,
     INSTITUTION_2,
     INSTITUTION_3,
+}
+
+// Extension helpers
+fun DomainSex.toDisplayString(): String = when (this) {
+    DomainSex.MALE -> "Male"
+    DomainSex.FEMALE -> "Female"
+    DomainSex.NON_BINARY -> "Non-binary"
+    DomainSex.PREFER_NOT_TO_SAY -> "Prefer not to say"
 } 

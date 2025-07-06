@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,7 +35,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
-import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
 import kotlinx.coroutines.launch
@@ -42,32 +42,34 @@ import java.io.File
 import java.io.FileOutputStream
 
 @Composable
-fun LeaderboardScreen() {
+fun StatsScreen() {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
-    ScreenContainer {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 24.dp),
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(16.dp),
+    ) {
+        // Header with icon and title (copied from ChatScreen)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 16.dp),
         ) {
             Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = null,
+                imageVector = Icons.Default.Leaderboard,
+                contentDescription = "Statistics",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp),
             )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Karma Leaderboard",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                text = "Statistics",
+                style = MaterialTheme.typography.headlineMedium,
             )
-            VerticalSpacer()
+        }
 
+        // Section: Karma Leaderboard
+        SectionCard(title = "Karma Leaderboard") {
             AppConstants.MOCK_LEADERS.forEachIndexed { index, pair ->
                 Text(
                     text = "${index + 1}. ${pair.first} – ${pair.second} pts",
@@ -75,16 +77,10 @@ fun LeaderboardScreen() {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Badges",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            VerticalSpacer()
-
+        // Section: Badges
+        SectionCard(title = "Badges") {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxWidth(),
@@ -93,17 +89,10 @@ fun LeaderboardScreen() {
                     BadgeCard(badge)
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Your Subscriptions",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
-            VerticalSpacer()
-
+        // Section: Subscriptions
+        SectionCard(title = "Your Subscriptions") {
             val subscriptions = listOf("Green Earth Org", "TeachTech", "Food For All")
             subscriptions.forEach { name ->
                 Text(
@@ -112,33 +101,10 @@ fun LeaderboardScreen() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Export + History header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "Volunteer History (Institution: Waterloo U.)",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                FilledTonalButton(onClick = {
-                    scope.launch {
-                        exportHistoryPdf(context, AppConstants.VOLUNTEER_HISTORY_ITEMS)
-                        ToastUtils.showSuccessToast(context, "History exported to Downloads")
-                    }
-                }) {
-                    Icon(imageVector = Icons.Default.Download, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Export")
-                }
-            }
-            VerticalSpacer()
-
+        // Section: Volunteer History
+        SectionCard(title = "Volunteer History (Institution: Waterloo U.)", showExport = true) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AppConstants.VOLUNTEER_HISTORY_ITEMS.forEach { item ->
                     Card(
@@ -164,6 +130,8 @@ fun LeaderboardScreen() {
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -224,4 +192,43 @@ private fun exportHistoryPdf(context: android.content.Context, history: List<App
     val file = File(downloads, "history.pdf")
     FileOutputStream(file).use { doc.writeTo(it) }
     doc.close()
+}
+
+// SectionCard composable wraps content in grey container and optional export button
+@Composable
+private fun SectionCard(
+    title: String,
+    showExport: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                if (showExport) {
+                    FilledTonalButton(onClick = {
+                        scope.launch {
+                            exportHistoryPdf(context, AppConstants.VOLUNTEER_HISTORY_ITEMS)
+                            ToastUtils.showSuccessToast(context, "History exported to Downloads")
+                        }
+                    }) {
+                        Icon(Icons.Default.Download, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Export")
+                    }
+                }
+            }
+            VerticalSpacer()
+            content()
+        }
+    }
 } 

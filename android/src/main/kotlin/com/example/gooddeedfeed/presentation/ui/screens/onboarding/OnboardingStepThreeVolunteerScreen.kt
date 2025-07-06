@@ -245,7 +245,10 @@ fun OnboardingStepThreeVolunteerScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    items(displayedSkills) { skill ->
+                    items(
+                        items = displayedSkills,
+                        key = { skill -> skill },
+                    ) { skill ->
                         SkillChip(
                             text = skill,
                             isSelected = skill in selectedSkills,

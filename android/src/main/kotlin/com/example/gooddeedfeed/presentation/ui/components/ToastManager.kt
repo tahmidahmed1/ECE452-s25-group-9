@@ -2,7 +2,7 @@ package com.example.gooddeedfeed.presentation.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,5 +50,5 @@ object ToastManager {
 
 @Composable
 fun rememberToastState(): State<ToastData?> {
-    return ToastManager.toastData.collectAsState()
+    return ToastManager.toastData.collectAsStateWithLifecycle()
 } 

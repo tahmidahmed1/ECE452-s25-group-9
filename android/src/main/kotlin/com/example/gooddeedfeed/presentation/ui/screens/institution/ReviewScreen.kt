@@ -7,11 +7,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -144,6 +149,8 @@ private fun ReviewCard(
     review: ActivityReview,
     onAction: (ReviewActionType) -> Unit,
 ) {
+    var showEvidenceDialog by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -200,7 +207,9 @@ private fun ReviewCard(
 
                 if (review.evidenceUrls.isNotEmpty()) {
                     AssistChip(
-                        onClick = { },
+                        onClick = {
+                            showEvidenceDialog = true
+                        },
                         label = { Text("View Evidence") },
                     )
                 }
@@ -234,20 +243,10 @@ private fun ReviewCard(
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Approve")
-                }
-
-                OutlinedButton(
-                    onClick = { onAction(ReviewActionType.REQUEST_MORE_INFO) },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Request Info",
-                        modifier = Modifier.size(16.dp),
+                    Text(
+                        text = "Approve",
+                        style = MaterialTheme.typography.labelSmall,
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("More Info")
                 }
 
                 OutlinedButton(
@@ -262,10 +261,25 @@ private fun ReviewCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        "Reject",
+                        text = "Reject",
                         color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
                     )
                 }
+            }
+
+            // Mocked dialog for evidence
+            if (showEvidenceDialog) {
+                AlertDialog(
+                    onDismissRequest = { showEvidenceDialog = false },
+                    confirmButton = {
+                        TextButton(onClick = { showEvidenceDialog = false }) {
+                            Text("Close")
+                        }
+                    },
+                    title = { Text("Evidence") },
+                    text = { Text("Here we would display the evidence attached to this review.") },
+                )
             }
         }
     }

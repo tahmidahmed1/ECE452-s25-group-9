@@ -1,5 +1,7 @@
 package com.example.gooddeedfeed.data.repository
 
+import com.example.gooddeedfeed.data.remote.EventApiService
+import com.example.gooddeedfeed.data.remote.dto.EventDto
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
@@ -9,25 +11,48 @@ import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private fun EventDto.toOpportunity(): VolunteerOpportunity = VolunteerOpportunity(
+    id = id ?: 0,
+    title = title,
+    organizationName = organizer_name ?: "",
+    location = location ?: "",
+    date = date ?: "",
+    description = description ?: "",
+    requiredVolunteers = max_volunteers ?: 0,
+    currentVolunteers = current_volunteers ?: 0,
+    category = category,
+    latitude = latitude ?: 0.0,
+    longitude = longitude ?: 0.0,
+)
+
 @Singleton
-class OpportunitiesRepositoryImpl @Inject constructor() : OpportunitiesRepository {
+class OpportunitiesRepositoryImpl @Inject constructor(
+    private val apiService: EventApiService,
+) : OpportunitiesRepository {
+
+    private suspend fun fetchAll(): List<VolunteerOpportunity> {
+        return try {
+            apiService.getAllEvents().map { it.toOpportunity() }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 
     override suspend fun getOpportunities(): Flow<List<VolunteerOpportunity>> = flow {
-        emit(getMockOpportunities())
+        emit(fetchAll())
     }
 
     override suspend fun getOpportunitiesByCategory(category: OpportunityCategory): Flow<List<VolunteerOpportunity>> = flow {
-        emit(getMockOpportunities().filter { it.category == category })
+        emit(fetchAll().filter { it.category == category })
     }
 
     override suspend fun searchOpportunities(query: String): Flow<List<VolunteerOpportunity>> = flow {
-        emit(
-            getMockOpportunities().filter {
-                it.title.contains(query, ignoreCase = true) ||
-                    it.description.contains(query, ignoreCase = true) ||
-                    it.organizationName.contains(query, ignoreCase = true)
-            },
-        )
+        val list = fetchAll().filter {
+            it.title.contains(query, ignoreCase = true) ||
+                it.description.contains(query, ignoreCase = true) ||
+                it.organizationName.contains(query, ignoreCase = true)
+        }
+        emit(list)
     }
 
     override suspend fun getOpportunitiesNearLocation(
@@ -35,11 +60,23 @@ class OpportunitiesRepositoryImpl @Inject constructor() : OpportunitiesRepositor
         longitude: Double,
         radiusKm: Double,
     ): Flow<List<VolunteerOpportunity>> = flow {
-        emit(getMockOpportunities())
+        val list = fetchAll().filter {
+            val dist = android.location.Location("event").apply {
+                this.latitude = it.latitude
+                this.longitude = it.longitude
+            }.distanceTo(
+                android.location.Location("user").apply {
+                    this.latitude = latitude
+                    this.longitude = longitude
+                },
+            ) / 1000f
+            dist <= radiusKm
+        }
+        emit(list)
     }
 
     override suspend fun applyForOpportunity(opportunityId: Int, message: String?): Result<Unit> {
-        return Result.success(Unit)
+        return Result.failure(Exception("Not implemented"))
     }
 
     override suspend fun getMyApplications(): Flow<List<VolunteerApplicationForVolunteer>> = flow {
@@ -51,64 +88,12 @@ class OpportunitiesRepositoryImpl @Inject constructor() : OpportunitiesRepositor
     }
 
     override suspend fun getOpportunityById(opportunityId: Int): Result<VolunteerOpportunity> {
-        val opportunity = getMockOpportunities().find { it.id == opportunityId }
-        return if (opportunity != null) {
-            Result.success(opportunity)
-        } else {
-            Result.failure(Exception("Opportunity not found"))
+        return runCatching {
+            apiService.getEvent(opportunityId).toOpportunity()
         }
     }
 
     override suspend fun getCategories(): List<OpportunityCategory> {
         return OpportunityCategory.values().toList()
-    }
-
-    private fun getMockOpportunities(): List<VolunteerOpportunity> {
-        return listOf(
-            VolunteerOpportunity(
-                id = 1,
-                title = "Beach Cleanup Drive",
-                organizationName = "Ocean Conservation Society",
-                location = "Sunset Beach",
-                date = "2024-02-18",
-                description = "Join us for a morning beach cleanup to protect marine life",
-                requiredVolunteers = 30,
-                currentVolunteers = 12,
-                category = OpportunityCategory.ENVIRONMENTAL,
-            ),
-            VolunteerOpportunity(
-                id = 2,
-                title = "Reading Program for Kids",
-                organizationName = "Learning Together Foundation",
-                location = "Central Library",
-                date = "2024-02-22",
-                description = "Help children improve their reading skills through one-on-one sessions",
-                requiredVolunteers = 10,
-                currentVolunteers = 6,
-                category = OpportunityCategory.EDUCATION,
-            ),
-            VolunteerOpportunity(
-                id = 3,
-                title = "Senior Care Assistance",
-                organizationName = "Golden Years Care",
-                location = "Riverside Senior Center",
-                date = "2024-02-25",
-                description = "Provide companionship and assistance to elderly residents",
-                requiredVolunteers = 15,
-                currentVolunteers = 3,
-                category = OpportunityCategory.HEALTHCARE,
-            ),
-            VolunteerOpportunity(
-                id = 4,
-                title = "Homeless Shelter Meal Service",
-                organizationName = "Hope Kitchen",
-                location = "Downtown Shelter",
-                date = "2024-02-28",
-                description = "Help prepare and serve meals to those in need",
-                requiredVolunteers = 20,
-                currentVolunteers = 14,
-                category = OpportunityCategory.SOCIAL_SERVICES,
-            ),
-        )
     }
 } 

@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.data.remote
 
+import android.util.Log
 import com.example.gooddeedfeed.data.mapper.toData
 import com.example.gooddeedfeed.data.remote.dto.AuthResponse
 import com.example.gooddeedfeed.data.remote.dto.ErrorResponse
@@ -400,8 +401,11 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
     }
 
     suspend fun uploadProfilePicture(token: String, imageFile: File): ProfilePictureUploadResponse? {
+        Log.d(TAG, "Attempting to upload profile picture: ${imageFile.absolutePath} (${imageFile.length()} bytes)")
+
         for ((index, url) in possibleUrls.withIndex()) {
             try {
+                Log.d(TAG, "[${index + 1}/${possibleUrls.size}] Uploading to $url")
                 val response: ProfilePictureUploadResponse = client.post("$url/upload-profile-picture") {
                     headers {
                         append(HttpHeaders.Authorization, "Bearer $token")
@@ -422,12 +426,15 @@ class AuthApiService(client: HttpClient) : BaseApiService(client) {
                     )
                 }.body()
 
+                Log.d(TAG, "Upload successful – server responded with URL: ${response.profile_picture_url}")
                 return response
             } catch (e: Exception) {
+                Log.e(TAG, "Upload attempt to $url failed: ${e.message}")
                 continue
             }
         }
 
+        Log.e(TAG, "All upload attempts failed – returning null")
         return null
     }
 

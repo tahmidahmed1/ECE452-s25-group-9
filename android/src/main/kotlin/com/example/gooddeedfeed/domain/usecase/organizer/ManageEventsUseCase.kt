@@ -35,4 +35,8 @@ class ManageEventsUseCase @Inject constructor(
     suspend fun toggleEventStatus(eventId: Int, isPublished: Boolean): Result<Unit> {
         return repository.toggleEventStatus(eventId, isPublished)
     }
+
+    suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit> {
+        return repository.uploadEventImage(eventId, file)
+    }
 } 

@@ -1,7 +1,9 @@
 package com.example.gooddeedfeed.presentation.viewmodel.volunteer
 
+import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gooddeedfeed.data.services.LocationService
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.usecase.volunteer.ApplyForOpportunityUseCase
@@ -20,16 +22,22 @@ data class OpportunitiesData(
     val categories: List<OpportunityCategory>,
     val selectedCategory: OpportunityCategory?,
     val isMapView: Boolean,
+    val radiusKm: Float = 10f,
+    val currentLocation: Location? = null,
+    val isLocationPermissionGranted: Boolean = false,
 )
 
 @HiltViewModel
 class OpportunitiesViewModel @Inject constructor(
     private val getOpportunitiesUseCase: GetOpportunitiesUseCase,
     private val applyForOpportunityUseCase: ApplyForOpportunityUseCase,
+    private val locationService: LocationService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<OpportunitiesData>>(UiState.Loading)
     val uiState: StateFlow<UiState<OpportunitiesData>> = _uiState.asStateFlow()
+
+    private var allOpportunities: List<VolunteerOpportunity> = emptyList()
 
     init {
         loadOpportunities()
@@ -44,12 +52,16 @@ class OpportunitiesViewModel @Inject constructor(
                 }
                 .collect { opportunities ->
                     val categories = OpportunityCategory.values().toList()
+                    allOpportunities = opportunities
                     _uiState.value = UiState.Success(
                         OpportunitiesData(
                             opportunities = opportunities,
                             categories = categories,
                             selectedCategory = null,
                             isMapView = false,
+                            radiusKm = 10f,
+                            currentLocation = null,
+                            isLocationPermissionGranted = false,
                         ),
                     )
                 }
@@ -68,9 +80,10 @@ class OpportunitiesViewModel @Inject constructor(
                     .collect { opportunities ->
                         val currentState = _uiState.value
                         if (currentState is UiState.Success) {
+                            allOpportunities = opportunities
                             _uiState.value = currentState.copy(
                                 data = currentState.data.copy(
-                                    opportunities = opportunities,
+                                    opportunities = filterByRadius(opportunities, currentState.data.currentLocation, currentState.data.radiusKm),
                                     selectedCategory = category,
                                 ),
                             )
@@ -89,9 +102,10 @@ class OpportunitiesViewModel @Inject constructor(
                 .collect { opportunities ->
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
+                        allOpportunities = opportunities
                         _uiState.value = currentState.copy(
                             data = currentState.data.copy(
-                                opportunities = opportunities,
+                                opportunities = filterByRadius(opportunities, currentState.data.currentLocation, currentState.data.radiusKm),
                                 selectedCategory = null,
                             ),
                         )
@@ -119,6 +133,69 @@ class OpportunitiesViewModel @Inject constructor(
             _uiState.value = currentState.copy(
                 data = currentState.data.copy(isMapView = !currentState.data.isMapView),
             )
+        }
+    }
+
+    private fun filterByRadius(opportunities: List<VolunteerOpportunity>, location: Location?, radiusKm: Float): List<VolunteerOpportunity> {
+        if (location == null) return opportunities
+
+        return opportunities.filter { opp ->
+            if (opp.latitude == 0.0 && opp.longitude == 0.0) {
+                true
+            } else {
+                val distance = locationService.calculateDistance(location.latitude, location.longitude, opp.latitude, opp.longitude)
+                distance <= radiusKm
+            }
+        }
+    }
+
+    fun updateRadius(newRadius: Float) {
+        val currentState = _uiState.value
+        if (currentState is UiState.Success) {
+            _uiState.value = currentState.copy(
+                data = currentState.data.copy(
+                    radiusKm = newRadius,
+                    opportunities = filterByRadius(allOpportunities, currentState.data.currentLocation, newRadius),
+                ),
+            )
+        }
+    }
+
+    fun onLocationPermissionGranted() {
+        val currentState = _uiState.value
+        if (currentState is UiState.Success) {
+            _uiState.value = currentState.copy(
+                data = currentState.data.copy(isLocationPermissionGranted = true),
+            )
+            startLocationUpdates()
+        }
+    }
+
+    fun onLocationPermissionDenied() {
+        val currentState = _uiState.value
+        if (currentState is UiState.Success) {
+            _uiState.value = currentState.copy(
+                data = currentState.data.copy(isLocationPermissionGranted = false),
+            )
+        }
+    }
+
+    private fun startLocationUpdates() {
+        viewModelScope.launch {
+            locationService.getLocationUpdates()
+                .catch { /* ignore */ }
+                .collect { loc ->
+                    val currentState = _uiState.value
+                    if (currentState is UiState.Success) {
+                        val filtered = filterByRadius(allOpportunities, loc, currentState.data.radiusKm)
+                        _uiState.value = currentState.copy(
+                            data = currentState.data.copy(
+                                currentLocation = loc,
+                                opportunities = filtered,
+                            ),
+                        )
+                    }
+                }
         }
     }
 } 

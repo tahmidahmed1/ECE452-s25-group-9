@@ -6,5 +6,6 @@ import com.example.gooddeedfeed.domain.repository.MapRepository
 class GetMapEventsUseCase(
     private val repository: MapRepository,
 ) {
-    suspend operator fun invoke(): List<VolunteerEvent> = repository.getMapEvents()
+    suspend operator fun invoke(lat: Double? = null, lon: Double? = null, radiusKm: Float = 50f): List<VolunteerEvent> =
+        repository.getMapEvents(lat, lon, radiusKm)
 } 

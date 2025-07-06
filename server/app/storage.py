@@ -148,5 +148,41 @@ class ObjectStorageService:
             logger.error(f"Unexpected error deleting image: {e}")
             return False
 
+    # ---------------- Event Images ---------------- #
+
+    async def upload_event_image(self, file: UploadFile, event_id: int) -> str:
+        """Upload an event image and return the public URL"""
+        # Validate file is an image
+        if not self._validate_image(file):
+            raise HTTPException(status_code=400, detail="Invalid image file")
+
+        # Limit size to 5MB
+        if file.size and file.size > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB")
+
+        try:
+            file_extension = "jpg"  # convert to JPEG
+            filename = f"event_{event_id}_{uuid.uuid4().hex}.{file_extension}"
+
+            resized_image = self._resize_image(file)
+
+            self.client.put_object(
+                self.bucket_name,
+                filename,
+                resized_image,
+                length=resized_image.getbuffer().nbytes,
+                content_type="image/jpeg",
+            )
+
+            url = f"http://{self.endpoint}/{self.bucket_name}/{filename}"
+            logger.info(f"Uploaded event image: {url}")
+            return url
+        except S3Error as e:
+            logger.error(f"Error uploading to MinIO: {e}")
+            raise HTTPException(status_code=500, detail="Failed to upload image")
+        except Exception as e:
+            logger.error(f"Unexpected error uploading image: {e}")
+            raise HTTPException(status_code=500, detail="Failed to upload image")
+
 # Global instance
 storage_service = ObjectStorageService() 

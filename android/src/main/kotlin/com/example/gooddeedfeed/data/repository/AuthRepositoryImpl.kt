@@ -1,6 +1,7 @@
 package com.example.gooddeedfeed.data.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -164,21 +165,28 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun uploadProfilePicture(file: File): Flow<Result<DomainProfilePictureUploadResponse>> = flow {
+        Log.d(TAG, "uploadProfilePicture() invoked with file: ${file.absolutePath} (${file.length()} bytes)")
+
         val result = try {
             val token = getTokenString()
             if (token.isNullOrBlank()) {
+                Log.e(TAG, "No auth token available – cannot upload profile picture")
                 Result.failure(Exception("No authentication token found"))
             } else {
                 val response = api.uploadProfilePicture(token, file)
                 if (response != null) {
+                    Log.d(TAG, "Upload succeeded – URL returned: ${response.profile_picture_url}")
                     Result.success(response.toDomain())
                 } else {
+                    Log.e(TAG, "Upload failed – API returned null response")
                     Result.failure(Exception("Failed to upload profile picture"))
                 }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Exception during upload: ${e.message}", e)
             Result.failure(e)
         }
+
         emit(result)
     }
 
@@ -206,5 +214,9 @@ class AuthRepositoryImpl(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    companion object {
+        private const val TAG = "AuthRepositoryImpl"
     }
 }

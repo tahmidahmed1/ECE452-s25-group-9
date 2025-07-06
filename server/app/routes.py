@@ -6,14 +6,15 @@ import logging
 from typing import List, Dict
 from fastapi.responses import JSONResponse
 from sqlalchemy import or_
+import math
 
 from .database import get_db
-from .models import User, UserType, InstitutionName, Sex
+from .models import User, UserType, InstitutionName, Sex, Event
 from .schemas import (
     UserCreate, User as UserSchema, Token, OnboardingStepOne, 
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
     InstitutionName as SchemaInstitutionName,
-    UserUpdate
+    UserUpdate, EventCreate
 )
 from .auth import (
     authenticate_user, create_access_token, get_password_hash, 
@@ -141,7 +142,16 @@ async def upload_profile_picture(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    logger.info(f"Profile picture upload request from user: {current_user.username}")
+    logger.info(f"Profile picture upload request from user: {current_user.username}, filename: {file.filename}, content_type: {file.content_type}")
+    
+    # Log file size if possible
+    try:
+        file.file.seek(0, 2)  # Move to end
+        size_bytes = file.file.tell()
+        file.file.seek(0)
+        logger.info(f"Uploaded file size: {size_bytes} bytes")
+    except Exception as e:
+        logger.warning(f"Could not determine uploaded file size: {e}")
     
     # Delete old profile picture if exists
     if current_user.profile_picture_url:
@@ -253,23 +263,97 @@ def get_institutions():
     """Get available institutions for onboarding"""
     return [{"value": inst.value, "label": inst.value} for inst in SchemaInstitutionName] 
 
-# Stub endpoint for fetching events
+# ------------------ Event Endpoints ------------------
+
+# Helper: calculate distance between two lat/lon points (Haversine)
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6371.0  # Earth radius km
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
 @router.get("/events", response_model=List[EventSchema])
-def get_events_stub():
-    return []
+def list_events_nearby(
+    lat: float | None = None,
+    lon: float | None = None,
+    radius_km: float = 50.0,
+    db: Session = Depends(get_db),
+):
+    """Return all events, filtered by distance if lat/lon provided."""
+    events = db.query(Event).all()
+    if lat is not None and lon is not None:
+        events = [
+            e for e in events if e.latitude is not None and e.longitude is not None and _haversine_km(lat, lon, e.latitude, e.longitude) <= radius_km
+        ]
+    return events
 
-# CRUD stub endpoints for events
 @router.post("/events", response_model=EventSchema)
-def create_event_stub(event: EventSchema):
+def create_event(event: EventCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    if current_user.user_type != UserType.ORGANIZER:
+        raise HTTPException(status_code=403, detail="Only organizers can create events")
+    event_data = event.dict()
+    if event_data.get("current_volunteers") is None:
+        event_data["current_volunteers"] = 0
+    new_event = Event(**event_data, organizer_id=current_user.id)
+    db.add(new_event)
+    db.commit()
+    db.refresh(new_event)
+    return new_event
+
+@router.get("/events/{event_id}", response_model=EventSchema)
+def get_event(event_id: int, db: Session = Depends(get_db)):
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
     return event
 
-@router.put("/events/{event_id}", response_model=EventSchema)
-def update_event_stub(event_id: int, event: EventSchema):
+@router.patch("/events/{event_id}", response_model=EventSchema)
+async def update_event(event_id: int, payload: EventCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    for k, v in payload.dict(exclude_unset=True).items():
+        setattr(event, k, v)
+    db.commit()
+    db.refresh(event)
     return event
 
-@router.delete("/events/{event_id}", status_code=204)
-def delete_event_stub(event_id: int):
-    return None 
+@router.delete("/events/{event_id}")
+async def delete_event(event_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    db.delete(event)
+    db.commit()
+    return {"detail": "deleted"}
+
+@router.get("/organizers/{organizer_id}/events", response_model=List[EventSchema])
+def list_events_by_organizer(organizer_id: int, db: Session = Depends(get_db)):
+    return db.query(Event).filter(Event.organizer_id == organizer_id).all()
+
+@router.websocket("/ws/chat/{room_id}")
+async def chat_endpoint(websocket: WebSocket, room_id: int, db: Session = Depends(get_db)):
+    await manager.connect(room_id, websocket)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            # data: {"sender_id":.., "receiver_id":.., "content":..}
+            msg = EventSchema(**data)
+            db.add(msg)
+            db.commit()
+            db.refresh(msg)
+            await manager.broadcast(room_id, msg.dict())
+    except WebSocketDisconnect:
+        manager.disconnect(room_id, websocket) 
 
 # ------------------ Profile Edit ------------------
 
@@ -280,10 +364,11 @@ def update_user_profile(
     db: Session = Depends(get_db),
 ):
     """Update fields of the currently authenticated user. Only provided fields are updated."""
+
     logger.info(f"Profile update requested by {current_user.username}")
 
-    # Iterate over update fields and set attributes if not None
     update_dict = updates.dict(exclude_unset=True)
+
     for field, value in update_dict.items():
         # Convert Enum values to correct DB enums if necessary
         if field == "sex" and value is not None:
@@ -305,62 +390,28 @@ def update_user_profile(
     logger.info(f"Profile updated successfully for {current_user.username}")
     return current_user 
 
-@router.post("/events", response_model=EventSchema)
-async def create_event(event: EventSchema, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    if current_user.user_type != UserType.ORGANIZER:
-        raise HTTPException(status_code=403, detail="Only organizers can create events")
-    db_event = EventSchema(**event.dict(), organizer_id=current_user.id)
-    db.add(db_event)
-    db.commit()
-    db.refresh(db_event)
-    return db_event
+# Event image upload
 
-@router.get("/events/{event_id}", response_model=EventSchema)
-async def get_event(event_id: int, db: Session = Depends(get_db)):
-    event = db.get(EventSchema, event_id)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    return event
-
-@router.patch("/events/{event_id}", response_model=EventSchema)
-async def update_event(event_id: int, payload: EventSchema, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    event = db.get(EventSchema, event_id)
+@router.post("/events/{event_id}/upload-image", response_model=EventSchema)
+async def upload_event_image(
+    event_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Upload an image for an event and return the updated event."""
+    event = db.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     if event.organizer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
-    for k, v in payload.dict(exclude_unset=True).items():
-        setattr(event, k, v)
+
+    # Upload to object storage
+    url = await storage_service.upload_event_image(file, event_id)
+
+    # Save URL
+    event.image_url = url
     db.commit()
     db.refresh(event)
-    return event
 
-@router.delete("/events/{event_id}")
-async def delete_event(event_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    event = db.get(EventSchema, event_id)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
-    if event.organizer_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not allowed")
-    db.delete(event)
-    db.commit()
-    return {"detail": "deleted"}
-
-@router.get("/organizers/{organizer_id}/events", response_model=list[EventSchema])
-async def list_events(organizer_id: int, db: Session = Depends(get_db)):
-    return db.query(EventSchema).filter(EventSchema.organizer_id == organizer_id).all()
-
-@router.websocket("/ws/chat/{room_id}")
-async def chat_endpoint(websocket: WebSocket, room_id: int, db: Session = Depends(get_db)):
-    await manager.connect(room_id, websocket)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            # data: {"sender_id":.., "receiver_id":.., "content":..}
-            msg = EventSchema(**data)
-            db.add(msg)
-            db.commit()
-            db.refresh(msg)
-            await manager.broadcast(room_id, msg.dict())
-    except WebSocketDisconnect:
-        manager.disconnect(room_id, websocket) 
+    return event 
