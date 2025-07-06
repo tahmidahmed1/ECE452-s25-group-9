@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.data.remote
 
+import android.util.Log
 import com.example.gooddeedfeed.data.mapper.toData
 import com.example.gooddeedfeed.data.remote.dto.AuthResponse
 import com.example.gooddeedfeed.data.remote.dto.ErrorResponse
@@ -38,7 +39,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import java.io.File
-import android.util.Log
 
 class AuthApiService(client: HttpClient) : BaseApiService(client) {
     companion object {

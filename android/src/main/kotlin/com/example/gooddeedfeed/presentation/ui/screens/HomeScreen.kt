@@ -1,6 +1,9 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,17 +13,22 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,11 +37,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,6 +53,7 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.base.ActionCard
+import com.example.gooddeedfeed.presentation.ui.components.base.InfoCard
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
@@ -57,19 +68,6 @@ import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import com.example.gooddeedfeed.presentation.ui.components.base.InfoCard
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.heightIn
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -219,7 +217,7 @@ private fun VolunteerCalendarView() {
                 EventItem("Beach Cleanup", "10:00 AM"),
                 EventItem("Food Drive", "1:00 PM"),
                 EventItem("Tree Planting", "4:00 PM"),
-            )
+            ),
         )
     }
 

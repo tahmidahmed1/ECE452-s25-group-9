@@ -1,8 +1,8 @@
 package com.example.gooddeedfeed
 
 import android.app.Application
-import dagger.hilt.android.HiltAndroidApp
 import com.google.android.libraries.places.api.Places
+import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class MainApplication : Application() {

@@ -1,6 +1,8 @@
 package com.example.gooddeedfeed.presentation.viewmodel.volunteer
 
 import android.location.Location
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.services.LocationService
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
@@ -14,8 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 
 data class OpportunitiesData(
     val opportunities: List<VolunteerOpportunity>,
@@ -140,7 +140,9 @@ class OpportunitiesViewModel @Inject constructor(
         if (location == null) return opportunities
 
         return opportunities.filter { opp ->
-            if (opp.latitude == 0.0 && opp.longitude == 0.0) true else {
+            if (opp.latitude == 0.0 && opp.longitude == 0.0) {
+                true
+            } else {
                 val distance = locationService.calculateDistance(location.latitude, location.longitude, opp.latitude, opp.longitude)
                 distance <= radiusKm
             }
@@ -151,7 +153,8 @@ class OpportunitiesViewModel @Inject constructor(
         val currentState = _uiState.value
         if (currentState is UiState.Success) {
             _uiState.value = currentState.copy(
-                data = currentState.data.copy(radiusKm = newRadius,
+                data = currentState.data.copy(
+                    radiusKm = newRadius,
                     opportunities = filterByRadius(allOpportunities, currentState.data.currentLocation, newRadius),
                 ),
             )

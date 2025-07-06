@@ -8,8 +8,8 @@ import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 
 class EventApiService(client: HttpClient) : BaseApiService(client) {
@@ -59,11 +59,15 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
         client.submitFormWithBinaryData(
             url = buildUrl("events/$eventId/upload-image"),
             formData = formData {
-                append("file", file.readBytes(), Headers.build {
-                    append(HttpHeaders.ContentType, "image/jpeg")
-                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
-                })
-            }
+                append(
+                    "file",
+                    file.readBytes(),
+                    Headers.build {
+                        append(HttpHeaders.ContentType, "image/jpeg")
+                        append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                    },
+                )
+            },
         ) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }

@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
+import com.example.gooddeedfeed.domain.util.calculateDistanceKm
+import com.example.gooddeedfeed.presentation.ui.components.base.PermissionRationaleCard
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.MapUiContract
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
@@ -50,8 +52,6 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.example.gooddeedfeed.presentation.ui.components.base.PermissionRationaleCard
-import com.example.gooddeedfeed.domain.util.calculateDistanceKm
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable

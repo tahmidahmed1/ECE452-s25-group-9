@@ -5,11 +5,11 @@ import com.example.gooddeedfeed.data.remote.dto.toDomain
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
-import com.example.gooddeedfeed.domain.repository.EventRepository
 import com.example.gooddeedfeed.domain.repository.AuthRepository
+import com.example.gooddeedfeed.domain.repository.EventRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 

@@ -35,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
@@ -138,7 +137,7 @@ private fun SettingToggleRow(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        
+
         RoundedRectangleToggle(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -155,9 +154,9 @@ private fun RoundedRectangleToggle(
     val animatedOffset by animateFloatAsState(
         targetValue = if (checked) 24f else 4f,
         animationSpec = tween(durationMillis = 200),
-        label = "toggle_offset"
+        label = "toggle_offset",
     )
-    
+
     val backgroundColor by animateColorAsState(
         targetValue = if (checked) {
             MaterialTheme.colorScheme.primary
@@ -165,9 +164,9 @@ private fun RoundedRectangleToggle(
             MaterialTheme.colorScheme.outline
         },
         animationSpec = tween(durationMillis = 200),
-        label = "toggle_background"
+        label = "toggle_background",
     )
-    
+
     val thumbColor by animateColorAsState(
         targetValue = if (checked) {
             MaterialTheme.colorScheme.onPrimary
@@ -175,7 +174,7 @@ private fun RoundedRectangleToggle(
             MaterialTheme.colorScheme.surface
         },
         animationSpec = tween(durationMillis = 200),
-        label = "toggle_thumb"
+        label = "toggle_thumb",
     )
 
     Box(
@@ -192,7 +191,7 @@ private fun RoundedRectangleToggle(
                 .size(20.dp)
                 .offset(x = animatedOffset.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(thumbColor)
+                .background(thumbColor),
         )
     }
 } 

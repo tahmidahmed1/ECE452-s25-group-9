@@ -247,7 +247,7 @@ fun OnboardingStepThreeVolunteerScreen(
                 ) {
                     items(
                         items = displayedSkills,
-                        key = { skill -> skill }
+                        key = { skill -> skill },
                     ) { skill ->
                         SkillChip(
                             text = skill,

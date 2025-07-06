@@ -1,48 +1,47 @@
 package com.example.gooddeedfeed.presentation.ui.screens.organizer
 
+import android.app.Activity
+import android.location.Geocoder
 import android.location.Location
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
-import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
-import kotlinx.coroutines.launch
+import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import com.google.android.libraries.places.api.model.Place
-import com.google.android.libraries.places.widget.Autocomplete
-import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
-import java.io.File
-import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
-import androidx.compose.ui.platform.LocalContext
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
-import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
-import com.google.android.libraries.places.api.net.FetchPlaceRequest
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.tasks.await
-import android.location.Geocoder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.util.Locale
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.android.libraries.places.widget.Autocomplete
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
+import com.google.maps.android.compose.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -221,7 +220,7 @@ fun CreateEventScreen(
             // Map picker button
             OutlinedButton(
                 onClick = { showMapPicker = true },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Select Location on Map")
             }
@@ -340,7 +339,7 @@ fun CreateEventScreen(
                             null
                         }
                     }
-                    locationText = addr?.firstOrNull()?.getAddressLine(0) ?: "${lat},${lon}"
+                    locationText = addr?.firstOrNull()?.getAddressLine(0) ?: "$lat,$lon"
                 }
                 showMapPicker = false
             },
@@ -395,7 +394,7 @@ private fun MapPickerDialog(
                             selectedLatLng?.let { onLocationSelected(it.latitude, it.longitude) }
                         },
                         enabled = selectedLatLng != null,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }

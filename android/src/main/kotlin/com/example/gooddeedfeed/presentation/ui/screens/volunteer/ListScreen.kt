@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
@@ -45,29 +47,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
+import com.example.gooddeedfeed.presentation.ui.components.base.PermissionRationaleCard
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesData
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.isGranted
-import com.example.gooddeedfeed.presentation.ui.components.base.PermissionRationaleCard
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.aspectRatio
+import com.google.accompanist.permissions.rememberPermissionState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -134,7 +133,7 @@ fun ListScreen(
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(
                     items = filteredOrganizers,
-                    key = { org -> org.name }
+                    key = { org -> org.name },
                 ) { org ->
                     Card(
                         modifier = Modifier
@@ -235,7 +234,7 @@ fun ListScreen(
                     ) {
                         items(
                             items = if (organizerSearch.isBlank()) opportunitiesData.opportunities else emptyList(),
-                            key = { opportunity -> opportunity.id }
+                            key = { opportunity -> opportunity.id },
                         ) { opportunity ->
                             OpportunityCard(
                                 opportunity = opportunity,
@@ -392,7 +391,7 @@ private fun OrganizerProfileScreen(profile: AppConstants.OrganizerProfile, onBac
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(
                 items = profile.events,
-                key = { event -> event.title + event.date }
+                key = { event -> event.title + event.date },
             ) { event ->
                 Card(
                     modifier = Modifier

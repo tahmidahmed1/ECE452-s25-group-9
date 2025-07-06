@@ -64,10 +64,12 @@ class OpportunitiesRepositoryImpl @Inject constructor(
             val dist = android.location.Location("event").apply {
                 this.latitude = it.latitude
                 this.longitude = it.longitude
-            }.distanceTo(android.location.Location("user").apply {
-                this.latitude = latitude
-                this.longitude = longitude
-            }) / 1000f
+            }.distanceTo(
+                android.location.Location("user").apply {
+                    this.latitude = latitude
+                    this.longitude = longitude
+                },
+            ) / 1000f
             dist <= radiusKm
         }
         emit(list)
