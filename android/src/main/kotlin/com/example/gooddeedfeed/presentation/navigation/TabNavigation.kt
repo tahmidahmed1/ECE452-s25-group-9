@@ -137,6 +137,7 @@ fun TabNavigationScreen(
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showEditProfile by remember { mutableStateOf(false) }
     var showPreviewProfile by remember { mutableStateOf(false) }
+    var showPrivacySettings by remember { mutableStateOf(false) }
 
     // Generate tabs based on user type early
     val tabs = NavigationConfig.getTabsForUserType(user.userType)
@@ -160,6 +161,7 @@ fun TabNavigationScreen(
                     user = user,
                     onEditProfile = { showEditProfile = true },
                     onPreviewProfile = { showPreviewProfile = true },
+                    onEditPrivacy = { showPrivacySettings = true },
                     onLogout = onLogout,
                 )
             },
@@ -204,6 +206,18 @@ fun TabNavigationScreen(
             com.example.gooddeedfeed.presentation.ui.screens.PreviewProfileScreen(
                 user = user,
                 onBack = { showPreviewProfile = false },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // Privacy & Notifications Overlay
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showPrivacySettings,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+        ) {
+            com.example.gooddeedfeed.presentation.ui.screens.PrivacySettingsScreen(
+                onClose = { showPrivacySettings = false },
                 modifier = Modifier.fillMaxSize(),
             )
         }

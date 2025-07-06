@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -51,6 +50,8 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.example.gooddeedfeed.presentation.ui.components.base.PermissionRationaleCard
+import com.example.gooddeedfeed.domain.util.calculateDistanceKm
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -106,28 +107,6 @@ fun MapView(
         }
     } else {
         PermissionRationaleCard { locationPermissionState.launchPermissionRequest() }
-    }
-}
-
-@Composable
-private fun PermissionRationaleCard(onRequestPermission: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
-            Spacer(Modifier.height(16.dp))
-            Text("Location permission required", fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Text("Please grant location permission to show nearby events.")
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = onRequestPermission) { Text("Grant permission") }
-        }
     }
 }
 
@@ -211,7 +190,7 @@ private fun DetailsRow(label: String, value: String) {
     }
 }
 
-// Helper extensions
+// Helper extensions (kept locally for map visuals)
 fun OpportunityCategory.color(): Color = when (this) {
     OpportunityCategory.ENVIRONMENTAL -> Color(0xFF4CAF50)
     OpportunityCategory.EDUCATION -> Color(0xFF2196F3)
@@ -226,10 +205,4 @@ fun OpportunityCategory.hue(): Float = when (this) {
     OpportunityCategory.SOCIAL_SERVICES -> BitmapDescriptorFactory.HUE_ORANGE
     OpportunityCategory.COMMUNITY_SERVICE -> BitmapDescriptorFactory.HUE_VIOLET
     else -> BitmapDescriptorFactory.HUE_AZURE
-}
-
-fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
-    val results = FloatArray(1)
-    android.location.Location.distanceBetween(lat1, lon1, lat2, lon2, results)
-    return results[0] / 1000f
 } 

@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AssistChip
@@ -129,7 +128,10 @@ fun ReviewCard(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Approve")
+                        Text(
+                            text = "Approve",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                     }
 
                     OutlinedButton(
@@ -145,20 +147,10 @@ fun ReviewCard(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Reject")
-                    }
-
-                    OutlinedButton(
-                        onClick = onRequestMoreInfo,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                        Text(
+                            text = "Reject",
+                            style = MaterialTheme.typography.labelSmall,
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("More Info")
                     }
                 }
             }

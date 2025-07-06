@@ -1,53 +1,60 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.ui.components.base.FormTextField
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
-import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 
 @Composable
-fun CreateDeedScreen(
-    user: DomainUser,
-) {
+fun CreateDeedScreen(user: DomainUser) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
+    // Optimization 8: Use derivedStateOf for computed values to reduce recompositions
+    val isButtonEnabled by remember {
+        derivedStateOf { title.isNotBlank() && description.isNotBlank() }
+    }
+
     ScreenContainer {
-        VerticalSpacer()
+        Column(
+            modifier = Modifier.padding(16.dp),
+        ) {
+            FormTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = "Good Deed Title",
+            )
 
-        FormTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = "Title",
-        )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        VerticalSpacer()
+            FormTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = "Description",
+            )
 
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 3,
-        )
+            Spacer(modifier = Modifier.height(24.dp))
 
-        VerticalSpacer(SpacingSize.Large)
-
-        PrimaryButton(
-            text = "Create",
-            onClick = {},
-            enabled = title.isNotBlank() && description.isNotBlank(),
-        )
+            PrimaryButton(
+                text = "Create",
+                onClick = {},
+                enabled = isButtonEnabled,
+            )
+        }
     }
 } 

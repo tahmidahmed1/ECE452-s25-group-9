@@ -54,13 +54,12 @@ fun AppTopBar(
     user: DomainUser,
     onEditProfile: () -> Unit = {},
     onPreviewProfile: () -> Unit = {},
+    onEditPrivacy: () -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showNotifMenu by remember { mutableStateOf(false) }
     var showProfileMenu by remember { mutableStateOf(false) }
-
-    val onEditPrivacy: () -> Unit = {}
 
     val density = LocalDensity.current
     val statusBarHeight = with(density) {

@@ -1,6 +1,5 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,9 +39,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.toDisplayString
 import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import com.example.gooddeedfeed.presentation.ui.components.ProfileImagePicker
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.example.gooddeedfeed.presentation.ui.components.onboarding.ProfileSectionHeader
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +68,7 @@ fun EditProfileScreen(
 
     // Volunteer-specific fields
     var sex by remember { mutableStateOf(user.sex ?: DomainSex.PREFER_NOT_TO_SAY) }
+    var sexDropdownExpanded by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf(TextFieldValue(user.description ?: "")) }
     var skills by remember { mutableStateOf(TextFieldValue(user.skills?.joinToString(", ") ?: "")) }
     var age by remember { mutableStateOf(TextFieldValue(user.age?.toString() ?: "")) }
@@ -119,6 +128,9 @@ fun EditProfileScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        ProfileSectionHeader("Personal Information")
+                        VerticalSpacer(SpacingSize.Medium)
+
                         OutlinedTextField(
                             value = fullName,
                             onValueChange = { fullName = it },
@@ -148,22 +160,42 @@ fun EditProfileScreen(
                         if (user.userType?.name == "VOLUNTEER") {
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            OutlinedTextField(
-                                value = TextFieldValue(sex.name),
-                                onValueChange = {},
-                                label = { Text("Sex") },
-                                readOnly = true,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        sex = when (sex) {
-                                            DomainSex.MALE -> DomainSex.FEMALE
-                                            DomainSex.FEMALE -> DomainSex.NON_BINARY
-                                            DomainSex.NON_BINARY -> DomainSex.PREFER_NOT_TO_SAY
-                                            DomainSex.PREFER_NOT_TO_SAY -> DomainSex.MALE
-                                        }
-                                    },
-                            )
+                            ExposedDropdownMenuBox(
+                                expanded = sexDropdownExpanded,
+                                onExpandedChange = { sexDropdownExpanded = !sexDropdownExpanded },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                OutlinedTextField(
+                                    value = sex.toDisplayString(),
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Sex") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sexDropdownExpanded) },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                    ),
+                                    modifier = Modifier
+                                        .menuAnchor()
+                                        .fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                )
+
+                                DropdownMenu(
+                                    expanded = sexDropdownExpanded,
+                                    onDismissRequest = { sexDropdownExpanded = false },
+                                ) {
+                                    DomainSex.values().forEach { option ->
+                                        DropdownMenuItem(
+                                            text = { Text(option.toDisplayString()) },
+                                            onClick = {
+                                                sex = option
+                                                sexDropdownExpanded = false
+                                            },
+                                        )
+                                    }
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(

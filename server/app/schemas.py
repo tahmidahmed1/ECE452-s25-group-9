@@ -112,26 +112,6 @@ class ProfilePictureUploadResponse(BaseModel):
     profile_picture_url: str
     message: str
 
-class EventSchema(BaseModel):
-    id: int
-    title: str
-    description: str
-    organization_id: int
-    organization_name: str
-    location: str
-    date: str
-    start_time: str
-    end_time: str
-    max_volunteers: int
-    current_volunteers: int
-    category: str
-    requirements: List[str] = []
-    status: str
-    created_at: str
-    updated_at: str
-    latitude: float = 0.0
-    longitude: float = 0.0
-
 # ------------------ Profile Update ------------------
 
 # Reuse same fields but make them all optional so users can update any subset.
@@ -154,13 +134,24 @@ class UserUpdate(BaseModel):
     has_drivers_license: Optional[bool] = None
     disabilities: Optional[str] = None
 
+# Duplicate schema definitions removed to avoid conflicts
+
+# ------------------ Event Schemas ------------------
+
 class EventBase(BaseModel):
     title: str
-    description: str | None = None
-    date: str | None = None
-    location: str | None = None
-    image_url: str | None = None
+    description: Optional[str] = None
+    date: Optional[str] = None
+    location: Optional[str] = None
+    image_url: Optional[str] = None
 
+    # Geolocation coordinates
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+    # Volunteer counts
+    max_volunteers: Optional[int] = None
+    current_volunteers: Optional[int] = None
 
 class EventCreate(EventBase):
     pass
@@ -172,6 +163,13 @@ class EventOut(EventBase):
 
     class Config:
         orm_mode = True
+
+# Backwards compatibility alias used in routes
+class EventSchema(EventOut):
+    """Alias to maintain compatibility with earlier code referring to EventSchema."""
+    pass 
+
+# ------------------ Messaging Schemas ------------------
 
 
 class MessageBase(BaseModel):

@@ -9,7 +9,7 @@ import javax.inject.Inject
 class MapRepositoryImpl @Inject constructor(
     private val apiService: EventApiService,
 ) : MapRepository {
-    override suspend fun getMapEvents(): List<VolunteerEvent> {
-        return apiService.getAllEvents().map { it.toDomain() }
+    override suspend fun getMapEvents(lat: Double?, lon: Double?, radiusKm: Float): List<VolunteerEvent> {
+        return apiService.getAllEvents(lat, lon, radiusKm).map { it.toDomain() }
     }
 } 

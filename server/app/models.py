@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, Enum, Text, JSON
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, Enum, Text, JSON, Float
 from sqlalchemy.sql import func
 import enum
 
@@ -81,6 +81,12 @@ class Event(Base):
     date = Column(String, nullable=True)
     location = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
+
+    max_volunteers = Column(Integer, nullable=True)
+    current_volunteers = Column(Integer, nullable=False, default=0)
+
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 

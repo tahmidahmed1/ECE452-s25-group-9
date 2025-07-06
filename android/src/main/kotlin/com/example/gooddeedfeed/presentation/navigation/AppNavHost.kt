@@ -25,6 +25,7 @@ import com.example.gooddeedfeed.presentation.ui.screens.auth.SignUpScreen
 import com.example.gooddeedfeed.presentation.ui.screens.onboarding.OnboardingScreen
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private const val TAG = "AppNavHost"
 
@@ -45,7 +46,7 @@ fun appNavHost(
     navController: NavHostController = rememberNavController(),
     viewModel: AuthViewModel = hiltViewModel<AuthViewModel>(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentState = uiState // Store in local variable to enable smart cast
     val toastState by rememberToastState()
 

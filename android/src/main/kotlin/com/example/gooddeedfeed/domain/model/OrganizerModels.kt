@@ -46,4 +46,6 @@ data class CreateEventData(
     val maxVolunteers: Int,
     val category: OpportunityCategory,
     val requirements: List<String>,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )

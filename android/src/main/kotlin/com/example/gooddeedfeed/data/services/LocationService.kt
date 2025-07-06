@@ -14,6 +14,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -60,8 +61,8 @@ class LocationService @Inject constructor(
 
     @SuppressLint("MissingPermission")
     suspend fun getCurrentLocation(): Location? = try {
-        fusedLocationClient.lastLocation.result
-    } catch (e: SecurityException) {
+        fusedLocationClient.lastLocation.await()
+    } catch (e: Exception) {
         null
     }
 

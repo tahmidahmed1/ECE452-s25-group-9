@@ -23,7 +23,7 @@ fun User.toDomain(): DomainUser = DomainUser(
     onboardingCompleted = onboarding_completed,
     fullName = full_name,
     phone = phone,
-    profilePictureUrl = profile_picture_url,
+    profilePictureUrl = profile_picture_url?.toEmulatorAccessibleUrl(),
     organizationName = organization_name,
     institutionName = institution_name?.toDomain(),
     createdAt = created_at,
@@ -90,6 +90,13 @@ fun AuthResponse.toDomain(): DomainAuthResponse = DomainAuthResponse(
 // ProfilePictureUploadResponse mappers
 fun ProfilePictureUploadResponse.toDomain(): DomainProfilePictureUploadResponse =
     DomainProfilePictureUploadResponse(
-        profilePictureUrl = profile_picture_url,
+        profilePictureUrl = profile_picture_url.toEmulatorAccessibleUrl(),
         message = message,
-    ) 
+    )
+
+// ------------------ Helpers ------------------
+
+private fun String.toEmulatorAccessibleUrl(): String {
+    return this.replace("http://localhost", "http://10.0.2.2")
+        .replace("http://127.0.0.1", "http://10.0.2.2")
+} 

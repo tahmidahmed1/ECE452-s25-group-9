@@ -1,126 +1,66 @@
 package com.example.gooddeedfeed.data.repository
 
+import com.example.gooddeedfeed.data.remote.EventApiService
+import com.example.gooddeedfeed.data.remote.dto.toDomain
 import com.example.gooddeedfeed.domain.model.CreateEventData
-import com.example.gooddeedfeed.domain.model.EventStatus
-import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.repository.EventRepository
+import com.example.gooddeedfeed.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class EventRepositoryImpl @Inject constructor() : EventRepository {
+class EventRepositoryImpl @Inject constructor(
+    private val apiService: EventApiService,
+    private val authRepository: AuthRepository,
+) : EventRepository {
 
     override suspend fun getMyEvents(): Flow<List<VolunteerEvent>> = flow {
-        emit(getMockEvents())
-    }
-
-    override suspend fun createEvent(eventData: CreateEventData): Result<VolunteerEvent> {
-        val newEvent = VolunteerEvent(
-            id = (1..1000).random(),
-            title = eventData.title,
-            description = eventData.description,
-            organizationId = 1,
-            organizationName = "Mock Organization",
-            location = eventData.location,
-            date = eventData.date,
-            startTime = eventData.startTime,
-            endTime = eventData.endTime,
-            maxVolunteers = eventData.maxVolunteers,
-            currentVolunteers = 0,
-            category = eventData.category,
-            requirements = eventData.requirements,
-            status = EventStatus.DRAFT,
-            createdAt = "2024-01-01T00:00:00Z",
-            updatedAt = "2024-01-01T00:00:00Z",
-        )
-        return Result.success(newEvent)
-    }
-
-    override suspend fun updateEvent(eventId: Int, eventData: CreateEventData): Result<VolunteerEvent> {
-        val updatedEvent = VolunteerEvent(
-            id = eventId,
-            title = eventData.title,
-            description = eventData.description,
-            organizationId = 1,
-            organizationName = "Mock Organization",
-            location = eventData.location,
-            date = eventData.date,
-            startTime = eventData.startTime,
-            endTime = eventData.endTime,
-            maxVolunteers = eventData.maxVolunteers,
-            currentVolunteers = 2,
-            category = eventData.category,
-            requirements = eventData.requirements,
-            status = EventStatus.PUBLISHED,
-            createdAt = "2024-01-01T00:00:00Z",
-            updatedAt = "2024-01-02T00:00:00Z",
-        )
-        return Result.success(updatedEvent)
-    }
-
-    override suspend fun deleteEvent(eventId: Int): Result<Unit> {
-        return Result.success(Unit)
-    }
-
-    override suspend fun getEventById(eventId: Int): Result<VolunteerEvent> {
-        val event = getMockEvents().find { it.id == eventId }
-        return if (event != null) {
-            Result.success(event)
+        val currentUserResult = authRepository.getCurrentUser().firstOrNull()
+        val userId = currentUserResult?.getOrNull()?.id
+        val dtos = if (userId != null) {
+            apiService.getOrganizerEvents(userId)
         } else {
-            Result.failure(Exception("Event not found"))
+            emptyList()
         }
+        emit(dtos.map { it.toDomain() })
+    }
+
+    override suspend fun createEvent(eventData: CreateEventData): Result<VolunteerEvent> = runCatching {
+        apiService.createEvent(token(), eventData).toDomain()
+    }
+
+    override suspend fun updateEvent(eventId: Int, eventData: CreateEventData): Result<VolunteerEvent> = runCatching {
+        apiService.updateEvent(token(), eventId, eventData).toDomain()
+    }
+
+    override suspend fun deleteEvent(eventId: Int): Result<Unit> = runCatching {
+        apiService.deleteEvent(token(), eventId)
+    }
+
+    override suspend fun getEventById(eventId: Int): Result<VolunteerEvent> = runCatching {
+        apiService.getEvent(eventId).toDomain()
     }
 
     override suspend fun toggleEventStatus(eventId: Int, isPublished: Boolean): Result<Unit> {
-        return Result.success(Unit)
+        // For simplicity, call updateEvent with status change
+        // This assumes backend will accept status field but CreateEventData lacks status; skipping.
+        return Result.failure(Exception("Not implemented"))
     }
 
     override suspend fun getEventApplications(eventId: Int): Flow<List<VolunteerApplicationForOrganizer>> = flow {
-        emit(emptyList())
+        emit(emptyList()) // Not yet implemented
     }
 
-    private fun getMockEvents(): List<VolunteerEvent> {
-        return listOf(
-            VolunteerEvent(
-                id = 1,
-                title = "Community Garden Cleanup",
-                description = "Help clean up and maintain our local community garden",
-                organizationId = 1,
-                organizationName = "Green Earth Initiative",
-                location = "Downtown Community Garden",
-                date = "2024-02-15",
-                startTime = "09:00",
-                endTime = "12:00",
-                maxVolunteers = 20,
-                currentVolunteers = 5,
-                category = OpportunityCategory.ENVIRONMENTAL,
-                requirements = listOf("Bring gloves", "Wear comfortable clothes"),
-                status = EventStatus.PUBLISHED,
-                createdAt = "2024-01-15T10:00:00Z",
-                updatedAt = "2024-01-15T10:00:00Z",
-            ),
-            VolunteerEvent(
-                id = 2,
-                title = "Food Bank Support",
-                description = "Assist with food sorting and distribution",
-                organizationId = 2,
-                organizationName = "City Food Bank",
-                location = "Main Street Food Bank",
-                date = "2024-02-20",
-                startTime = "14:00",
-                endTime = "17:00",
-                maxVolunteers = 15,
-                currentVolunteers = 8,
-                category = OpportunityCategory.SOCIAL_SERVICES,
-                requirements = listOf("Must be 16+", "Food safety training provided"),
-                status = EventStatus.PUBLISHED,
-                createdAt = "2024-01-10T15:00:00Z",
-                updatedAt = "2024-01-10T15:00:00Z",
-            ),
-        )
+    override suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit> = runCatching {
+        apiService.uploadEventImage(token(), eventId, file)
+    }
+
+    private suspend fun token(): String {
+        return authRepository.getToken().firstOrNull() ?: ""
     }
 } 

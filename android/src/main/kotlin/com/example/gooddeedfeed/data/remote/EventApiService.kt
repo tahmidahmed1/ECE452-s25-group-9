@@ -6,45 +6,65 @@ import com.example.gooddeedfeed.domain.model.CreateEventData
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.Headers
 import io.ktor.http.contentType
 
-class EventApiService(private val client: HttpClient) {
-    companion object {
-        private val possibleUrls = listOf(
-            "http://10.0.2.2:8000", // Android emulator
-            "http://127.0.0.1:8000", // local
-        )
-    }
+class EventApiService(client: HttpClient) : BaseApiService(client) {
 
-    private fun base(): String = possibleUrls.first()
+    private fun buildUrl(path: String): String = "${possibleUrls.first()}/$path"
 
     /* ----------------- Public CRUD ----------------- */
 
-    suspend fun getAllEvents(): List<EventDto> = client.get("${base()}/events").body()
+    suspend fun getAllEvents(lat: Double? = null, lon: Double? = null, radiusKm: Float = 50f): List<EventDto> {
+        return client.get(buildUrl("events")) {
+            url {
+                if (lat != null && lon != null) {
+                    parameters.append("lat", lat.toString())
+                    parameters.append("lon", lon.toString())
+                    parameters.append("radius_km", radiusKm.toString())
+                }
+            }
+        }.body()
+    }
 
     suspend fun getOrganizerEvents(organizerId: Int): List<EventDto> =
-        client.get("${base()}/organizers/$organizerId/events").body()
+        client.get(buildUrl("organizers/$organizerId/events")).body()
 
-    suspend fun getEvent(id: Int): EventDto = client.get("${base()}/events/$id").body()
+    suspend fun getEvent(id: Int): EventDto = client.get(buildUrl("events/$id")).body()
 
     suspend fun createEvent(token: String, data: CreateEventData): EventDto =
-        client.post("${base()}/events") {
+        client.post(buildUrl("events")) {
             header(HttpHeaders.Authorization, "Bearer $token")
             contentType(ContentType.Application.Json)
             setBody(data.toDto())
         }.body()
 
     suspend fun updateEvent(token: String, id: Int, data: CreateEventData): EventDto =
-        client.patch("${base()}/events/$id") {
+        client.patch(buildUrl("events/$id")) {
             header(HttpHeaders.Authorization, "Bearer $token")
             contentType(ContentType.Application.Json)
             setBody(data.toDto())
         }.body()
 
     suspend fun deleteEvent(token: String, id: Int) {
-        client.delete("${base()}/events/$id") {
+        client.delete(buildUrl("events/$id")) {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+    }
+
+    suspend fun uploadEventImage(token: String, eventId: Int, file: java.io.File) {
+        client.submitFormWithBinaryData(
+            url = buildUrl("events/$eventId/upload-image"),
+            formData = formData {
+                append("file", file.readBytes(), Headers.build {
+                    append(HttpHeaders.ContentType, "image/jpeg")
+                    append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                })
+            }
+        ) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
     }

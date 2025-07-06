@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.presentation.viewmodel.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.BuildConfig
@@ -160,16 +161,20 @@ constructor(
     // ------------------ Profile Picture ------------------
 
     fun uploadProfilePicture(file: File) {
+        Log.d(TAG, "AuthViewModel.uploadProfilePicture called with file: ${file.absolutePath}")
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             try {
                 authRepository.uploadProfilePicture(file).first().onSuccess {
+                    Log.d(TAG, "Profile picture upload succeeded; refreshing user")
                     // Refresh user after successful upload
                     fetchUser()
                 }.onFailure { err ->
+                    Log.e(TAG, "Profile picture upload failed: ${err.message}")
                     _uiState.value = AuthUiState.Error(err.message ?: "Failed to upload picture")
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "Exception uploading profile picture: ${e.message}", e)
                 _uiState.value = AuthUiState.Error(e.message ?: "Failed to upload picture")
             }
         }
@@ -189,5 +194,9 @@ constructor(
                 _uiState.value = AuthUiState.SignedOut
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "AuthViewModel"
     }
 }

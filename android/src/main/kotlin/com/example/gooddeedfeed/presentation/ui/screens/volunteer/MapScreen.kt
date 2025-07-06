@@ -23,6 +23,7 @@ import com.example.gooddeedfeed.presentation.viewmodel.volunteer.MapViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -31,7 +32,7 @@ fun MapScreen(
     onLogout: () -> Unit = {},
     viewModel: MapViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
 
     // Permission handling – request only when user taps button in PermissionRationaleCard

@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 object ToastManager {
     private val _toastData = MutableStateFlow<ToastData?>(null)
@@ -50,5 +51,5 @@ object ToastManager {
 
 @Composable
 fun rememberToastState(): State<ToastData?> {
-    return ToastManager.toastData.collectAsState()
+    return ToastManager.toastData.collectAsStateWithLifecycle()
 } 

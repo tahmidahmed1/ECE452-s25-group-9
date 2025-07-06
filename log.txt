@@ -1,0 +1,198 @@
+.
+├── CONTRIBUTORS.md
+├── README.md
+├── TODO.md
+├── android
+│   ├── build.gradle.kts
+│   └── src
+│       ├── main
+│       │   ├── AndroidManifest.xml
+│       │   ├── kotlin
+│       │   │   └── com
+│       │   │       └── example
+│       │   │           └── gooddeedfeed
+│       │   │               ├── MainApplication.kt
+│       │   │               ├── data
+│       │   │               │   ├── mapper
+│       │   │               │   │   └── UserMappers.kt
+│       │   │               │   ├── remote
+│       │   │               │   │   ├── AuthApiService.kt
+│       │   │               │   │   ├── BaseApiService.kt
+│       │   │               │   │   ├── EventApiService.kt
+│       │   │               │   │   └── dto
+│       │   │               │   │       ├── AuthDtos.kt
+│       │   │               │   │       └── EventDtos.kt
+│       │   │               │   ├── repository
+│       │   │               │   │   ├── AuthRepositoryImpl.kt
+│       │   │               │   │   ├── EventRepositoryImpl.kt
+│       │   │               │   │   ├── MapRepositoryImpl.kt
+│       │   │               │   │   ├── OpportunitiesRepositoryImpl.kt
+│       │   │               │   │   └── ReviewRepositoryImpl.kt
+│       │   │               │   └── services
+│       │   │               │       └── LocationService.kt
+│       │   │               ├── di
+│       │   │               │   ├── AuthModule.kt
+│       │   │               │   ├── EventModule.kt
+│       │   │               │   └── InstitutionModule.kt
+│       │   │               ├── domain
+│       │   │               │   ├── model
+│       │   │               │   │   ├── DomainEnums.kt
+│       │   │               │   │   ├── InstitutionModels.kt
+│       │   │               │   │   ├── OrganizerModels.kt
+│       │   │               │   │   ├── SharedModels.kt
+│       │   │               │   │   ├── UserModels.kt
+│       │   │               │   │   └── VolunteerModels.kt
+│       │   │               │   ├── repository
+│       │   │               │   │   ├── AuthRepository.kt
+│       │   │               │   │   ├── EventRepository.kt
+│       │   │               │   │   ├── MapRepository.kt
+│       │   │               │   │   ├── OpportunitiesRepository.kt
+│       │   │               │   │   └── ReviewRepository.kt
+│       │   │               │   ├── usecase
+│       │   │               │   │   ├── GetCurrentUserUseCase.kt
+│       │   │               │   │   ├── GetMapEventsUseCase.kt
+│       │   │               │   │   ├── SignInUseCase.kt
+│       │   │               │   │   ├── SignOutUseCase.kt
+│       │   │               │   │   ├── SignUpUseCase.kt
+│       │   │               │   │   ├── institution
+│       │   │               │   │   │   └── ManageReviewsUseCase.kt
+│       │   │               │   │   ├── organizer
+│       │   │               │   │   │   └── ManageEventsUseCase.kt
+│       │   │               │   │   └── volunteer
+│       │   │               │   │       ├── ApplyForOpportunityUseCase.kt
+│       │   │               │   │       └── GetOpportunitiesUseCase.kt
+│       │   │               │   └── util
+│       │   │               │       ├── DistanceUtils.kt
+│       │   │               │       └── UserTypeUtils.kt
+│       │   │               └── presentation
+│       │   │                   ├── MainActivity.kt
+│       │   │                   ├── common
+│       │   │                   │   └── UiState.kt
+│       │   │                   ├── navigation
+│       │   │                   │   ├── AppNavHost.kt
+│       │   │                   │   ├── AppTopBar.kt
+│       │   │                   │   ├── NavigationConfig.kt
+│       │   │                   │   ├── README.md
+│       │   │                   │   └── TabNavigation.kt
+│       │   │                   ├── theme
+│       │   │                   │   ├── Animations.kt
+│       │   │                   │   ├── Shapes.kt
+│       │   │                   │   ├── Theme.kt
+│       │   │                   │   └── Typography.kt
+│       │   │                   ├── ui
+│       │   │                   │   ├── components
+│       │   │                   │   │   ├── CustomToast.kt
+│       │   │                   │   │   ├── ImagePicker.kt
+│       │   │                   │   │   ├── ToastManager.kt
+│       │   │                   │   │   ├── ToastUtils.kt
+│       │   │                   │   │   ├── base
+│       │   │                   │   │   │   ├── CardComponents.kt
+│       │   │                   │   │   │   ├── FormComponents.kt
+│       │   │                   │   │   │   ├── PermissionRationaleCard.kt
+│       │   │                   │   │   │   ├── ScreenComponents.kt
+│       │   │                   │   │   │   └── StateComponents.kt
+│       │   │                   │   │   ├── institution
+│       │   │                   │   │   │   └── InstitutionComponents.kt
+│       │   │                   │   │   ├── navigation
+│       │   │                   │   │   ├── onboarding
+│       │   │                   │   │   │   └── OnboardingComponents.kt
+│       │   │                   │   │   ├── organizer
+│       │   │                   │   │   │   └── OrganizerComponents.kt
+│       │   │                   │   │   └── volunteer
+│       │   │                   │   │       └── VolunteerComponents.kt
+│       │   │                   │   ├── screens
+│       │   │                   │   │   ├── ChatScreen.kt
+│       │   │                   │   │   ├── EditProfileScreen.kt
+│       │   │                   │   │   ├── HomeScreen.kt
+│       │   │                   │   │   ├── LeaderboardScreen.kt
+│       │   │                   │   │   ├── PreviewProfileScreen.kt
+│       │   │                   │   │   ├── PrivacySettingsScreen.kt
+│       │   │                   │   │   ├── SplashScreen.kt
+│       │   │                   │   │   ├── auth
+│       │   │                   │   │   │   ├── SignInScreen.kt
+│       │   │                   │   │   │   └── SignUpScreen.kt
+│       │   │                   │   │   ├── institution
+│       │   │                   │   │   │   └── ReviewScreen.kt
+│       │   │                   │   │   ├── onboarding
+│       │   │                   │   │   │   ├── OnboardingScreen.kt
+│       │   │                   │   │   │   ├── OnboardingStepOneScreen.kt
+│       │   │                   │   │   │   ├── OnboardingStepThreeVolunteerScreen.kt
+│       │   │                   │   │   │   ├── OnboardingStepTwoBasicScreen.kt
+│       │   │                   │   │   │   └── OnboardingStepTwoScreen.kt
+│       │   │                   │   │   ├── organizer
+│       │   │                   │   │   │   ├── CreateEventScreen.kt
+│       │   │                   │   │   │   └── EventManagementScreen.kt
+│       │   │                   │   │   └── volunteer
+│       │   │                   │   │       ├── CreateDeedScreen.kt
+│       │   │                   │   │       ├── ListScreen.kt
+│       │   │                   │   │       ├── MapScreen.kt
+│       │   │                   │   │       ├── MapScreenComponents.kt
+│       │   │                   │   │       └── ProfileScreen.kt
+│       │   │                   │   └── theme
+│       │   │                   │       └── Constants.kt
+│       │   │                   └── viewmodel
+│       │   │                       ├── auth
+│       │   │                       │   └── AuthViewModel.kt
+│       │   │                       ├── common
+│       │   │                       │   └── HomeViewModel.kt
+│       │   │                       ├── institution
+│       │   │                       │   └── ReviewViewModel.kt
+│       │   │                       ├── onboarding
+│       │   │                       │   └── OnboardingViewModel.kt
+│       │   │                       ├── organizer
+│       │   │                       │   └── EventManagementViewModel.kt
+│       │   │                       ├── profile
+│       │   │                       └── volunteer
+│       │   │                           ├── MapViewModel.kt
+│       │   │                           └── OpportunitiesViewModel.kt
+│       │   └── res
+│       │       ├── drawable
+│       │       ├── font
+│       │       │   ├── dm_sans_bold.ttf
+│       │       │   ├── dm_sans_light.ttf
+│       │       │   ├── dm_sans_medium.ttf
+│       │       │   └── dm_sans_regular.ttf
+│       │       ├── layout
+│       │       ├── mipmap
+│       │       │   └── ic_launcher.png
+│       │       ├── values
+│       │       │   ├── strings.xml
+│       │       │   └── themes.xml
+│       │       └── values-night
+│       │           └── themes.xml
+├── build.gradle.kts
+├── docker-compose.yml
+├── gradle
+│   ├── libs.versions.toml
+│   └── wrapper
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── gradle.properties
+├── gradlew
+├── gradlew.bat
+├── local.properties
+├── log.txt
+├── run-dev.bat
+├── run-dev.sh
+├── server
+│   ├── Dockerfile
+│   ├── alembic
+│   │   ├── README
+│   │   ├── env.py
+│   │   ├── script.py.mako
+│   │   └── versions
+│   │       └── 20250701_01_add_lat_lon_to_events.py
+│   ├── alembic.ini
+│   ├── app
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── database.py
+│   │   ├── main.py
+│   │   ├── models.py
+│   │   ├── routes.py
+│   │   ├── schemas.py
+│   │   └── storage.py
+│   └── requirements.txt
+└── settings.gradle.kts
+
+72 directories, 147 files

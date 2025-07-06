@@ -26,6 +26,7 @@ import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.LoadingIndicator
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.OnboardingDotIndicators
 import com.example.gooddeedfeed.presentation.viewmodel.onboarding.OnboardingViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +42,7 @@ fun OnboardingScreen(
     var basicProfilePicture: java.io.File? by remember { mutableStateOf(null) }
     val context = LocalContext.current
 
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Calculate total steps based on user type
     val totalSteps = when (selectedUserType) {

@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
 import com.example.gooddeedfeed.presentation.ui.screens.HomeScreen
-import com.example.gooddeedfeed.presentation.ui.screens.LeaderboardScreen
+import com.example.gooddeedfeed.presentation.ui.screens.StatsScreen
 import com.example.gooddeedfeed.presentation.ui.screens.institution.ReviewScreen
 import com.example.gooddeedfeed.presentation.ui.screens.organizer.EventManagementScreen
 import com.example.gooddeedfeed.presentation.ui.screens.volunteer.ListScreen
@@ -36,9 +36,9 @@ object NavigationConfig {
 
     @Composable
     private fun createLeaderboardTab(): TabItem = TabItem(
-        title = "Leaderboard",
+        title = "Statistics",
         icon = Icons.Default.Star,
-        screen = { _, _ -> LeaderboardScreen() },
+        screen = { _, _ -> StatsScreen() },
     )
 
     @Composable

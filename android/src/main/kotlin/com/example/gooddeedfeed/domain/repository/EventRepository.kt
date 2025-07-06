@@ -42,6 +42,11 @@ interface EventRepository {
     suspend fun toggleEventStatus(eventId: Int, isPublished: Boolean): Result<Unit>
 
     /**
+     * Upload or replace the image for an event.
+     */
+    suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit>
+
+    /**
      * Get volunteer applications for an event
      */
     suspend fun getEventApplications(eventId: Int): Flow<List<VolunteerApplicationForOrganizer>>

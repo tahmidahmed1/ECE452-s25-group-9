@@ -25,6 +25,8 @@ data class EventDto(
     val created_at: String? = null,
     val updated_at: String? = null,
     val image_url: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 fun EventDto.toDomain(): VolunteerEvent = VolunteerEvent(
@@ -44,6 +46,8 @@ fun EventDto.toDomain(): VolunteerEvent = VolunteerEvent(
     status = status,
     createdAt = created_at ?: "",
     updatedAt = updated_at ?: "",
+    latitude = latitude ?: 0.0,
+    longitude = longitude ?: 0.0,
 )
 
 fun CreateEventData.toDto(): EventDto = EventDto(
@@ -56,4 +60,6 @@ fun CreateEventData.toDto(): EventDto = EventDto(
     max_volunteers = maxVolunteers,
     category = category,
     requirements = requirements,
+    latitude = latitude,
+    longitude = longitude,
 ) 
