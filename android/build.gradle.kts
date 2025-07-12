@@ -74,7 +74,7 @@ android {
 
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
-    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
+    implementation(platform("com.google.firebase:firebase-bom:32.7.3"))
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
     implementation("androidx.activity:activity-compose:1.10.1")
