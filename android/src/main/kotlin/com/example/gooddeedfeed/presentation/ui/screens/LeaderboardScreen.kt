@@ -671,7 +671,6 @@ private fun SubscriptionsSection(
     }
 }
 
-
 @Composable
 private fun SubscriptionCard(
     organizer: DomainUser,

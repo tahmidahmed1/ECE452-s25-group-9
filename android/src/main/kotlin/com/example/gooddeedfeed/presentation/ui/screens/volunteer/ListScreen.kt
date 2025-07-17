@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,7 +39,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -65,15 +65,15 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.ui.components.base.EnhancedLocationPermissionManager
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.FiltersDrawer
-import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.OpportunitiesList
 import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
+import com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.SubscriptionViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 
@@ -126,7 +126,7 @@ fun ListScreen(
                 OrganizerProfileScreen(
                     organizer = selectedOrganizer!!,
                     onBack = { selectedOrganizer = null },
-                    onMessage = { 
+                    onMessage = {
                         showMessageDialog = true
                         messageText = ""
                     },
@@ -138,7 +138,7 @@ fun ListScreen(
                             subscriptionViewModel.subscribeToOrganizer(selectedOrganizer!!.id)
                             ToastManager.showSuccess("Subscribed to ${selectedOrganizer!!.organizationName ?: selectedOrganizer!!.fullName ?: selectedOrganizer!!.username}")
                         }
-                    }
+                    },
                 )
             } else if (selectedOpportunity != null) {
                 VolunteerOpportunityDetailScreen(opportunity = selectedOpportunity!!, onBack = { selectedOpportunity = null })
@@ -279,10 +279,10 @@ fun ListScreen(
                         showMessageDialog = false
                         messageText = ""
                     },
-                    onDismiss = { 
+                    onDismiss = {
                         showMessageDialog = false
                         messageText = ""
-                    }
+                    },
                 )
             }
         },
@@ -524,11 +524,11 @@ private fun OrganizerProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Centered profile section
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             // Profile picture
             if (organizer.profilePictureUrl != null && organizer.profilePictureUrl.isNotEmpty()) {
@@ -556,9 +556,9 @@ private fun OrganizerProfileScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Organization/Full name
             organizer.organizationName?.let { orgName ->
                 Text(
@@ -577,7 +577,7 @@ private fun OrganizerProfileScreen(
                     textAlign = TextAlign.Center,
                 )
             }
-            
+
             // Username
             Text(
                 text = "@${organizer.username}",
@@ -585,9 +585,9 @@ private fun OrganizerProfileScreen(
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Email
             Text(
                 text = organizer.email,
@@ -599,28 +599,28 @@ private fun OrganizerProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(organizer.organizationDescription ?: "No description available", style = MaterialTheme.typography.bodyMedium)
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Action buttons row
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Button(
                 onClick = onSubscriptionToggle,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Icon(
                     imageVector = if (organizer.isSubscribed) Icons.Default.Check else Icons.Default.Add,
-                    contentDescription = null
+                    contentDescription = null,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(if (organizer.isSubscribed) "Subscribed" else "Subscribe")
             }
-            
+
             Button(
                 onClick = onMessage,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Icon(Icons.Default.Chat, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
@@ -633,7 +633,7 @@ private fun OrganizerProfileScreen(
             Text(
                 text = "${organizer.subscriberCount} subscribers",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -747,7 +747,7 @@ private fun MessageDialog(
                 Text(
                     text = "Send a message to start a conversation:",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 16.dp),
                 )
                 OutlinedTextField(
                     value = messageText,
@@ -755,14 +755,14 @@ private fun MessageDialog(
                     placeholder = { Text("Type your message...") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
-                    maxLines = 5
+                    maxLines = 5,
                 )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = onSend,
-                enabled = messageText.isNotBlank()
+                enabled = messageText.isNotBlank(),
             ) {
                 Text("Send")
             }
@@ -771,6 +771,6 @@ private fun MessageDialog(
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
-        }
+        },
     )
 } 

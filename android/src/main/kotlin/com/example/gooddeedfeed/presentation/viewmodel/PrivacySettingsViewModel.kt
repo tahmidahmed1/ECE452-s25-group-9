@@ -2,8 +2,8 @@ package com.example.gooddeedfeed.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
 import com.example.gooddeedfeed.data.repository.AuthRepositoryImpl
+import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,7 +101,7 @@ class PrivacySettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     notificationsEnabled = enabled,
                     successMessage = if (enabled) "Notifications enabled" else "Notifications disabled",
-                    errorMessage = null
+                    errorMessage = null,
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -117,15 +117,15 @@ class PrivacySettingsViewModel @Inject constructor(
             try {
                 // Update local settings first
                 locationSettingsRepository.setShareProfilePictureEnabled(enabled)
-                
+
                 // Update backend
                 val userUpdate = DomainUserUpdate(shareProfilePicture = enabled)
                 authRepository.updateProfile(userUpdate)
-                
+
                 _uiState.value = _uiState.value.copy(
                     shareProfilePictureEnabled = enabled,
                     successMessage = if (enabled) "Profile picture sharing enabled" else "Profile picture sharing disabled",
-                    errorMessage = null
+                    errorMessage = null,
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
