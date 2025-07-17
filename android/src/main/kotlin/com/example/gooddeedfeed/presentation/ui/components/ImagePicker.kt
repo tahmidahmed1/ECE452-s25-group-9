@@ -142,13 +142,17 @@ object ImageUtils {
         fun validateOrganizationName(organizationName: String?, userType: DomainUserType?): String? {
             return if (userType == DomainUserType.ORGANIZER && organizationName.isNullOrBlank()) {
                 "Organization name is required"
-            } else null
+            } else {
+                null
+            }
         }
 
         fun validateOrganizationType(organizationType: OrganizationType?, userType: DomainUserType?): String? {
             return if (userType == DomainUserType.ORGANIZER && organizationType == null) {
                 "Organization type is required"
-            } else null
+            } else {
+                null
+            }
         }
 
         fun validateAge(age: String): String? {

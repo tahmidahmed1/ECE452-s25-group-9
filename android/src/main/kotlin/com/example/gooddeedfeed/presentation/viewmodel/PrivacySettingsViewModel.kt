@@ -16,12 +16,12 @@ data class PrivacySettingsState(
     val notificationsEnabled: Boolean = true,
     val shareProfilePictureEnabled: Boolean = true,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel
 class PrivacySettingsViewModel @Inject constructor(
-    private val locationSettingsRepository: LocationSettingsRepository
+    private val locationSettingsRepository: LocationSettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PrivacySettingsState())
@@ -36,18 +36,18 @@ class PrivacySettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-                
+
                 combine(
                     locationSettingsRepository.isLocationEnabled,
                     locationSettingsRepository.isNotificationsEnabled,
-                    locationSettingsRepository.isShareProfilePictureEnabled
+                    locationSettingsRepository.isShareProfilePictureEnabled,
                 ) { locationEnabled, notificationsEnabled, shareProfilePictureEnabled ->
                     PrivacySettingsState(
                         locationEnabled = locationEnabled,
                         notificationsEnabled = notificationsEnabled,
                         shareProfilePictureEnabled = shareProfilePictureEnabled,
                         isLoading = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
                 }.collect { state ->
                     _uiState.value = state
@@ -55,7 +55,7 @@ class PrivacySettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Failed to load settings: ${e.message}"
+                    errorMessage = "Failed to load settings: ${e.message}",
                 )
             }
         }
@@ -65,9 +65,9 @@ class PrivacySettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-                
+
                 locationSettingsRepository.setLocationEnabled(enabled)
-                
+
                 _uiState.value = _uiState.value.copy(
                     locationEnabled = enabled,
                     isLoading = false,
@@ -75,12 +75,12 @@ class PrivacySettingsViewModel @Inject constructor(
                         "Location services enabled! You may need to restart the app for changes to take effect."
                     } else {
                         "Location services disabled. Nearby events may not be shown accurately."
-                    }
+                    },
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Failed to update location setting: ${e.message}"
+                    errorMessage = "Failed to update location setting: ${e.message}",
                 )
             }
         }
@@ -93,7 +93,7 @@ class PrivacySettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(notificationsEnabled = enabled)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = "Failed to update notifications setting: ${e.message}"
+                    errorMessage = "Failed to update notifications setting: ${e.message}",
                 )
             }
         }
@@ -106,7 +106,7 @@ class PrivacySettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(shareProfilePictureEnabled = enabled)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = "Failed to update profile picture setting: ${e.message}"
+                    errorMessage = "Failed to update profile picture setting: ${e.message}",
                 )
             }
         }
@@ -115,29 +115,29 @@ class PrivacySettingsViewModel @Inject constructor(
     fun saveAllSettings(
         locationEnabled: Boolean,
         notificationsEnabled: Boolean,
-        shareProfilePictureEnabled: Boolean
+        shareProfilePictureEnabled: Boolean,
     ) {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-                
+
                 locationSettingsRepository.updateAllSettings(
                     locationEnabled,
                     notificationsEnabled,
-                    shareProfilePictureEnabled
+                    shareProfilePictureEnabled,
                 )
-                
+
                 _uiState.value = _uiState.value.copy(
                     locationEnabled = locationEnabled,
                     notificationsEnabled = notificationsEnabled,
                     shareProfilePictureEnabled = shareProfilePictureEnabled,
                     isLoading = false,
-                    errorMessage = null
+                    errorMessage = null,
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Failed to save settings: ${e.message}"
+                    errorMessage = "Failed to save settings: ${e.message}",
                 )
             }
         }

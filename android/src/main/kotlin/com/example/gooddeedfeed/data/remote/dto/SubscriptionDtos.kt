@@ -1,31 +1,29 @@
 package com.example.gooddeedfeed.data.remote.dto
 
 import kotlinx.serialization.Serializable
-import com.example.gooddeedfeed.data.remote.dto.UserDto
-import com.example.gooddeedfeed.data.remote.dto.SocialMediaLinkDto
 
 @Serializable
 data class SubscriptionCreateDto(
-    val organizer_id: Int
+    val organizer_id: Int,
 )
 
 @Serializable
 data class SubscriptionResponseDto(
     val success: Boolean,
     val message: String,
-    val is_subscribed: Boolean
+    val is_subscribed: Boolean,
 )
 
 @Serializable
 data class SubscriptionStatusDto(
     val organizer_id: Int,
     val is_subscribed: Boolean,
-    val subscribed_at: String? = null
+    val subscribed_at: String? = null,
 )
 
 @Serializable
 data class UserSubscriptionsResponseDto(
-    val subscriptions: List<UserDto>
+    val subscriptions: List<UserDto>,
 )
 
 @Serializable
@@ -58,5 +56,5 @@ data class OrganizerWithSubscriptionStatusDto(
     val disabilities: String? = null,
     val karma_points: Int = 0,
     val is_subscribed: Boolean = false,
-    val subscriber_count: Int = 0
+    val subscriber_count: Int = 0,
 ) 

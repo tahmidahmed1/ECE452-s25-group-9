@@ -33,16 +33,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.theme.BorderRadius
 import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
-import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
-import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.ui.components.BadgeManager
 import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundScreen
-import com.example.gooddeedfeed.presentation.navigation.TabItem
-import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
+import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
 
 @Composable
 fun FloatingNavBarItem(

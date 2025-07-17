@@ -10,7 +10,7 @@ class LeaderboardApiService(client: HttpClient) : BaseApiService(client) {
 
     suspend fun getLeaderboard(
         page: Int = 1,
-        pageSize: Int = 20
+        pageSize: Int = 20,
     ): LeaderboardResponseDto {
         return withFallbackUrls { baseUrl ->
             client.get("$baseUrl/leaderboard") {

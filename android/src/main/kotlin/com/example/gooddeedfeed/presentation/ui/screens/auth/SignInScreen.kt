@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.BuildConfig
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
-import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.FormTextField
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SecondaryButton
@@ -61,7 +60,7 @@ fun SignInScreen(
     onNavigateToSignUp: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onNavigateToHome: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -203,7 +202,7 @@ fun SignInScreen(
             // Development Mode - Only show in debug builds
             if (BuildConfig.DEV_MODE) {
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -223,17 +222,17 @@ fun SignInScreen(
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                        
+
                         Text(
                             text = "Quick sign in for testing",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -251,9 +250,9 @@ fun SignInScreen(
                                     modifier = Modifier.size(32.dp),
                                 )
                             }
-                            
+
                             Spacer(modifier = Modifier.width(16.dp))
-                            
+
                             FloatingActionButton(
                                 onClick = { if (!isLoading) onDevModeSignIn(DomainUserType.ORGANIZER) },
                                 modifier = Modifier.size(64.dp),
@@ -267,7 +266,7 @@ fun SignInScreen(
                                 )
                             }
                         }
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -277,9 +276,9 @@ fun SignInScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            
+
                             Spacer(modifier = Modifier.width(32.dp))
-                            
+
                             Text(
                                 text = "Organizer",
                                 style = MaterialTheme.typography.bodySmall,
@@ -292,4 +291,3 @@ fun SignInScreen(
         }
     }
 }
-

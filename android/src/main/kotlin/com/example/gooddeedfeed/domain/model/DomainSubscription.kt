@@ -3,13 +3,13 @@ package com.example.gooddeedfeed.domain.model
 data class DomainSubscriptionResponse(
     val success: Boolean,
     val message: String,
-    val isSubscribed: Boolean
+    val isSubscribed: Boolean,
 )
 
 data class DomainSubscriptionStatus(
     val organizerId: Int,
     val isSubscribed: Boolean,
-    val subscribedAt: String? = null
+    val subscribedAt: String? = null,
 )
 
 data class DomainOrganizerWithSubscriptionStatus(
@@ -41,10 +41,10 @@ data class DomainOrganizerWithSubscriptionStatus(
     val disabilities: String? = null,
     val karmaPoints: Int = 0,
     val isSubscribed: Boolean = false,
-    val subscriberCount: Int = 0
+    val subscriberCount: Int = 0,
 )
 
 data class DomainSocialMediaLink(
     val platform: String,
-    val url: String
+    val url: String,
 ) 

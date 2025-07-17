@@ -6,9 +6,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.mapper.toDomain
 import com.example.gooddeedfeed.data.remote.BadgeApiService
 import com.example.gooddeedfeed.domain.model.DomainBadge
-import com.example.gooddeedfeed.domain.model.DomainUserBadge
-import com.example.gooddeedfeed.domain.model.DomainBadgeCheckResponse
 import com.example.gooddeedfeed.domain.model.DomainBadgeAchievement
+import com.example.gooddeedfeed.domain.model.DomainBadgeCheckResponse
+import com.example.gooddeedfeed.domain.model.DomainUserBadge
 import com.example.gooddeedfeed.domain.repository.BadgeRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -63,7 +63,7 @@ class BadgeRepositoryImpl @Inject constructor(
                                 description = achievement.description,
                                 iconName = achievement.iconName,
                                 color = achievement.color,
-                                earnedAt = achievement.earnedAt
+                                earnedAt = achievement.earnedAt,
                             )
                         },
                         totalBadgesEarned = dto.totalBadgesEarned,
@@ -76,9 +76,9 @@ class BadgeRepositoryImpl @Inject constructor(
                                 iconName = badge.iconName,
                                 color = badge.color,
                                 isActive = badge.isActive,
-                                createdAt = badge.createdAt
+                                createdAt = badge.createdAt,
                             )
-                        }
+                        },
                     )
                 }
             }

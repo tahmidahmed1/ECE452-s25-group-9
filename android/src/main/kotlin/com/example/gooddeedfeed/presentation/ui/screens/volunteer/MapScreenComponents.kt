@@ -54,7 +54,6 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlin.math.cos
 import kotlin.math.ln
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -67,10 +66,10 @@ fun MapView(
     onEventSelected: (VolunteerEvent) -> Unit,
 ) {
     // Use user's current location if available, otherwise use a neutral default
-    val initialLocation = uiState.currentLocation?.let { 
-        LatLng(it.latitude, it.longitude) 
+    val initialLocation = uiState.currentLocation?.let {
+        LatLng(it.latitude, it.longitude)
     } ?: LatLng(43.6532, -79.3832) // Toronto as fallback only
-    
+
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(initialLocation, zoomLevel)
     }
@@ -83,11 +82,13 @@ fun MapView(
             val currentTarget = cameraPositionState.position.target
             val distance = FloatArray(1)
             Location.distanceBetween(
-                currentTarget.latitude, currentTarget.longitude,
-                userLocation.latitude, userLocation.longitude,
-                distance
+                currentTarget.latitude,
+                currentTarget.longitude,
+                userLocation.latitude,
+                userLocation.longitude,
+                distance,
             )
-            
+
             // Only animate if we're more than 1km away (to avoid constant updates)
             if (distance[0] > 1000) {
                 cameraPositionState.animate(
@@ -114,10 +115,10 @@ fun MapView(
             modifier = modifier,
             cameraPositionState = cameraPositionState,
             properties = MapProperties(
-                isMyLocationEnabled = true, 
+                isMyLocationEnabled = true,
                 mapType = MapType.NORMAL,
                 // Disable any automatic location centering that might interfere
-                isIndoorEnabled = false
+                isIndoorEnabled = false,
             ),
             uiSettings = MapUiSettings(
                 myLocationButtonEnabled = true,
@@ -126,7 +127,7 @@ fun MapView(
                 rotationGesturesEnabled = true,
                 scrollGesturesEnabled = true,
                 tiltGesturesEnabled = true,
-                zoomGesturesEnabled = true
+                zoomGesturesEnabled = true,
             ),
         ) {
             uiState.currentLocation?.let { loc ->
@@ -156,11 +157,11 @@ fun MapView(
         // Check if permission is permanently denied
         if (locationPermissionState.status.shouldShowRationale) {
             // Permission denied but not permanently - show rationale
-        PermissionRationaleCard { locationPermissionState.launchPermissionRequest() }
+            PermissionRationaleCard { locationPermissionState.launchPermissionRequest() }
         } else {
             // Permission permanently denied - show "Uh Oh" state with settings option
             LocationPermissionHandler(
-                onOpenSettings = { /* This is handled within the component */ }
+                onOpenSettings = { /* This is handled within the component */ },
             )
         }
     }
@@ -202,15 +203,15 @@ fun RadiusSlider(radiusKm: Float, onRadiusChange: (Float) -> Unit, onZoomChange:
             }
             Spacer(Modifier.height(8.dp))
             Slider(
-                value = radiusKm, 
+                value = radiusKm,
                 onValueChange = { newRadius ->
                     onRadiusChange(newRadius)
                     // Calculate zoom level to fit the radius circle within screen bounds
                     val zoomLevel = calculateZoomForRadius(newRadius)
                     onZoomChange(zoomLevel)
-                }, 
-                valueRange = 1f..50f, 
-                steps = 49
+                },
+                valueRange = 1f..50f,
+                steps = 49,
             )
         }
     }
@@ -224,24 +225,24 @@ private fun calculateZoomForRadius(radiusKm: Float): Float {
     // We want the radius circle to fit within the screen with some padding
     // Assume we want the circle to take up about 60% of the screen width
     // This means the total diameter should be about 60% of visible distance
-    
+
     // Convert radius to meters and add padding factor
     val radiusMeters = radiusKm * 1000.0
     val paddingFactor = 1.8 // This ensures the circle fits comfortably with some padding
     val requiredViewDistance = radiusMeters * paddingFactor
-    
+
     // Google Maps zoom formula approximation at latitude ~45 degrees (reasonable global average)
     // meters_per_pixel = 156543.03392 * cos(latitude) / 2^zoom_level
     // For latitude ~45°, cos(45°) ≈ 0.7071
     // Assume screen width is ~400dp ≈ 1000 pixels (rough mobile screen approximation)
-    
+
     val metersPerPixelAtZoom0 = 156543.03392 * 0.7071
     val screenWidthPixels = 1000.0
     val requiredMetersPerPixel = requiredViewDistance / screenWidthPixels
-    
+
     // Calculate zoom level: zoom = log2(metersPerPixelAtZoom0 / requiredMetersPerPixel)
     val zoomLevel = ln(metersPerPixelAtZoom0 / requiredMetersPerPixel) / ln(2.0)
-    
+
     // Clamp zoom level to reasonable bounds (Google Maps supports 1-20)
     return zoomLevel.toFloat().coerceIn(8f, 18f)
 }

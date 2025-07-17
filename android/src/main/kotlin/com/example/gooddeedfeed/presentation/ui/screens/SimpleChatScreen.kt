@@ -53,21 +53,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
-import com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.ChatMessage
 import com.example.gooddeedfeed.presentation.viewmodel.ChatConversation
+import com.example.gooddeedfeed.presentation.viewmodel.ChatMessage
+import com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel
 
 @Composable
 fun SimpleChatScreen(
     user: DomainUser,
     otherUserId: Int? = null,
     modifier: Modifier = Modifier,
-    viewModel: ChatViewModel = hiltViewModel<ChatViewModel>()
+    viewModel: ChatViewModel = hiltViewModel<ChatViewModel>(),
 ) {
     val conversationsState by viewModel.conversationsState.collectAsStateWithLifecycle()
     val messagesState by viewModel.messagesState.collectAsStateWithLifecycle()
     val sendMessageState by viewModel.sendMessageState.collectAsStateWithLifecycle()
-    
+
     var selectedConversation by remember { mutableStateOf<ChatConversation?>(null) }
     var showMessages by remember { mutableStateOf(otherUserId != null) }
 
@@ -100,18 +100,18 @@ fun SimpleChatScreen(
             subtitle = "Chat with organizer",
             lastMessage = "",
             timestamp = "",
-            otherUserId = otherUserId ?: 0
+            otherUserId = otherUserId ?: 0,
         )
-        
+
         ChatMessagesScreen(
             conversation = conversation,
             user = user,
-            onBackClick = { 
+            onBackClick = {
                 showMessages = false
                 selectedConversation = null
             },
             viewModel = viewModel,
-            modifier = modifier
+            modifier = modifier,
         )
     } else {
         ChatListScreen(
@@ -122,7 +122,7 @@ fun SimpleChatScreen(
                 showMessages = true
                 viewModel.loadMessages(conversation.otherUserId, user)
             },
-            modifier = modifier
+            modifier = modifier,
         )
     }
 }
@@ -132,27 +132,27 @@ private fun ChatListScreen(
     user: DomainUser,
     conversationsState: UiState<List<ChatConversation>>,
     onConversationClick: (ChatConversation) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         // Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Chat,
                 contentDescription = "Chat",
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Messages",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
 
@@ -161,7 +161,7 @@ private fun ChatListScreen(
             is UiState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
@@ -171,39 +171,39 @@ private fun ChatListScreen(
                 if (conversations.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Chat,
                                 contentDescription = "No conversations",
                                 modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "No conversations yet",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = "Start a conversation with an organizer",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
                 } else {
                     LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(conversations) { conversation ->
                             ConversationItem(
                                 conversation = conversation,
-                                onClick = { onConversationClick(conversation) }
+                                onClick = { onConversationClick(conversation) },
                             )
                         }
                     }
@@ -212,20 +212,20 @@ private fun ChatListScreen(
             is UiState.Error -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
                             text = conversationsState.message,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
-                            onClick = { /* Retry loading */ }
+                            onClick = { /* Retry loading */ },
                         ) {
                             Text("Retry")
                         }
@@ -240,21 +240,21 @@ private fun ChatListScreen(
 @Composable
 private fun ConversationItem(
     conversation: ChatConversation,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -262,13 +262,13 @@ private fun ConversationItem(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = conversation.subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -276,17 +276,17 @@ private fun ConversationItem(
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
             Column(
-                horizontalAlignment = Alignment.End
+                horizontalAlignment = Alignment.End,
             ) {
                 Text(
                     text = conversation.timestamp,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (conversation.unreadCount > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -295,14 +295,14 @@ private fun ConversationItem(
                             .size(20.dp)
                             .background(
                                 MaterialTheme.colorScheme.primary,
-                                CircleShape
+                                CircleShape,
                             ),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = conversation.unreadCount.toString(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
                 }
@@ -318,7 +318,7 @@ private fun ChatMessagesScreen(
     user: DomainUser,
     onBackClick: () -> Unit,
     viewModel: ChatViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val messagesState by viewModel.messagesState.collectAsStateWithLifecycle()
     var messageText by remember { mutableStateOf("") }
@@ -327,7 +327,7 @@ private fun ChatMessagesScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
     ) {
         // Top bar
         TopAppBar(
@@ -337,12 +337,12 @@ private fun ChatMessagesScreen(
                         text = conversation.title,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = conversation.subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             },
@@ -350,10 +350,10 @@ private fun ChatMessagesScreen(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back"
+                        contentDescription = "Back",
                     )
                 }
-            }
+            },
         )
 
         // Messages
@@ -362,7 +362,7 @@ private fun ChatMessagesScreen(
                 is UiState.Loading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -372,12 +372,12 @@ private fun ChatMessagesScreen(
                     if (messages.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = "No messages yet",
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     } else {
@@ -386,12 +386,12 @@ private fun ChatMessagesScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
-                            reverseLayout = true
+                            reverseLayout = true,
                         ) {
                             items(messages.reversed()) { message ->
                                 ChatMessageItem(
                                     message = message,
-                                    currentUserId = user.id
+                                    currentUserId = user.id,
                                 )
                             }
                         }
@@ -400,20 +400,20 @@ private fun ChatMessagesScreen(
                 is UiState.Error -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
                                 text = (messagesState as UiState.Error).message,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { viewModel.loadMessages(conversation.otherUserId, user) }
+                                onClick = { viewModel.loadMessages(conversation.otherUserId, user) },
                             ) {
                                 Text("Retry")
                             }
@@ -429,14 +429,14 @@ private fun ChatMessagesScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedTextField(
                     value = messageText,
@@ -444,7 +444,7 @@ private fun ChatMessagesScreen(
                     placeholder = { Text("Type your message...") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(24.dp),
-                    maxLines = 4
+                    maxLines = 4,
                 )
 
                 FilledIconButton(
@@ -455,11 +455,11 @@ private fun ChatMessagesScreen(
                         }
                     },
                     modifier = Modifier.size(48.dp),
-                    enabled = messageText.isNotBlank()
+                    enabled = messageText.isNotBlank(),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Send,
-                        contentDescription = "Send message"
+                        contentDescription = "Send message",
                     )
                 }
             }
@@ -470,14 +470,14 @@ private fun ChatMessagesScreen(
 @Composable
 private fun ChatMessageItem(
     message: ChatMessage,
-    currentUserId: Int
+    currentUserId: Int,
 ) {
     val isFromCurrentUser = message.senderId == currentUserId
     val alignment = if (isFromCurrentUser) Alignment.CenterEnd else Alignment.CenterStart
 
     Box(
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = alignment
+        contentAlignment = alignment,
     ) {
         Card(
             modifier = Modifier.widthIn(max = 280.dp),
@@ -485,23 +485,23 @@ private fun ChatMessageItem(
                 topStart = 16.dp,
                 topEnd = 16.dp,
                 bottomStart = if (isFromCurrentUser) 16.dp else 4.dp,
-                bottomEnd = if (isFromCurrentUser) 4.dp else 16.dp
+                bottomEnd = if (isFromCurrentUser) 4.dp else 16.dp,
             ),
             colors = CardDefaults.cardColors(
                 containerColor = if (isFromCurrentUser) {
                     MaterialTheme.colorScheme.primary
                 } else {
                     MaterialTheme.colorScheme.surfaceVariant
-                }
-            )
+                },
+            ),
         ) {
             Column(
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(12.dp),
             ) {
                 if (!isFromCurrentUser) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Box(
                             modifier = Modifier
@@ -512,14 +512,14 @@ private fun ChatMessageItem(
                                         "volunteer" -> MaterialTheme.colorScheme.secondary
                                         "organizer" -> MaterialTheme.colorScheme.tertiary
                                         else -> MaterialTheme.colorScheme.outline
-                                    }
-                                )
+                                    },
+                                ),
                         )
                         Text(
                             text = message.senderName,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
@@ -532,7 +532,7 @@ private fun ChatMessageItem(
                         MaterialTheme.colorScheme.onPrimary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    },
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -545,7 +545,7 @@ private fun ChatMessageItem(
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     },
-                    modifier = Modifier.align(if (isFromCurrentUser) Alignment.End else Alignment.Start)
+                    modifier = Modifier.align(if (isFromCurrentUser) Alignment.End else Alignment.Start),
                 )
             }
         }

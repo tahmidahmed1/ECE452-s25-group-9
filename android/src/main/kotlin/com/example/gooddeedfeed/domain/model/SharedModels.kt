@@ -63,8 +63,9 @@ data class VolunteerApplicationForVolunteer(
 enum class ApprovalStatus(val displayName: String) {
     PENDING("Pending Review"),
     APPROVED("Approved"),
-    REJECTED("Rejected");
-    
+    REJECTED("Rejected"),
+    ;
+
     companion object {
         fun fromString(value: String): ApprovalStatus? {
             return values().find { it.name.equals(value, ignoreCase = true) }
@@ -77,8 +78,9 @@ enum class OrganizationType(val displayName: String) {
     SCHOOL_GROUP("School Group"),
     CLUB("Club"),
     CHARITY("Charity"),
-    CUSTOM("Custom");
-    
+    CUSTOM("Custom"),
+    ;
+
     companion object {
         fun fromString(value: String): OrganizationType? {
             return values().find { it.name.equals(value, ignoreCase = true) }
@@ -90,7 +92,8 @@ enum class SocialMediaPlatform(val displayName: String, val iconName: String) {
     INSTAGRAM("Instagram", "instagram"),
     FACEBOOK("Facebook", "facebook"),
     TWITTER("Twitter", "twitter"),
-    LINKEDIN("LinkedIn", "linkedin");
+    LINKEDIN("LinkedIn", "linkedin"),
+    ;
 
     companion object {
         fun fromString(value: String): SocialMediaPlatform? {
@@ -101,7 +104,7 @@ enum class SocialMediaPlatform(val displayName: String, val iconName: String) {
 
 data class SocialMediaLink(
     val platform: SocialMediaPlatform,
-    val url: String
+    val url: String,
 )
 
 data class OrganizationProfile(
@@ -111,5 +114,5 @@ data class OrganizationProfile(
     val website: String? = null,
     val socialMediaLinks: List<SocialMediaLink> = emptyList(),
     val images: List<String> = emptyList(),
-    val customType: String? = null
+    val customType: String? = null,
 ) 

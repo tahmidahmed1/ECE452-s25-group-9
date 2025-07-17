@@ -7,27 +7,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,16 +38,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,28 +52,20 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainOrganizerWithSubscriptionStatus
+import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.presentation.common.UiState
-import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.EnhancedLocationPermissionManager
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
-import com.example.gooddeedfeed.presentation.ui.components.volunteer.OpportunitiesList
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.FiltersDrawer
-import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesData
+import com.example.gooddeedfeed.presentation.ui.components.volunteer.OpportunitiesList
+import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.SubscriptionViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
-import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
-import com.example.gooddeedfeed.presentation.navigation.ModernDropdownMenu
-import com.example.gooddeedfeed.presentation.navigation.ModernDropdownMenuItem
-import com.example.gooddeedfeed.domain.model.OpportunityFilters
-import com.example.gooddeedfeed.domain.model.DateFilter
-import com.example.gooddeedfeed.presentation.ui.screens.volunteer.VolunteerOpportunityDetailScreen
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -213,7 +200,7 @@ private fun HeaderSection(
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
             )
-            
+
             IconButton(onClick = onChatClick) {
                 Icon(
                     imageVector = Icons.Default.Chat,
@@ -222,9 +209,9 @@ private fun HeaderSection(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Search and filters row
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -249,7 +236,7 @@ private fun HeaderSection(
                 ),
                 shape = RoundedCornerShape(12.dp),
             )
-            
+
             IconButton(onClick = onFiltersClick) {
                 Icon(
                     imageVector = Icons.Default.FilterList,
@@ -283,26 +270,26 @@ private fun OrganizerCard(
                 Text(
                     text = organizer.organizationName ?: organizer.fullName ?: organizer.username,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = organizer.organizationDescription ?: "No description available",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (organizer.subscriberCount > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${organizer.subscriberCount} subscribers",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
             Button(
                 onClick = onSubscriptionClick,
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.padding(start = 8.dp),
             ) {
                 Icon(
                     imageVector = if (organizer.isSubscribed) Icons.Default.Check else Icons.Default.Add,
@@ -437,14 +424,14 @@ private fun OrganizerProfileScreen(
         Text("Events", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         VerticalSpacer()
         // TODO: Implement events loading from backend
-                Card(
-            modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Events will be loaded here",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

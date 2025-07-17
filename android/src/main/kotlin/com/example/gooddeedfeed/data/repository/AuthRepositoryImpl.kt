@@ -8,10 +8,10 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.mapper.toDomain
 import com.example.gooddeedfeed.data.mapper.toDto
 import com.example.gooddeedfeed.data.remote.AuthApiService
+import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
-import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.first
@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val api: AuthApiService,
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
 ) : AuthRepository {
 
     companion object {
@@ -37,13 +37,13 @@ class AuthRepositoryImpl @Inject constructor(
         Log.d(TAG, "💾 Token: ${token.take(20)}...")
         Log.d(TAG, "💾 User ID: $userId")
         Log.d(TAG, "💾 Username: $username")
-        
+
         dataStore.edit { preferences ->
             preferences[JWT_TOKEN_KEY] = token
             preferences[USER_ID_KEY] = userId
             preferences[USERNAME_KEY] = username
         }
-        
+
         Log.d(TAG, "✅ Auth data saved successfully")
     }
 
@@ -66,24 +66,24 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun signUp(username: String, email: String, password: String): Result<DomainUser> {
         Log.d(TAG, "🔄 Repository signUp called")
         Log.d(TAG, "📝 SignUp params - Username: $username, Email: $email")
-        
+
         return try {
             Log.d(TAG, "📞 Calling AuthApiService.signUp...")
             val response = api.signUp(username, email, password)
-            
+
             Log.d(TAG, "🔄 Converting response to domain model...")
             val domainUser = response.user.toDomain()
-            
+
             Log.d(TAG, "💾 Saving authentication data...")
             saveAuthData(
                 token = response.access_token,
                 userId = response.user.id.toString(),
-                username = response.user.username
+                username = response.user.username,
             )
-            
+
             Log.d(TAG, "✅ Repository signUp successful")
             Log.d(TAG, "✅ Domain user - ID: ${domainUser.id}, Username: ${domainUser.username}")
-            
+
             Result.success(domainUser)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Repository signUp failed", e)
@@ -96,24 +96,24 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun signIn(username: String, password: String): Result<DomainUser> {
         Log.d(TAG, "🔄 Repository signIn called")
         Log.d(TAG, "📝 SignIn params - Username: $username")
-        
+
         return try {
             Log.d(TAG, "📞 Calling AuthApiService.signIn...")
             val response = api.signIn(username, password)
-            
+
             Log.d(TAG, "🔄 Converting response to domain model...")
             val domainUser = response.user.toDomain()
-            
+
             Log.d(TAG, "💾 Saving authentication data...")
             saveAuthData(
                 token = response.access_token,
                 userId = response.user.id.toString(),
-                username = response.user.username
+                username = response.user.username,
             )
-            
+
             Log.d(TAG, "✅ Repository signIn successful")
             Log.d(TAG, "✅ Domain user - ID: ${domainUser.id}, Username: ${domainUser.username}")
-            
+
             Result.success(domainUser)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Repository signIn failed", e)
@@ -125,60 +125,60 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signOut(): Result<Unit> {
         Log.d(TAG, "🔄 Repository signOut called")
-        
+
         return try {
             Log.d(TAG, "📞 Calling AuthApiService.signOut...")
             api.signOut()
-            
+
             Log.d(TAG, "🧹 Clearing stored authentication data...")
             clearAuthData()
-            
+
             Log.d(TAG, "✅ Repository signOut successful")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Repository signOut failed", e)
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
             Log.e(TAG, "❌ Exception message: ${e.message}")
-            
+
             // Even if API call fails, clear local data
             Log.d(TAG, "🧹 Clearing local auth data despite API failure...")
             clearAuthData()
-            
+
             Result.failure(e)
         }
     }
 
     override suspend fun getCurrentUser(): Result<DomainUser> {
         Log.d(TAG, "🔄 Repository getCurrentUser called")
-        
+
         return try {
             val token = getToken()
             if (token == null) {
                 Log.w(TAG, "⚠️ No token found - user not authenticated")
                 return Result.failure(Exception("No authentication token found"))
             }
-            
+
             Log.d(TAG, "📞 Calling AuthApiService.getCurrentUser...")
             val user = api.getCurrentUser()
-            
+
             Log.d(TAG, "🔄 Converting user to domain model...")
             val domainUser = user.toDomain()
-            
+
             Log.d(TAG, "✅ Repository getCurrentUser successful")
             Log.d(TAG, "✅ Domain user - ID: ${domainUser.id}, Username: ${domainUser.username}")
-            
+
             Result.success(domainUser)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Repository getCurrentUser failed", e)
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
             Log.e(TAG, "❌ Exception message: ${e.message}")
-            
+
             // If getCurrentUser fails, it might be due to invalid token
             if (e.message?.contains("401") == true || e.message?.contains("unauthorized") == true) {
                 Log.d(TAG, "🧹 Clearing invalid authentication data...")
                 clearAuthData()
             }
-            
+
             Result.failure(e)
         }
     }
@@ -186,7 +186,7 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun setUserType(userType: DomainUserType): Result<Unit> {
         return try {
             api.setUserType(userType.toDto())
-                    Result.success(Unit)
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -221,16 +221,16 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun completeOrganizerOnboarding(
         profile: DomainOrganizerProfile,
-        profilePictureFile: File?
+        profilePictureFile: File?,
     ): Result<Unit> {
         return try {
             val success = api.completeOrganizerOnboarding(
                 profile = profile,
-                profilePictureFile = profilePictureFile
-                )
-                if (success) {
-                    Result.success(Unit)
-                } else {
+                profilePictureFile = profilePictureFile,
+            )
+            if (success) {
+                Result.success(Unit)
+            } else {
                 Result.failure(Exception("Failed to complete organizer onboarding"))
             }
         } catch (e: Exception) {
@@ -240,12 +240,12 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun completeVolunteerOnboarding(
         profile: DomainVolunteerProfile,
-        profilePictureFile: File?
+        profilePictureFile: File?,
     ): Result<Unit> {
         return try {
             val success = api.completeVolunteerOnboarding(
                 profile = profile,
-                profilePictureFile = profilePictureFile
+                profilePictureFile = profilePictureFile,
             )
             if (success) {
                 Result.success(Unit)
@@ -266,4 +266,3 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 }
-

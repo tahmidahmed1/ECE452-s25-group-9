@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SubscriptionViewModel @Inject constructor(
-    private val subscriptionRepository: SubscriptionRepository
+    private val subscriptionRepository: SubscriptionRepository,
 ) : ViewModel() {
 
     companion object {
@@ -31,7 +31,7 @@ class SubscriptionViewModel @Inject constructor(
     fun searchOrganizers(query: String) {
         Log.d(TAG, "🔍 Searching organizers with query: $query")
         _uiState.value = UiState.Loading
-        
+
         viewModelScope.launch {
             subscriptionRepository.getOrganizersWithSubscriptionStatus(query)
                 .onSuccess { organizers ->
@@ -48,13 +48,13 @@ class SubscriptionViewModel @Inject constructor(
     fun subscribeToOrganizer(organizerId: Int) {
         Log.d(TAG, "📝 Subscribing to organizer: $organizerId")
         _subscriptionActionState.value = UiState.Loading
-        
+
         viewModelScope.launch {
             subscriptionRepository.subscribeToOrganizer(organizerId)
                 .onSuccess { response ->
                     Log.d(TAG, "✅ Successfully subscribed to organizer: $organizerId")
                     _subscriptionActionState.value = UiState.Success(response.message)
-                    
+
                     // Update the current organizer list to reflect the subscription change
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
@@ -62,7 +62,7 @@ class SubscriptionViewModel @Inject constructor(
                             if (organizer.id == organizerId) {
                                 organizer.copy(
                                     isSubscribed = response.isSubscribed,
-                                    subscriberCount = if (response.isSubscribed) organizer.subscriberCount + 1 else organizer.subscriberCount
+                                    subscriberCount = if (response.isSubscribed) organizer.subscriberCount + 1 else organizer.subscriberCount,
                                 )
                             } else {
                                 organizer
@@ -81,13 +81,13 @@ class SubscriptionViewModel @Inject constructor(
     fun unsubscribeFromOrganizer(organizerId: Int) {
         Log.d(TAG, "🗑️ Unsubscribing from organizer: $organizerId")
         _subscriptionActionState.value = UiState.Loading
-        
+
         viewModelScope.launch {
             subscriptionRepository.unsubscribeFromOrganizer(organizerId)
                 .onSuccess { response ->
                     Log.d(TAG, "✅ Successfully unsubscribed from organizer: $organizerId")
                     _subscriptionActionState.value = UiState.Success(response.message)
-                    
+
                     // Update the current organizer list to reflect the subscription change
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
@@ -95,7 +95,7 @@ class SubscriptionViewModel @Inject constructor(
                             if (organizer.id == organizerId) {
                                 organizer.copy(
                                     isSubscribed = response.isSubscribed,
-                                    subscriberCount = if (!response.isSubscribed) maxOf(0, organizer.subscriberCount - 1) else organizer.subscriberCount
+                                    subscriberCount = if (!response.isSubscribed) maxOf(0, organizer.subscriberCount - 1) else organizer.subscriberCount,
                                 )
                             } else {
                                 organizer
@@ -113,7 +113,7 @@ class SubscriptionViewModel @Inject constructor(
 
     fun getUserSubscriptions() {
         Log.d(TAG, "📋 Getting user subscriptions")
-        
+
         viewModelScope.launch {
             subscriptionRepository.getUserSubscriptions()
                 .onSuccess { subscriptions ->

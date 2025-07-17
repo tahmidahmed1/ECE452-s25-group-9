@@ -31,8 +31,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
-import com.example.gooddeedfeed.presentation.ui.components.base.LocationPermissionHandler
-import com.example.gooddeedfeed.presentation.ui.components.base.PermissionRationaleCard
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
@@ -74,9 +72,9 @@ fun LocationDeniedState(
                     style = MaterialTheme.typography.headlineLarge,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Uh Oh title
             Text(
                 text = "Uh Oh!",
@@ -85,9 +83,9 @@ fun LocationDeniedState(
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Explanation text
             Text(
                 text = "We need location access to show you nearby volunteer opportunities and help you find events in your area.",
@@ -95,9 +93,9 @@ fun LocationDeniedState(
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Instructions card
             Card(
                 colors = CardDefaults.cardColors(
@@ -115,31 +113,31 @@ fun LocationDeniedState(
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 12.dp),
                     )
-                    
+
                     LocationInstructionStep(
                         step = "1",
                         text = "Tap \"Open Settings\" below",
                     )
-                    
+
                     LocationInstructionStep(
                         step = "2",
                         text = "Find \"Permissions\" or \"App permissions\"",
                     )
-                    
+
                     LocationInstructionStep(
                         step = "3",
                         text = "Tap \"Location\" and select \"Allow\"",
                     )
-                    
+
                     LocationInstructionStep(
                         step = "4",
                         text = "Return to Good Deed Feed",
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Action button
             Button(
                 onClick = onOpenSettings,
@@ -147,9 +145,9 @@ fun LocationDeniedState(
             ) {
                 Text("Open Settings")
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Additional info
             Text(
                 text = "You can also enable location services in Privacy & Notifications settings",
@@ -189,9 +187,9 @@ private fun LocationInstructionStep(
                 fontWeight = FontWeight.Bold,
             )
         }
-        
+
         Spacer(modifier = Modifier.width(12.dp))
-        
+
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
@@ -206,7 +204,7 @@ fun LocationPermissionHandler(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    
+
     LocationDeniedState(
         onOpenSettings = {
             // Open app settings
@@ -240,7 +238,7 @@ fun LocationPermissionManager(
             onPermissionDenied()
         }
     }
-    
+
     if (locationPermissionState.status.isGranted) {
         // Permission granted - show main content
         content()
@@ -248,8 +246,8 @@ fun LocationPermissionManager(
         // Permission denied - show appropriate error state
         if (locationPermissionState.status.shouldShowRationale) {
             // Permission denied but not permanently - show rationale
-            PermissionRationaleCard { 
-                locationPermissionState.launchPermissionRequest() 
+            PermissionRationaleCard {
+                locationPermissionState.launchPermissionRequest()
             }
         } else {
             // Permission permanently denied - show "Uh Oh" state with settings option
@@ -292,14 +290,14 @@ fun EnhancedLocationPermissionManager(
             }
         }
     }
-    
+
     when {
         !locationPermissionState.status.isGranted -> {
             // Permission denied - show appropriate error state
             if (locationPermissionState.status.shouldShowRationale) {
                 // Permission denied but not permanently - show rationale
-                PermissionRationaleCard { 
-                    locationPermissionState.launchPermissionRequest() 
+                PermissionRationaleCard {
+                    locationPermissionState.launchPermissionRequest()
                 }
             } else {
                 // Permission permanently denied - show "Uh Oh" state with settings option
@@ -370,9 +368,9 @@ fun LocationDisabledState(
                     style = MaterialTheme.typography.headlineLarge,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Title
             Text(
                 text = "Location Services Disabled",
@@ -381,9 +379,9 @@ fun LocationDisabledState(
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Explanation text
             Text(
                 text = "Location permission is granted, but location services are disabled in your app settings. Enable them to see nearby events.",
@@ -391,9 +389,9 @@ fun LocationDisabledState(
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Instructions card
             Card(
                 colors = CardDefaults.cardColors(
@@ -411,31 +409,31 @@ fun LocationDisabledState(
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 12.dp),
                     )
-                    
+
                     LocationInstructionStep(
                         step = "1",
                         text = "Tap \"Open Settings\" below",
                     )
-                    
+
                     LocationInstructionStep(
                         step = "2",
                         text = "Find \"Privacy & Notifications\"",
                     )
-                    
+
                     LocationInstructionStep(
                         step = "3",
                         text = "Enable \"Location Services\" toggle",
                     )
-                    
+
                     LocationInstructionStep(
                         step = "4",
                         text = "Return to Good Deed Feed",
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Action button
             Button(
                 onClick = onOpenSettings,

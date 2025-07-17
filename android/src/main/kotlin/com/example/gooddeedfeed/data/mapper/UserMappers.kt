@@ -1,23 +1,23 @@
 package com.example.gooddeedfeed.data.mapper
 
+import com.example.gooddeedfeed.data.remote.dto.BadgeDto
+import com.example.gooddeedfeed.data.remote.dto.OrganizationTypeDto
 import com.example.gooddeedfeed.data.remote.dto.Sex
+import com.example.gooddeedfeed.data.remote.dto.SocialMediaLinkDto
+import com.example.gooddeedfeed.data.remote.dto.SocialMediaPlatformDto
+import com.example.gooddeedfeed.data.remote.dto.UserBadgeDto
 import com.example.gooddeedfeed.data.remote.dto.UserDto
 import com.example.gooddeedfeed.data.remote.dto.UserType
 import com.example.gooddeedfeed.data.remote.dto.UserUpdateDto
-import com.example.gooddeedfeed.data.remote.dto.OrganizationTypeDto
-import com.example.gooddeedfeed.data.remote.dto.SocialMediaLinkDto
-import com.example.gooddeedfeed.data.remote.dto.SocialMediaPlatformDto
-import com.example.gooddeedfeed.data.remote.dto.BadgeDto
-import com.example.gooddeedfeed.data.remote.dto.UserBadgeDto
-import com.example.gooddeedfeed.domain.model.DomainUser
-import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.DomainBadge
 import com.example.gooddeedfeed.domain.model.DomainSex
+import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserBadge
+import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.model.OrganizationType
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
-import com.example.gooddeedfeed.domain.model.DomainBadge
-import com.example.gooddeedfeed.domain.model.DomainUserBadge
 
 // DTO → Domain
 fun UserDto.toDomain(): DomainUser {
@@ -124,18 +124,17 @@ fun SocialMediaLinkDto.toDomain(): SocialMediaLink = SocialMediaLink(
 
 // Badge mappers
 fun BadgeDto.toDomain(): DomainBadge = DomainBadge(
-        id = id,
-        name = name,
-        description = description,
-        requiredKarmaPoints = requiredKarmaPoints,
-        iconName = iconName,
-        color = color,
-        isActive = isActive,
-        createdAt = createdAt,
-    )
+    id = id,
+    name = name,
+    description = description,
+    requiredKarmaPoints = requiredKarmaPoints,
+    iconName = iconName,
+    color = color,
+    isActive = isActive,
+    createdAt = createdAt,
+)
 
 fun UserBadgeDto.toDomain(): DomainUserBadge = DomainUserBadge(
-        badge = badge.toDomain(),
-        earnedAt = earnedAt,
-    )
-
+    badge = badge.toDomain(),
+    earnedAt = earnedAt,
+)

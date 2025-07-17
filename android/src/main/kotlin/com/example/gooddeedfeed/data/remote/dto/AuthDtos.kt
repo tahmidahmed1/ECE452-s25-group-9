@@ -38,6 +38,7 @@ data class OnboardingStepOneDto(
 enum class UserType {
     @SerialName("volunteer")
     VOLUNTEER,
+
     @SerialName("organizer")
     ORGANIZER,
 }
@@ -46,10 +47,13 @@ enum class UserType {
 enum class Sex {
     @SerialName("male")
     MALE,
+
     @SerialName("female")
     FEMALE,
+
     @SerialName("non_binary")
     NON_BINARY,
+
     @SerialName("prefer_not_to_say")
     PREFER_NOT_TO_SAY,
 }
@@ -126,7 +130,7 @@ data class UserUpdateDto(
 data class OrganizationImagesResponseDto(
     val organization_images: List<String>,
     val message: String,
-) 
+)
 
 @Serializable
 data class ProfilePictureUploadResponse(
@@ -135,32 +139,39 @@ data class ProfilePictureUploadResponse(
 )
 
 @Serializable
-data class OnboardingResponse(val message: String, val user_type: UserType? = null) 
+data class OnboardingResponse(val message: String, val user_type: UserType? = null)
 
 @Serializable
 enum class OrganizationTypeDto {
     @SerialName("non_profit")
     NON_PROFIT,
+
     @SerialName("school_group")
     SCHOOL_GROUP,
+
     @SerialName("club")
     CLUB,
+
     @SerialName("charity")
     CHARITY,
+
     @SerialName("custom")
-    CUSTOM
+    CUSTOM,
 }
 
 @Serializable
 enum class SocialMediaPlatformDto {
     @SerialName("instagram")
     INSTAGRAM,
+
     @SerialName("facebook")
     FACEBOOK,
+
     @SerialName("twitter")
     TWITTER,
+
     @SerialName("linkedin")
-    LINKEDIN
+    LINKEDIN,
 }
 
 @Serializable
@@ -188,5 +199,4 @@ data class OnboardingStepThreeVolunteerDto(
 data class BannerUploadResponse(
     val banner_url: String,
     val message: String,
-) 
-
+)

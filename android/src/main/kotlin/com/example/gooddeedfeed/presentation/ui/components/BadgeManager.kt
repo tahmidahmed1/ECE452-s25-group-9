@@ -19,7 +19,7 @@ fun BadgeManager(
 ) {
     var showAchievementDialog by remember { mutableStateOf(false) }
     var achievedBadges by remember { mutableStateOf<List<DomainBadgeAchievement>>(emptyList()) }
-    
+
     val badgeCheckState by badgeViewModel.badgeCheckState.collectAsStateWithLifecycle()
 
     // Check for new badges when karma points change
@@ -55,7 +55,7 @@ fun BadgeManager(
                 showAchievementDialog = false
                 achievedBadges = emptyList()
                 badgeViewModel.clearBadgeCheckState()
-            }
+            },
         )
     }
 } 

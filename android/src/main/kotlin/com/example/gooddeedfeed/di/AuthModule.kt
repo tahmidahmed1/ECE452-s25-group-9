@@ -37,10 +37,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AuthModule {
-    
+
     private const val TAG = "AuthModule"
     private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
-    
+
     @Provides
     @Singleton
     fun provideHttpClient(dataStore: DataStore<Preferences>): HttpClient =
@@ -48,7 +48,7 @@ object AuthModule {
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })
             }
-            
+
             install(Logging) {
                 logger = object : Logger {
                     override fun log(message: String) {
@@ -57,7 +57,7 @@ object AuthModule {
                 }
                 level = LogLevel.INFO
             }
-            
+
             install(Auth) {
                 bearer {
                     loadTokens {
@@ -72,7 +72,7 @@ object AuthModule {
                                 null
                             }
                         }
-                        
+
                         if (token != null) {
                             Log.d(TAG, "✅ Auth interceptor: Token loaded successfully, will add to request")
                             BearerTokens(token, token) // Use access token as refresh token for now
@@ -81,14 +81,14 @@ object AuthModule {
                             null
                         }
                     }
-                    
+
                     refreshTokens {
                         Log.d(TAG, "🔄 Auth interceptor: Token refresh requested - not implemented")
                         null
                     }
                 }
             }
-            
+
             install(HttpTimeout) {
                 requestTimeoutMillis = 30000 // 30 seconds
                 connectTimeoutMillis = 30000 // 30 seconds
@@ -104,7 +104,7 @@ object AuthModule {
     @Singleton
     fun provideAuthRepository(
         api: AuthApiService,
-        dataStore: DataStore<Preferences>
+        dataStore: DataStore<Preferences>,
     ): AuthRepository = AuthRepositoryImpl(api, dataStore)
 
     @Provides

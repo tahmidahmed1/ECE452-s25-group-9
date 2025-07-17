@@ -13,14 +13,14 @@ fun LeaderboardEntryDto.toDomain(): DomainLeaderboardEntry {
         fullName = full_name,
         karmaPoints = karma_points,
         profilePictureUrl = profile_picture_url?.toEmulatorAccessibleUrl(),
-        userType = user_type?.let { 
+        userType = user_type?.let {
             try {
                 DomainUserType.valueOf(it.uppercase())
             } catch (e: IllegalArgumentException) {
                 null
             }
         },
-        rank = rank
+        rank = rank,
     )
 }
 
@@ -32,7 +32,7 @@ fun LeaderboardResponseDto.toDomain(): DomainLeaderboardResponse {
         totalPages = total_pages,
         totalEntries = total_entries,
         hasNext = has_next,
-        hasPrevious = has_previous
+        hasPrevious = has_previous,
     )
 }
 
@@ -57,12 +57,12 @@ private fun String.toEmulatorAccessibleUrl(): String {
         .replace("http://127.0.0.1", "http://$host")
         .replace("http://minio:9000", "http://$host:9001")
         .replace("http://minio:9001", "http://$host:9001")
-    
+
     // Force emulator URL if we detect we're still using localhost and it doesn't work
     if (mappedUrl.contains("localhost") && !isEmulator) {
         mappedUrl = mappedUrl.replace("http://localhost", "http://10.0.2.2")
             .replace("http://127.0.0.1", "http://10.0.2.2")
     }
-    
+
     return mappedUrl
 } 

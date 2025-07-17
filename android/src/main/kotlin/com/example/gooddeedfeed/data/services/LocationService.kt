@@ -42,7 +42,7 @@ class LocationService @Inject constructor(
                     // Filter out obviously fake/test locations (like Google Plex HQ)
                     val isValidLocation = !(location.latitude == 37.4220 && location.longitude == -122.0841)
                     if (isValidLocation) {
-                    trySend(location)
+                        trySend(location)
                     }
                     // If it's a fake location, we don't send it and let the system try again
                 }

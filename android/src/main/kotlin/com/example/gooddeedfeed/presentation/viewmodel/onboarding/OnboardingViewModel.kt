@@ -3,8 +3,8 @@ package com.example.gooddeedfeed.presentation.viewmodel.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
-import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -47,7 +47,7 @@ class OnboardingViewModel @Inject constructor(
                         if (volunteerProfile != null) {
                             authRepository.completeVolunteerOnboarding(
                                 profile = volunteerProfile,
-                                profilePictureFile = profilePictureFile
+                                profilePictureFile = profilePictureFile,
                             )
                         } else {
                             Result.failure(Exception("Volunteer profile is required"))
@@ -57,7 +57,7 @@ class OnboardingViewModel @Inject constructor(
                         if (organizerProfile != null) {
                             authRepository.completeOrganizerOnboarding(
                                 profile = organizerProfile,
-                                profilePictureFile = profilePictureFile
+                                profilePictureFile = profilePictureFile,
                             )
                         } else {
                             Result.failure(Exception("Organizer profile is required"))
@@ -74,9 +74,9 @@ class OnboardingViewModel @Inject constructor(
                 _error.value = e.message ?: "Unknown error occurred"
             } finally {
                 _isLoading.value = false
-                        }
-                    }
-                }
+            }
+        }
+    }
 
     fun clearError() {
         _error.value = null
@@ -94,7 +94,7 @@ class OnboardingViewModel @Inject constructor(
 
     fun completeVolunteerOnboarding(
         volunteerProfile: DomainVolunteerProfile,
-        profilePictureFile: File? = null
+        profilePictureFile: File? = null,
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -103,7 +103,7 @@ class OnboardingViewModel @Inject constructor(
             try {
                 val result = authRepository.completeVolunteerOnboarding(
                     profile = volunteerProfile,
-                    profilePictureFile = profilePictureFile
+                    profilePictureFile = profilePictureFile,
                 )
 
                 if (result.isSuccess) {

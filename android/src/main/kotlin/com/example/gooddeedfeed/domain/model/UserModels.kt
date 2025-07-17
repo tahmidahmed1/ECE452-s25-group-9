@@ -110,7 +110,7 @@ data class DomainUserUpdate(
 data class DomainOrganizationImagesResponse(
     val organizationImages: List<String>,
     val message: String,
-    val totalImages: Int
+    val totalImages: Int,
 )
 
 // Enumerations are defined in DomainEnums.kt to avoid leaking DTO types into the domain layer.

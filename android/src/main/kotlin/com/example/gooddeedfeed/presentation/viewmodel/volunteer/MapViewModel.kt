@@ -107,22 +107,22 @@ class MapViewModel @Inject constructor(
         viewModelScope.launch {
             val locationEnabled = locationSettingsRepository.isLocationEnabled.first()
             if (locationEnabled) {
-        _uiState.update { it.copy(isLocationPermissionGranted = true, errorMessage = null) }
+                _uiState.update { it.copy(isLocationPermissionGranted = true, errorMessage = null) }
                 // First try to get last known location for immediate feedback
                 getCurrentLocation()
                 // Then start continuous location updates
-        startLocationUpdates()
+                startLocationUpdates()
             } else {
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
                         isLocationPermissionGranted = false,
-                        errorMessage = "Location services are disabled in settings"
+                        errorMessage = "Location services are disabled in settings",
                     )
                 }
             }
         }
     }
-    
+
     private fun getCurrentLocation() {
         viewModelScope.launch {
             try {
@@ -132,10 +132,10 @@ class MapViewModel @Inject constructor(
                         val newState = currentState.copy(
                             currentLocation = loc,
                             isLocationPermissionGranted = true,
-                            errorMessage = null
+                            errorMessage = null,
                         )
                         val resState = filterEventsByRadius(newState)
-                        
+
                         // Load events with current location
                         loadEvents(loc.latitude, loc.longitude)
                         resState

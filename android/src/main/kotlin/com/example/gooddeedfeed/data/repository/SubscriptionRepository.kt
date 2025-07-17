@@ -1,9 +1,9 @@
 package com.example.gooddeedfeed.data.repository
 
-import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainOrganizerWithSubscriptionStatus
 import com.example.gooddeedfeed.domain.model.DomainSubscriptionResponse
 import com.example.gooddeedfeed.domain.model.DomainSubscriptionStatus
-import com.example.gooddeedfeed.domain.model.DomainOrganizerWithSubscriptionStatus
+import com.example.gooddeedfeed.domain.model.DomainUser
 
 interface SubscriptionRepository {
     suspend fun subscribeToOrganizer(organizerId: Int): Result<DomainSubscriptionResponse>

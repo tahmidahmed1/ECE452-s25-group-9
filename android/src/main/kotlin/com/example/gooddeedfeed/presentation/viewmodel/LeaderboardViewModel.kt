@@ -18,12 +18,12 @@ data class LeaderboardUiState(
     val errorMessage: String? = null,
     val currentPage: Int = 1,
     val hasNextPage: Boolean = true,
-    val totalEntries: Int = 0
+    val totalEntries: Int = 0,
 )
 
 @HiltViewModel
 class LeaderboardViewModel @Inject constructor(
-    private val leaderboardRepository: LeaderboardRepository
+    private val leaderboardRepository: LeaderboardRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LeaderboardUiState())
@@ -41,7 +41,7 @@ class LeaderboardViewModel @Inject constructor(
                 isLoading = true,
                 errorMessage = null,
                 entries = emptyList(),
-                currentPage = 1
+                currentPage = 1,
             )
 
             leaderboardRepository.getLeaderboard(1, pageSize).collect { result ->
@@ -52,15 +52,15 @@ class LeaderboardViewModel @Inject constructor(
                             entries = response.entries,
                             currentPage = response.page,
                             hasNextPage = response.hasNext,
-                            totalEntries = response.totalEntries
+                            totalEntries = response.totalEntries,
                         )
                     },
                     onFailure = { error ->
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            errorMessage = error.message ?: "Failed to load leaderboard"
+                            errorMessage = error.message ?: "Failed to load leaderboard",
                         )
-                    }
+                    },
                 )
             }
         }
@@ -81,15 +81,15 @@ class LeaderboardViewModel @Inject constructor(
                             isLoadingMore = false,
                             entries = currentState.entries + response.entries,
                             currentPage = response.page,
-                            hasNextPage = response.hasNext
+                            hasNextPage = response.hasNext,
                         )
                     },
                     onFailure = { error ->
                         _uiState.value = _uiState.value.copy(
                             isLoadingMore = false,
-                            errorMessage = error.message ?: "Failed to load more entries"
+                            errorMessage = error.message ?: "Failed to load more entries",
                         )
-                    }
+                    },
                 )
             }
         }

@@ -1,8 +1,8 @@
 package com.example.gooddeedfeed.presentation.ui.components.organizer
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,15 +26,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.gooddeedfeed.domain.model.EventStatus
 import com.example.gooddeedfeed.domain.model.OrganizationType
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
-import com.example.gooddeedfeed.domain.model.EventStatus
-import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 
 /**
  * Card component for displaying events in organizer view
@@ -207,14 +206,14 @@ fun OrganizationTypeDropdown(
     onCustomTypeChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    
+
     Column(modifier = modifier) {
         ExposedDropdownMenuBox(
             expanded = expanded,
-            onExpandedChange = { expanded = it }
+            onExpandedChange = { expanded = it },
         ) {
             OutlinedTextField(
                 value = when (selectedType) {
@@ -232,12 +231,12 @@ fun OrganizationTypeDropdown(
                     .fillMaxWidth()
                     .menuAnchor(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ExposedDropdownMenuDefaults.textFieldColors()
+                colors = ExposedDropdownMenuDefaults.textFieldColors(),
             )
-            
+
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
             ) {
                 OrganizationType.values().forEach { type ->
                     DropdownMenuItem(
@@ -245,12 +244,12 @@ fun OrganizationTypeDropdown(
                         onClick = {
                             onTypeSelected(type)
                             expanded = false
-                        }
+                        },
                     )
                 }
             }
         }
-        
+
         // Custom type input field
         if (selectedType == OrganizationType.CUSTOM) {
             VerticalSpacer(SpacingSize.Small)
@@ -262,17 +261,17 @@ fun OrganizationTypeDropdown(
                 isError = isError && customType.isBlank(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true
+                singleLine = true,
             )
         }
-        
+
         // Error message
         if (isError && errorMessage != null) {
             VerticalSpacer(SpacingSize.ExtraSmall)
             Text(
                 text = errorMessage,
                 color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
             )
         }
     }
@@ -282,34 +281,34 @@ fun OrganizationTypeDropdown(
 fun SocialMediaInputSection(
     socialMediaLinks: List<SocialMediaLink>,
     onLinksChanged: (List<SocialMediaLink>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
-    
+
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "Social Media Links",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
-            
+
             TextButton(
                 onClick = { showAddDialog = true },
-                enabled = socialMediaLinks.size < 4 // Max 4 platforms
+                enabled = socialMediaLinks.size < 4, // Max 4 platforms
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Add Link")
             }
         }
-        
+
         VerticalSpacer(SpacingSize.Small)
-        
+
         // Display current social media links
         socialMediaLinks.forEach { link ->
             SocialMediaLinkItem(
@@ -317,22 +316,22 @@ fun SocialMediaInputSection(
                 onRemove = {
                     onLinksChanged(socialMediaLinks - link)
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
             VerticalSpacer(SpacingSize.Small)
         }
-        
+
         if (socialMediaLinks.isEmpty()) {
             Text(
                 text = "No social media links added yet",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
     }
-    
+
     // Add social media dialog
     if (showAddDialog) {
         SocialMediaAddDialog(
@@ -341,7 +340,7 @@ fun SocialMediaInputSection(
             onAdd = { platform, url ->
                 onLinksChanged(socialMediaLinks + SocialMediaLink(platform, url))
                 showAddDialog = false
-            }
+            },
         )
     }
 }
@@ -350,47 +349,47 @@ fun SocialMediaInputSection(
 private fun SocialMediaLinkItem(
     link: SocialMediaLink,
     onRemove: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = getSocialMediaIcon(link.platform),
                 contentDescription = link.platform.displayName,
                 tint = getSocialMediaColor(link.platform),
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = link.platform.displayName,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
                 Text(
                     text = link.url,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            
+
             IconButton(onClick = onRemove) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Remove",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -401,14 +400,14 @@ private fun SocialMediaLinkItem(
 private fun SocialMediaAddDialog(
     existingPlatforms: List<SocialMediaPlatform>,
     onDismiss: () -> Unit,
-    onAdd: (SocialMediaPlatform, String) -> Unit
+    onAdd: (SocialMediaPlatform, String) -> Unit,
 ) {
     var selectedPlatform by remember { mutableStateOf<SocialMediaPlatform?>(null) }
     var url by remember { mutableStateOf("") }
     var isValidUrl by remember { mutableStateOf(true) }
-    
+
     val availablePlatforms = SocialMediaPlatform.values().filter { it !in existingPlatforms }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Social Media Link") },
@@ -418,12 +417,12 @@ private fun SocialMediaAddDialog(
                 Text(
                     text = "Platform",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
                 VerticalSpacer(SpacingSize.Small)
-                
+
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(availablePlatforms) { platform ->
                         FilterChip(
@@ -434,15 +433,15 @@ private fun SocialMediaAddDialog(
                                 Icon(
                                     imageVector = getSocialMediaIcon(platform),
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
-                            }
+                            },
                         )
                     }
                 }
-                
+
                 VerticalSpacer(SpacingSize.Medium)
-                
+
                 // URL input
                 OutlinedTextField(
                     value = url,
@@ -451,21 +450,21 @@ private fun SocialMediaAddDialog(
                         isValidUrl = isValidSocialMediaUrl(it, selectedPlatform)
                     },
                     label = { Text("Profile URL") },
-                    placeholder = { 
+                    placeholder = {
                         Text(getPlaceholderUrl(selectedPlatform))
                     },
                     isError = !isValidUrl,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
                 )
-                
+
                 if (!isValidUrl) {
                     VerticalSpacer(SpacingSize.ExtraSmall)
                     Text(
                         text = "Please enter a valid URL",
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
             }
@@ -479,7 +478,7 @@ private fun SocialMediaAddDialog(
                         }
                     }
                 },
-                enabled = selectedPlatform != null && url.isNotBlank() && isValidUrl
+                enabled = selectedPlatform != null && url.isNotBlank() && isValidUrl,
             ) {
                 Text("Add")
             }
@@ -488,7 +487,7 @@ private fun SocialMediaAddDialog(
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
-        }
+        },
     )
 }
 
@@ -497,42 +496,42 @@ fun OrganizationImageCarousel(
     images: List<String>,
     onImagesChanged: (List<String>) -> Unit,
     onAddImages: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "Organization Images",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
-            
+
             TextButton(
                 onClick = onAddImages,
-                enabled = images.size < 10 // Max 10 images
+                enabled = images.size < 10, // Max 10 images
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Add Images")
             }
         }
-        
+
         Text(
             text = "${images.size}/10 images",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        
+
         VerticalSpacer(SpacingSize.Small)
-        
+
         if (images.isNotEmpty()) {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
+                contentPadding = PaddingValues(horizontal = 4.dp),
             ) {
                 itemsIndexed(images) { index, imageUrl ->
                     OrganizationImageItem(
@@ -540,7 +539,7 @@ fun OrganizationImageCarousel(
                         onRemove = {
                             onImagesChanged(images - imageUrl)
                         },
-                        modifier = Modifier.size(120.dp)
+                        modifier = Modifier.size(120.dp),
                     )
                 }
             }
@@ -551,32 +550,32 @@ fun OrganizationImageCarousel(
                     .height(120.dp)
                     .clickable { onAddImages() },
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 ),
                 border = BorderStroke(
                     width = 2.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                )
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                ),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(
                             Icons.Default.Add,
                             contentDescription = null,
                             modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         VerticalSpacer(SpacingSize.Small)
                         Text(
                             text = "Add organization images",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                     }
                 }
@@ -589,7 +588,7 @@ fun OrganizationImageCarousel(
 private fun OrganizationImageItem(
     imageUrl: String,
     onRemove: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
         AsyncImage(
@@ -598,9 +597,9 @@ private fun OrganizationImageItem(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
         )
-        
+
         // Remove button
         IconButton(
             onClick = onRemove,
@@ -609,14 +608,14 @@ private fun OrganizationImageItem(
                 .size(28.dp)
                 .background(
                     Color.Black.copy(alpha = 0.6f),
-                    RoundedCornerShape(14.dp)
-                )
+                    RoundedCornerShape(14.dp),
+                ),
         ) {
             Icon(
                 Icons.Default.Close,
                 contentDescription = "Remove image",
                 tint = Color.White,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
         }
     }
@@ -653,7 +652,7 @@ private fun getPlaceholderUrl(platform: SocialMediaPlatform?): String {
 
 private fun isValidSocialMediaUrl(url: String, platform: SocialMediaPlatform?): Boolean {
     if (url.isBlank()) return true // Allow empty for now
-    
+
     return when (platform) {
         SocialMediaPlatform.INSTAGRAM -> url.contains("instagram.com")
         SocialMediaPlatform.FACEBOOK -> url.contains("facebook.com")

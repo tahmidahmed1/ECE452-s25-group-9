@@ -5,15 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
 import com.example.gooddeedfeed.data.services.LocationService
+import com.example.gooddeedfeed.domain.model.DateFilter
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.usecase.volunteer.ApplyForOpportunityUseCase
 import com.example.gooddeedfeed.domain.usecase.volunteer.GetOpportunitiesUseCase
 import com.example.gooddeedfeed.presentation.common.UiState
-import com.example.gooddeedfeed.domain.model.OpportunityFilters
-import com.example.gooddeedfeed.domain.model.DateFilter
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class OpportunitiesData(
@@ -171,13 +171,13 @@ class OpportunitiesViewModel @Inject constructor(
     fun onLocationPermissionGranted() {
         viewModelScope.launch {
             val locationEnabled = locationSettingsRepository.isLocationEnabled.first()
-        val currentState = _uiState.value
-        if (currentState is UiState.Success) {
+            val currentState = _uiState.value
+            if (currentState is UiState.Success) {
                 if (locationEnabled) {
-            _uiState.value = currentState.copy(
-                data = currentState.data.copy(isLocationPermissionGranted = true),
-            )
-            startLocationUpdates()
+                    _uiState.value = currentState.copy(
+                        data = currentState.data.copy(isLocationPermissionGranted = true),
+                    )
+                    startLocationUpdates()
                 } else {
                     _uiState.value = currentState.copy(
                         data = currentState.data.copy(isLocationPermissionGranted = false),
@@ -205,7 +205,7 @@ class OpportunitiesViewModel @Inject constructor(
                 val lat = location?.latitude
                 val lon = location?.longitude
                 val radiusKm = currentState.data.radiusKm
-                
+
                 try {
                     getOpportunitiesUseCase.getOpportunitiesWithFilters(lat, lon, radiusKm, filters)
                         .catch { e ->
@@ -214,8 +214,8 @@ class OpportunitiesViewModel @Inject constructor(
                         .collect { opportunities ->
                             _uiState.value = UiState.Success(
                                 currentState.data.copy(
-                                    opportunities = opportunities
-                                )
+                                    opportunities = opportunities,
+                                ),
                             )
                         }
                 } catch (e: Exception) {
@@ -229,7 +229,7 @@ class OpportunitiesViewModel @Inject constructor(
         return opportunities.filter { opportunity ->
             // Category filter
             val categoryMatch = filters.selectedCategories.isEmpty() || filters.selectedCategories.contains(opportunity.category)
-            
+
             // Availability filter
             val availabilityMatch = when {
                 filters.onlyAvailable -> opportunity.currentVolunteers < opportunity.requiredVolunteers
@@ -239,10 +239,10 @@ class OpportunitiesViewModel @Inject constructor(
                 }
                 else -> true
             }
-            
+
             // Karma points filter
             val karmaMatch = opportunity.karmaPoints >= filters.minKarmaPoints && opportunity.karmaPoints <= filters.maxKarmaPoints
-            
+
             // Date filter
             val dateMatch = when (filters.dateFilter) {
                 DateFilter.ALL -> true
@@ -250,7 +250,7 @@ class OpportunitiesViewModel @Inject constructor(
                 DateFilter.THIS_WEEK -> isThisWeek(opportunity.date)
                 DateFilter.THIS_MONTH -> isThisMonth(opportunity.date)
             }
-            
+
             categoryMatch && availabilityMatch && karmaMatch && dateMatch
         }
     }

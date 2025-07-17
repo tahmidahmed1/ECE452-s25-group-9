@@ -23,7 +23,7 @@ object LeaderboardModule {
     @Provides
     @Singleton
     fun provideLeaderboardRepository(
-        leaderboardApiService: LeaderboardApiService
+        leaderboardApiService: LeaderboardApiService,
     ): LeaderboardRepository {
         return LeaderboardRepositoryImpl(leaderboardApiService)
     }

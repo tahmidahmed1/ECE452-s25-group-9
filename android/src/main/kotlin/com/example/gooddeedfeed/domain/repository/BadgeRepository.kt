@@ -1,8 +1,8 @@
 package com.example.gooddeedfeed.domain.repository
 
 import com.example.gooddeedfeed.domain.model.DomainBadge
-import com.example.gooddeedfeed.domain.model.DomainUserBadge
 import com.example.gooddeedfeed.domain.model.DomainBadgeCheckResponse
+import com.example.gooddeedfeed.domain.model.DomainUserBadge
 import kotlinx.coroutines.flow.Flow
 
 interface BadgeRepository {

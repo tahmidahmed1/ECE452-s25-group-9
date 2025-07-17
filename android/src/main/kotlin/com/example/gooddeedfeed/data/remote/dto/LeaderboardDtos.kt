@@ -10,7 +10,7 @@ data class LeaderboardEntryDto(
     val karma_points: Int,
     val profile_picture_url: String? = null,
     val user_type: String? = null,
-    val rank: Int
+    val rank: Int,
 )
 
 @Serializable
@@ -21,5 +21,5 @@ data class LeaderboardResponseDto(
     val total_pages: Int,
     val total_entries: Int,
     val has_next: Boolean,
-    val has_previous: Boolean
+    val has_previous: Boolean,
 ) 

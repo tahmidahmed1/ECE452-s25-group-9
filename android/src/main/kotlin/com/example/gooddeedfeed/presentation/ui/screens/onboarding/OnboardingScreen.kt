@@ -130,14 +130,14 @@ fun OnboardingScreen(
                                 else -> {
                                     OnboardingStepTwoScreen(
                                         userType = userType,
-                                    onComplete = { fullName, phone, organizationName, profilePictureFile, organizerProfile ->
+                                        onComplete = { fullName, phone, organizationName, profilePictureFile, organizerProfile ->
                                             viewModel.completeOnboarding(
                                                 userType = userType,
                                                 fullName = fullName,
                                                 phone = phone,
                                                 organizationName = organizationName,
                                                 profilePictureFile = profilePictureFile,
-                                            organizerProfile = organizerProfile
+                                                organizerProfile = organizerProfile,
                                             )
                                         },
                                         modifier = Modifier.fillMaxSize(),
@@ -164,10 +164,9 @@ fun OnboardingScreen(
                             },
                             modifier = Modifier.fillMaxSize(),
                         )
+                    }
                 }
             }
         }
     }
-} 
-} 
-
+}

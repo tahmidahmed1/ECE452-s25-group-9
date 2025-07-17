@@ -19,15 +19,15 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
     /* ----------------- Public CRUD ----------------- */
 
     suspend fun getAllEvents(
-        lat: Double? = null, 
-        lon: Double? = null, 
+        lat: Double? = null,
+        lon: Double? = null,
         radiusKm: Float = 50f,
         category: String? = null,
         onlyAvailable: Boolean = false,
         almostFull: Boolean = false,
         minKarmaPoints: Int = 1,
         maxKarmaPoints: Int = 200,
-        dateFilter: String? = null
+        dateFilter: String? = null,
     ): List<EventDto> {
         return client.get(buildUrl("events")) {
             url {
@@ -36,7 +36,7 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
                     parameters.append("lon", lon.toString())
                     parameters.append("radius_km", radiusKm.toString())
                 }
-                
+
                 category?.let { parameters.append("category", it) }
                 if (onlyAvailable) parameters.append("only_available", "true")
                 if (almostFull) parameters.append("almost_full", "true")

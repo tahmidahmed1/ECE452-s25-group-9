@@ -1,6 +1,5 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,9 +45,9 @@ private val mockItems = listOf(
         type = LostFoundType.LOST,
         images = listOf(
             "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=60",
-            "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=400&q=60"
+            "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=400&q=60",
         ),
-        contactName = "Sarah Chen"
+        contactName = "Sarah Chen",
     ),
     LostFoundItem(
         id = "2",
@@ -58,9 +57,9 @@ private val mockItems = listOf(
         date = "1 day ago",
         type = LostFoundType.FOUND,
         images = listOf(
-            "https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=60"
+            "https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=60",
         ),
-        contactName = "Alex Johnson"
+        contactName = "Alex Johnson",
     ),
     LostFoundItem(
         id = "3",
@@ -70,9 +69,9 @@ private val mockItems = listOf(
         date = "3 days ago",
         type = LostFoundType.LOST,
         images = listOf(
-            "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=400&q=60"
+            "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=400&q=60",
         ),
-        contactName = "Emma Davis"
+        contactName = "Emma Davis",
     ),
     LostFoundItem(
         id = "4",
@@ -82,9 +81,9 @@ private val mockItems = listOf(
         date = "5 days ago",
         type = LostFoundType.FOUND,
         images = listOf(
-            "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=400&q=60"
+            "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=400&q=60",
         ),
-        contactName = "Jordan Kim"
+        contactName = "Jordan Kim",
     ),
 )
 
@@ -102,7 +101,7 @@ fun LostAndFoundScreen(
     if (selectedItem != null) {
         LostFoundDetailScreen(
             item = selectedItem!!,
-            onBack = { selectedItem = null }
+            onBack = { selectedItem = null },
         )
         return
     }
@@ -110,7 +109,7 @@ fun LostAndFoundScreen(
     if (showCreateForm) {
         CreateLostFoundScreen(
             onBack = { showCreateForm = false },
-            onSubmit = { showCreateForm = false }
+            onSubmit = { showCreateForm = false },
         )
         return
     }
@@ -118,13 +117,13 @@ fun LostAndFoundScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         // Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (onBack != null) {
@@ -158,22 +157,22 @@ fun LostAndFoundScreen(
         // Filter chips
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             FilterChip(
                 selected = selectedFilter == null,
                 onClick = { selectedFilter = null },
-                label = { Text("All") }
+                label = { Text("All") },
             )
             FilterChip(
                 selected = selectedFilter == LostFoundType.LOST,
                 onClick = { selectedFilter = LostFoundType.LOST },
-                label = { Text("Lost Items") }
+                label = { Text("Lost Items") },
             )
             FilterChip(
                 selected = selectedFilter == LostFoundType.FOUND,
                 onClick = { selectedFilter = LostFoundType.FOUND },
-                label = { Text("Found Items") }
+                label = { Text("Found Items") },
             )
         }
 
@@ -187,12 +186,12 @@ fun LostAndFoundScreen(
         }
 
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(filteredItems) { item ->
                 LostFoundItemCard(
                     item = item,
-                    onClick = { selectedItem = item }
+                    onClick = { selectedItem = item },
                 )
             }
         }
@@ -209,24 +208,24 @@ private fun LostFoundItemCard(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
 
                 Surface(
@@ -235,7 +234,7 @@ private fun LostFoundItemCard(
                     } else {
                         MaterialTheme.colorScheme.primaryContainer
                     },
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
                 ) {
                     Text(
                         text = item.type.name,
@@ -245,7 +244,7 @@ private fun LostFoundItemCard(
                         } else {
                             MaterialTheme.colorScheme.onPrimaryContainer
                         },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
             }
@@ -255,25 +254,25 @@ private fun LostFoundItemCard(
             Text(
                 text = item.description,
                 style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2
+                maxLines = 2,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = "Location",
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = item.location,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -282,20 +281,20 @@ private fun LostFoundItemCard(
                     imageVector = Icons.Default.DateRange,
                     contentDescription = "Date",
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = item.date,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             if (item.images.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(item.images.take(3)) { imageUrl ->
                         AsyncImage(
@@ -304,7 +303,7 @@ private fun LostFoundItemCard(
                             modifier = Modifier
                                 .size(60.dp)
                                 .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
                     }
                 }
@@ -321,7 +320,7 @@ private fun LostFoundDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
@@ -330,7 +329,7 @@ private fun LostFoundDetailScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = item.title,
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
 
@@ -342,7 +341,7 @@ private fun LostFoundDetailScreen(
             } else {
                 MaterialTheme.colorScheme.primaryContainer
             },
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         ) {
             Text(
                 text = "${item.type.name} ITEM",
@@ -352,7 +351,7 @@ private fun LostFoundDetailScreen(
                 } else {
                     MaterialTheme.colorScheme.onPrimaryContainer
                 },
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
 
@@ -361,39 +360,39 @@ private fun LostFoundDetailScreen(
         Text(
             text = "Description",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = item.description,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Column {
                 Text(
                     text = "Location",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = item.location,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
             Column {
                 Text(
                     text = "Date",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = item.date,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
@@ -403,11 +402,11 @@ private fun LostFoundDetailScreen(
             Text(
                 text = "Images",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(8.dp))
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(item.images) { imageUrl ->
                     AsyncImage(
@@ -416,7 +415,7 @@ private fun LostFoundDetailScreen(
                         modifier = Modifier
                             .size(120.dp)
                             .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
                 }
             }
@@ -426,7 +425,7 @@ private fun LostFoundDetailScreen(
 
         Button(
             onClick = { /* Mock contact */ },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(Icons.Default.Phone, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -448,7 +447,7 @@ private fun CreateLostFoundScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
@@ -457,7 +456,7 @@ private fun CreateLostFoundScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Report Item",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
 
@@ -465,17 +464,17 @@ private fun CreateLostFoundScreen(
 
         // Type selection
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FilterChip(
                 selected = selectedType == LostFoundType.LOST,
                 onClick = { selectedType = LostFoundType.LOST },
-                label = { Text("Lost Item") }
+                label = { Text("Lost Item") },
             )
             FilterChip(
                 selected = selectedType == LostFoundType.FOUND,
                 onClick = { selectedType = LostFoundType.FOUND },
-                label = { Text("Found Item") }
+                label = { Text("Found Item") },
             )
         }
 
@@ -485,7 +484,7 @@ private fun CreateLostFoundScreen(
             value = title,
             onValueChange = { title = it },
             label = { Text("Item Title") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -495,7 +494,7 @@ private fun CreateLostFoundScreen(
             onValueChange = { description = it },
             label = { Text("Description") },
             modifier = Modifier.fillMaxWidth(),
-            minLines = 3
+            minLines = 3,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -504,14 +503,14 @@ private fun CreateLostFoundScreen(
             value = location,
             onValueChange = { location = it },
             label = { Text("Location") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedButton(
             onClick = { /* Mock image picker */ },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -523,7 +522,7 @@ private fun CreateLostFoundScreen(
         Button(
             onClick = onSubmit,
             modifier = Modifier.fillMaxWidth(),
-            enabled = title.isNotBlank() && description.isNotBlank() && location.isNotBlank()
+            enabled = title.isNotBlank() && description.isNotBlank() && location.isNotBlank(),
         ) {
             Text("Submit Report")
         }

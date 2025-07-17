@@ -6,5 +6,5 @@ data class OpportunityFilters(
     val almostFull: Boolean = false,
     val minKarmaPoints: Int = 1,
     val maxKarmaPoints: Int = 200,
-    val dateFilter: DateFilter = DateFilter.ALL
+    val dateFilter: DateFilter = DateFilter.ALL,
 ) 

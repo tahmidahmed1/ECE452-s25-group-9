@@ -16,7 +16,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -52,7 +51,7 @@ constructor(
     fun devModeSignIn(userType: DomainUserType = DomainUserType.VOLUNTEER) {
         Log.d(TAG, "🎯 DevMode signIn initiated")
         Log.d(TAG, "📝 DevMode userType: $userType")
-        
+
         if (!BuildConfig.DEV_MODE) {
             Log.w(TAG, "⚠️ DevMode not available in release builds")
             _uiState.value = AuthUiState.Error("Dev mode is not available in release builds")
@@ -61,17 +60,17 @@ constructor(
 
         Log.d(TAG, "🔄 Setting loading state...")
         _uiState.value = AuthUiState.Loading
-        
+
         viewModelScope.launch {
             try {
                 val timestamp = System.currentTimeMillis().toString().takeLast(6)
                 val devUsername = "dev_${userType.name.lowercase()}_$timestamp"
-                
+
                 Log.d(TAG, "🔄 Generated dev username: $devUsername")
                 Log.d(TAG, "📞 Calling signUpUseCase...")
-                
+
                 val result = signUpUseCase.invoke(devUsername, "$devUsername@example.com", "dev_password_123")
-                
+
                 result.onSuccess { response ->
                     Log.d(TAG, "✅ DevMode signUp successful")
                     Log.d(TAG, "🔄 Fetching user details...")
@@ -91,15 +90,15 @@ constructor(
     fun signUp(username: String, email: String, password: String) {
         Log.d(TAG, "🎯 SignUp initiated")
         Log.d(TAG, "📝 SignUp params - Username: $username, Email: $email")
-        
+
         Log.d(TAG, "🔄 Setting loading state...")
         _uiState.value = AuthUiState.Loading
-        
+
         viewModelScope.launch {
             try {
                 Log.d(TAG, "📞 Calling signUpUseCase...")
                 val result = signUpUseCase.invoke(username, email, password)
-                
+
                 result.onSuccess { response ->
                     Log.d(TAG, "✅ SignUp successful")
                     Log.d(TAG, "🔄 Fetching user details...")
@@ -118,15 +117,15 @@ constructor(
     fun signIn(username: String, password: String) {
         Log.d(TAG, "🎯 SignIn initiated")
         Log.d(TAG, "📝 SignIn params - Username: $username")
-        
+
         Log.d(TAG, "🔄 Setting loading state...")
         _uiState.value = AuthUiState.Loading
-        
+
         viewModelScope.launch {
             try {
                 Log.d(TAG, "📞 Calling signInUseCase...")
                 val result = signInUseCase.invoke(username, password)
-                
+
                 result.onSuccess { response ->
                     Log.d(TAG, "✅ SignIn successful")
                     Log.d(TAG, "🔄 Fetching user details...")
@@ -144,12 +143,12 @@ constructor(
 
     fun signOut() {
         Log.d(TAG, "🎯 SignOut initiated")
-        
+
         viewModelScope.launch {
             try {
                 Log.d(TAG, "📞 Calling signOutUseCase...")
                 val result = signOutUseCase.invoke()
-                
+
                 result.onSuccess {
                     Log.d(TAG, "✅ SignOut successful")
                     _uiState.value = AuthUiState.SignedOut
@@ -166,12 +165,12 @@ constructor(
 
     private fun fetchUser() {
         Log.d(TAG, "🔄 FetchUser initiated")
-        
+
         viewModelScope.launch {
             try {
                 Log.d(TAG, "📞 Calling getCurrentUser...")
                 val result = getCurrentUser.invoke()
-                
+
                 result.onSuccess { user: DomainUser ->
                     Log.d(TAG, "✅ FetchUser successful")
                     Log.d(TAG, "✅ User details - ID: ${user.id}, Username: ${user.username}")
@@ -227,12 +226,12 @@ constructor(
 
     private fun checkCurrentUser() {
         Log.d(TAG, "🔄 CheckCurrentUser initiated")
-        
+
         viewModelScope.launch {
             try {
                 Log.d(TAG, "📞 Calling getCurrentUser for auth check...")
                 val result = getCurrentUser.invoke()
-                
+
                 result.onSuccess { user: DomainUser ->
                     Log.d(TAG, "✅ CheckCurrentUser successful - user is authenticated")
                     Log.d(TAG, "✅ User details - ID: ${user.id}, Username: ${user.username}")

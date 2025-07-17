@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class LocationSettingsRepository @Inject constructor(
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
 ) {
     private companion object {
         private val LOCATION_ENABLED_KEY = booleanPreferencesKey("location_enabled")
@@ -52,7 +52,7 @@ class LocationSettingsRepository @Inject constructor(
     suspend fun updateAllSettings(
         locationEnabled: Boolean,
         notificationsEnabled: Boolean,
-        shareProfilePictureEnabled: Boolean
+        shareProfilePictureEnabled: Boolean,
     ) {
         dataStore.edit { preferences ->
             preferences[LOCATION_ENABLED_KEY] = locationEnabled

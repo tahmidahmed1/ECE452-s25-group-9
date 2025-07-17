@@ -1,10 +1,10 @@
 package com.example.gooddeedfeed.domain.repository
 
+import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
-import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import java.io.File
 
 interface AuthRepository {
@@ -18,11 +18,11 @@ interface AuthRepository {
     suspend fun uploadOrganizationImages(files: List<File>): Result<List<String>>
     suspend fun completeOrganizerOnboarding(
         profile: DomainOrganizerProfile,
-        profilePictureFile: File?
+        profilePictureFile: File?,
     ): Result<Unit>
     suspend fun completeVolunteerOnboarding(
         profile: DomainVolunteerProfile,
-        profilePictureFile: File?
+        profilePictureFile: File?,
     ): Result<Unit>
     suspend fun updateProfile(updates: DomainUserUpdate): Result<DomainUser>
 }

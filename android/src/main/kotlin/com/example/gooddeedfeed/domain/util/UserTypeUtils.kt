@@ -15,9 +15,9 @@ object UserTypeUtils {
         return when (user.userType) {
             DomainUserType.VOLUNTEER -> {
                 user.fullName != null && user.phone != null && user.sex != null &&
-                user.description != null && user.skills != null && user.age != null &&
-                user.emergencyContactName != null && user.emergencyContactPhone != null &&
-                user.locationArea != null && user.hasDriversLicense != null
+                    user.description != null && user.skills != null && user.age != null &&
+                    user.emergencyContactName != null && user.emergencyContactPhone != null &&
+                    user.locationArea != null && user.hasDriversLicense != null
             }
             DomainUserType.ORGANIZER -> user.organizationName != null
             null -> false
@@ -40,7 +40,7 @@ object UserTypeUtils {
      */
     fun getUserFullDisplayName(user: DomainUser): String {
         val baseName = user.fullName ?: user.username
-        
+
         return when (user.userType) {
             DomainUserType.VOLUNTEER -> baseName
             DomainUserType.ORGANIZER -> {

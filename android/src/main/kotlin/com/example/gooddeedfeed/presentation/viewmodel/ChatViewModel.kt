@@ -1,11 +1,11 @@
 package com.example.gooddeedfeed.presentation.viewmodel
 
 import android.util.Log
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.remote.ChatApiService
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
@@ -14,9 +14,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.websocket.Frame
@@ -41,14 +41,14 @@ data class ChatMessage(
     val timestamp: String,
     val isFromCurrentUser: Boolean = false,
     val senderId: Int,
-    val receiverId: Int
+    val receiverId: Int,
 )
 
 @Serializable
 data class SendMessageRequest(
     val sender_id: Int,
     val receiver_id: Int,
-    val content: String
+    val content: String,
 )
 
 @Serializable
@@ -61,14 +61,14 @@ data class ChatConversation(
     val unreadCount: Int = 0,
     val isStarred: Boolean = false,
     val participantCount: Int = 0,
-    val otherUserId: Int
+    val otherUserId: Int,
 )
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val httpClient: HttpClient,
     private val chatApiService: ChatApiService,
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
 ) : ViewModel() {
 
     companion object {
@@ -94,13 +94,13 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _conversationsState.value = UiState.Loading
-                
+
                 val token = getAuthToken()
                 if (token.isNullOrEmpty()) {
                     _conversationsState.value = UiState.Error("No authentication token found")
                     return@launch
                 }
-                
+
                 chatApiService.withFallbackUrls { baseUrl ->
                     httpClient.get("$baseUrl/conversations") {
                         header("Authorization", "Bearer $token")
@@ -120,13 +120,13 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _messagesState.value = UiState.Loading
-                
+
                 val token = getAuthToken()
                 if (token.isNullOrEmpty()) {
                     _messagesState.value = UiState.Error("No authentication token found")
                     return@launch
                 }
-                
+
                 chatApiService.withFallbackUrls { baseUrl ->
                     httpClient.get("$baseUrl/messages/$otherUserId") {
                         header("Authorization", "Bearer $token")
@@ -142,7 +142,7 @@ class ChatViewModel @Inject constructor(
                             timestamp = formatTimestamp(msg.sent_at),
                             isFromCurrentUser = msg.sender_id == currentUser.id,
                             senderId = msg.sender_id,
-                            receiverId = msg.receiver_id
+                            receiverId = msg.receiver_id,
                         )
                     }
                     _messagesState.value = UiState.Success(chatMessages)
@@ -158,19 +158,19 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _sendMessageState.value = UiState.Loading
-                
+
                 val token = getAuthToken()
                 if (token.isNullOrEmpty()) {
                     _sendMessageState.value = UiState.Error("No authentication token found")
                     return@launch
                 }
-                
+
                 val request = SendMessageRequest(
                     sender_id = currentUser.id,
                     receiver_id = receiverId,
-                    content = content
+                    content = content,
                 )
-                
+
                 chatApiService.withFallbackUrls { baseUrl ->
                     httpClient.post("$baseUrl/messages") {
                         contentType(ContentType.Application.Json)
@@ -180,7 +180,7 @@ class ChatViewModel @Inject constructor(
                 }.let { response ->
                     val sentMessage = response.body<MessageResponse>()
                     _sendMessageState.value = UiState.Success("Message sent successfully")
-                    
+
                     // Add message to current messages
                     val currentMessages = (_messagesState.value as? UiState.Success)?.data ?: emptyList()
                     val newMessage = ChatMessage(
@@ -191,9 +191,9 @@ class ChatViewModel @Inject constructor(
                         timestamp = formatTimestamp(sentMessage.sent_at),
                         isFromCurrentUser = true,
                         senderId = currentUser.id,
-                        receiverId = receiverId
+                        receiverId = receiverId,
                     )
-                    
+
                     _messagesState.value = UiState.Success(currentMessages + newMessage)
                 }
             } catch (e: Exception) {
@@ -211,7 +211,7 @@ class ChatViewModel @Inject constructor(
                     Log.e(TAG, "No authentication token for WebSocket connection")
                     return@launch
                 }
-                
+
                 chatApiService.withFallbackUrls { baseUrl ->
                     val wsUrl = baseUrl.replace("http", "ws")
                     httpClient.webSocket("$wsUrl/ws/chat/$roomId") {
@@ -273,5 +273,5 @@ data class MessageResponse(
     val content: String,
     val sender_id: Int,
     val receiver_id: Int,
-    val sent_at: String
+    val sent_at: String,
 ) 

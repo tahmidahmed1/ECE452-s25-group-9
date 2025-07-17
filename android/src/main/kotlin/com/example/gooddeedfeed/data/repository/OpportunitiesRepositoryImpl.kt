@@ -2,12 +2,12 @@ package com.example.gooddeedfeed.data.repository
 
 import com.example.gooddeedfeed.data.remote.EventApiService
 import com.example.gooddeedfeed.data.remote.dto.EventDto
+import com.example.gooddeedfeed.domain.model.DateFilter
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
-import com.example.gooddeedfeed.domain.model.OpportunityFilters
-import com.example.gooddeedfeed.domain.model.DateFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
@@ -103,21 +103,23 @@ class OpportunitiesRepositoryImpl @Inject constructor(
         lat: Double?,
         lon: Double?,
         radiusKm: Float,
-        filters: OpportunityFilters
+        filters: OpportunityFilters,
     ): Flow<List<VolunteerOpportunity>> = flow {
         val opportunities = try {
             // Convert filters to API parameters
             val categoryParam = if (filters.selectedCategories.isNotEmpty()) {
                 filters.selectedCategories.first().name.lowercase()
-            } else null
-            
+            } else {
+                null
+            }
+
             val dateFilterParam = when (filters.dateFilter) {
                 DateFilter.ALL -> null
                 DateFilter.TODAY -> "today"
                 DateFilter.THIS_WEEK -> "this_week"
                 DateFilter.THIS_MONTH -> "this_month"
             }
-            
+
             apiService.getAllEvents(
                 lat = lat,
                 lon = lon,
@@ -127,7 +129,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 almostFull = filters.almostFull,
                 minKarmaPoints = filters.minKarmaPoints,
                 maxKarmaPoints = filters.maxKarmaPoints,
-                dateFilter = dateFilterParam
+                dateFilter = dateFilterParam,
             ).map { it.toOpportunity() }
         } catch (e: Exception) {
             emptyList()

@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -50,25 +49,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
-import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
-import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
-import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
-import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
-import com.example.gooddeedfeed.presentation.viewmodel.LeaderboardViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.domain.model.DomainBadge
-import com.example.gooddeedfeed.domain.model.DomainUserBadge
+import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
 import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
+import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
+import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.LeaderboardViewModel
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -76,14 +74,14 @@ import java.io.FileOutputStream
 @Composable
 fun StatsScreen(
     viewModel: LeaderboardViewModel = hiltViewModel(),
-    badgeViewModel: BadgeViewModel = hiltViewModel()
+    badgeViewModel: BadgeViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val allBadgesState by badgeViewModel.allBadgesState.collectAsStateWithLifecycle()
     val userBadgesState by badgeViewModel.userBadgesState.collectAsStateWithLifecycle()
-    
+
     // Show error toast if there's an error
     uiState.errorMessage?.let { error ->
         LaunchedEffect(error) {
@@ -91,7 +89,7 @@ fun StatsScreen(
             viewModel.clearError()
         }
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -122,7 +120,7 @@ fun StatsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
@@ -131,17 +129,17 @@ fun StatsScreen(
                     text = "No leaderboard entries available",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 400.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     itemsIndexed(uiState.entries) { index, entry ->
                         LeaderboardEntryCard(entry = entry)
                     }
-                    
+
                     // Loading indicator for pagination
                     if (uiState.isLoadingMore) {
                         item {
@@ -149,13 +147,13 @@ fun StatsScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(16.dp),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             }
                         }
                     }
-                    
+
                     // Load more trigger
                     if (uiState.hasNextPage && !uiState.isLoadingMore) {
                         item {
@@ -178,7 +176,7 @@ fun StatsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -189,10 +187,10 @@ fun StatsScreen(
                         is UiState.Success -> userState.data.map { it.badge.id }.toSet()
                         else -> emptySet()
                     }
-                    
+
                     val earnedBadges = allBadges.filter { earnedBadgeIds.contains(it.id) }
                     val unearnedBadges = allBadges.filter { !earnedBadgeIds.contains(it.id) }
-                    
+
                     if (earnedBadges.isEmpty()) {
                         // Show explanatory text when no badges are earned
                         Column(
@@ -222,7 +220,7 @@ fun StatsScreen(
                                 textAlign = TextAlign.Center,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            
+
                             // Show preview of available badges
                             if (unearnedBadges.isNotEmpty()) {
                                 Text(
@@ -260,7 +258,7 @@ fun StatsScreen(
                                     }
                                 }
                             }
-                            
+
                             if (unearnedBadges.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
@@ -286,7 +284,7 @@ fun StatsScreen(
                         text = "Failed to load badges",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(16.dp),
                     )
                 }
                 is UiState.Idle -> {
@@ -295,7 +293,7 @@ fun StatsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -311,7 +309,7 @@ fun StatsScreen(
         VerticalSpacer(SpacingSize.Large)
 
         // Section: Volunteer History
-                    SectionCard(title = "Volunteer History", showExport = true) {
+        SectionCard(title = "Volunteer History", showExport = true) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AppConstants.VOLUNTEER_HISTORY_ITEMS.forEach { item ->
                     Card(
@@ -349,13 +347,13 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
     } else {
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
-    
+
     val contentColor = if (isEarned) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
     }
-    
+
     Card(
         colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = Modifier
@@ -377,9 +375,9 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
                 tint = if (isEarned) MaterialTheme.colorScheme.primary else contentColor,
                 modifier = Modifier.size(32.dp),
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Badge name
             Text(
                 text = badge.name,
@@ -389,9 +387,9 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
                 maxLines = 2,
                 fontWeight = if (isEarned) FontWeight.Bold else FontWeight.Normal,
             )
-            
+
             Spacer(modifier = Modifier.height(4.dp))
-            
+
             // Required points or earned indicator
             if (isEarned) {
                 Text(
@@ -477,7 +475,7 @@ private fun SectionCard(
 @Composable
 private fun LeaderboardEntryCard(
     entry: DomainLeaderboardEntry,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -487,20 +485,20 @@ private fun LeaderboardEntryCard(
                 2 -> MaterialTheme.colorScheme.secondaryContainer
                 3 -> MaterialTheme.colorScheme.tertiaryContainer
                 else -> MaterialTheme.colorScheme.surfaceVariant
-            }
+            },
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 // Rank
                 Box(
@@ -513,9 +511,9 @@ private fun LeaderboardEntryCard(
                                 3 -> MaterialTheme.colorScheme.tertiary
                                 else -> MaterialTheme.colorScheme.outline
                             },
-                            shape = CircleShape
+                            shape = CircleShape,
                         ),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = entry.rank.toString(),
@@ -524,7 +522,7 @@ private fun LeaderboardEntryCard(
                             1, 2, 3 -> MaterialTheme.colorScheme.onPrimary
                             else -> MaterialTheme.colorScheme.onSurface
                         },
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 
@@ -539,7 +537,7 @@ private fun LeaderboardEntryCard(
                             .size(40.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
                 } else {
                     Icon(
@@ -550,7 +548,7 @@ private fun LeaderboardEntryCard(
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                             .padding(8.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -562,13 +560,13 @@ private fun LeaderboardEntryCard(
                         text = entry.fullName ?: entry.username,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     if (entry.fullName != null) {
                         Text(
                             text = "@${entry.username}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -576,23 +574,23 @@ private fun LeaderboardEntryCard(
 
             // Karma points
             Column(
-                horizontalAlignment = Alignment.End
+                horizontalAlignment = Alignment.End,
             ) {
                 Text(
                     text = "${entry.karmaPoints}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     text = "karma",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
-} 
+}
 
 @Composable
 private fun getIconForBadgeName(iconName: String): ImageVector {
@@ -611,30 +609,30 @@ private fun getIconForBadgeName(iconName: String): ImageVector {
 
 @Composable
 private fun SubscriptionsSection(
-    subscriptionViewModel: com.example.gooddeedfeed.presentation.viewmodel.volunteer.SubscriptionViewModel = hiltViewModel()
+    subscriptionViewModel: com.example.gooddeedfeed.presentation.viewmodel.volunteer.SubscriptionViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    
+
     LaunchedEffect(Unit) {
         subscriptionViewModel.getUserSubscriptions()
     }
-    
+
     SectionCard(title = "Your Subscriptions") {
         // Mock data for now since getUserSubscriptions returns different data structure
         val mockSubscriptions = listOf(
             MockSubscription("1", "Green Earth Org", "Environmental cleanup and conservation", true),
             MockSubscription("2", "TeachTech", "Technology education for underserved communities", true),
             MockSubscription("3", "Food For All", "Food distribution and hunger relief", true),
-            MockSubscription("4", "Senior Care Connect", "Support services for elderly community members", true)
+            MockSubscription("4", "Senior Care Connect", "Support services for elderly community members", true),
         )
-        
+
         if (mockSubscriptions.isEmpty()) {
             Text(
                 text = "No subscriptions yet",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -647,7 +645,7 @@ private fun SubscriptionsSection(
                                 subscriptionViewModel.unsubscribeFromOrganizer(subscription.id.toInt())
                                 com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Unsubscribed from ${subscription.name}")
                             }
-                        }
+                        },
                     )
                 }
             }
@@ -659,44 +657,44 @@ private data class MockSubscription(
     val id: String,
     val name: String,
     val description: String,
-    val isActive: Boolean
+    val isActive: Boolean,
 )
 
 @Composable
 private fun SubscriptionCard(
     subscription: MockSubscription,
-    onUnsubscribe: () -> Unit
+    onUnsubscribe: () -> Unit,
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = subscription.name,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
                 Text(
                     text = subscription.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2
+                    maxLines = 2,
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             androidx.compose.material3.TextButton(
                 onClick = onUnsubscribe,
                 colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
             ) {
                 Text("Unsubscribe")
             }

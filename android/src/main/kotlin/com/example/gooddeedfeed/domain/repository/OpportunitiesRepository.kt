@@ -1,9 +1,9 @@
 package com.example.gooddeedfeed.domain.repository
 
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
-import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -43,7 +43,7 @@ interface OpportunitiesRepository {
         lat: Double? = null,
         lon: Double? = null,
         radiusKm: Float = 50f,
-        filters: OpportunityFilters
+        filters: OpportunityFilters,
     ): Flow<List<VolunteerOpportunity>>
 
     /**

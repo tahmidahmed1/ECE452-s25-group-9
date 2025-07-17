@@ -7,7 +7,7 @@ data class DomainLeaderboardEntry(
     val karmaPoints: Int,
     val profilePictureUrl: String? = null,
     val userType: DomainUserType? = null,
-    val rank: Int
+    val rank: Int,
 )
 
 data class DomainLeaderboardResponse(
@@ -17,5 +17,5 @@ data class DomainLeaderboardResponse(
     val totalPages: Int,
     val totalEntries: Int,
     val hasNext: Boolean,
-    val hasPrevious: Boolean
+    val hasPrevious: Boolean,
 ) 

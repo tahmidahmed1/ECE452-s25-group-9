@@ -30,10 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.domain.model.ApprovalStatus
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
-import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.FormTextField
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SecondaryButton
@@ -72,7 +69,7 @@ fun SignUpScreen(
     onNavigateToSignIn: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onNavigateToHome: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -225,4 +222,3 @@ fun SignUpScreen(
         }
     }
 }
-

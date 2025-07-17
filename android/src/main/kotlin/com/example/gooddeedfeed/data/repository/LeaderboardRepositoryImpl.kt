@@ -6,13 +6,13 @@ import com.example.gooddeedfeed.domain.model.DomainLeaderboardResponse
 import com.example.gooddeedfeed.domain.repository.LeaderboardRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlin.Result
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.Result
 
 @Singleton
 class LeaderboardRepositoryImpl @Inject constructor(
-    private val leaderboardApiService: LeaderboardApiService
+    private val leaderboardApiService: LeaderboardApiService,
 ) : LeaderboardRepository {
 
     override suspend fun getLeaderboard(page: Int, pageSize: Int): Flow<Result<DomainLeaderboardResponse>> = flow {

@@ -1,7 +1,5 @@
 package com.example.gooddeedfeed.di
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import com.example.gooddeedfeed.data.remote.BadgeApiService
 import com.example.gooddeedfeed.data.repository.BadgeRepositoryImpl
 import com.example.gooddeedfeed.domain.repository.BadgeRepository
@@ -20,7 +18,7 @@ abstract class BadgeModule {
     @Binds
     @Singleton
     abstract fun bindBadgeRepository(
-        badgeRepositoryImpl: BadgeRepositoryImpl
+        badgeRepositoryImpl: BadgeRepositoryImpl,
     ): BadgeRepository
 
     companion object {

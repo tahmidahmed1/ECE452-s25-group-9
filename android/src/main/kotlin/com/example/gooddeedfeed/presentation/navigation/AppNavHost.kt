@@ -77,7 +77,7 @@ fun appNavHost(
                         when (currentState) {
                             is AuthUiState.Success -> {
                                 val user = currentState.user
-                                
+
                                 if (!user.onboardingCompleted) {
                                     navController.navigate(Screen.Onboarding.route) {
                                         popUpTo(Screen.Splash.route) { inclusive = true }
@@ -116,10 +116,10 @@ fun appNavHost(
                         navController.navigate(Screen.AuthenticatedHome.route) {
                             popUpTo(Screen.SignIn.route) { inclusive = true }
                         }
-                    }
+                    },
                 )
             }
-            
+
             composable(Screen.SignUp.route) {
                 SignUpScreen(
                     uiState = currentState,
@@ -134,22 +134,22 @@ fun appNavHost(
                         navController.navigate(Screen.AuthenticatedHome.route) {
                             popUpTo(Screen.SignUp.route) { inclusive = true }
                         }
-                    }
+                    },
                 )
             }
-            
+
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(
                     onOnboardingComplete = {
                         // Refresh user data and navigate to home
                         viewModel.refreshUser()
-                            navController.navigate(Screen.AuthenticatedHome.route) {
-                                popUpTo(0)
+                        navController.navigate(Screen.AuthenticatedHome.route) {
+                            popUpTo(0)
                         }
                     },
                 )
             }
-            
+
             composable(Screen.AuthenticatedHome.route) {
                 val user = (currentState as? AuthUiState.Success)?.user
                 if (user != null) {

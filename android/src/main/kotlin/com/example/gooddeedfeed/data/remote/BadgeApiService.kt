@@ -1,13 +1,13 @@
 package com.example.gooddeedfeed.data.remote
 
+import com.example.gooddeedfeed.data.remote.dto.BadgeCheckResponseDto
 import com.example.gooddeedfeed.data.remote.dto.BadgeDto
 import com.example.gooddeedfeed.data.remote.dto.UserBadgeDto
-import com.example.gooddeedfeed.data.remote.dto.BadgeCheckResponseDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.post
-import io.ktor.client.request.bearerAuth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -18,7 +18,7 @@ class BadgeApiService(client: HttpClient) : BaseApiService(client) {
             val response = withFallbackUrls { baseUrl ->
                 client.get("$baseUrl/badges")
             }
-            
+
             if (response.status.value in 200..299) {
                 val badges: List<BadgeDto> = response.body()
                 emit(Result.success(badges))
@@ -37,7 +37,7 @@ class BadgeApiService(client: HttpClient) : BaseApiService(client) {
                     bearerAuth(token)
                 }
             }
-            
+
             if (response.status.value in 200..299) {
                 val userBadges: List<UserBadgeDto> = response.body()
                 emit(Result.success(userBadges))
@@ -56,7 +56,7 @@ class BadgeApiService(client: HttpClient) : BaseApiService(client) {
                     bearerAuth(token)
                 }
             }
-            
+
             if (response.status.value in 200..299) {
                 val badgeCheckResponse: BadgeCheckResponseDto = response.body()
                 emit(Result.success(badgeCheckResponse))

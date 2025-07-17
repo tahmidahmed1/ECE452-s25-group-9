@@ -11,7 +11,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ChatModule {
-    
+
     @Provides
     @Singleton
     fun provideChatApiService(client: HttpClient): ChatApiService = ChatApiService(client)

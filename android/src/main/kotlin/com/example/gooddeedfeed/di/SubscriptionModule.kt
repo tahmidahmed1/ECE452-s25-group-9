@@ -26,7 +26,7 @@ abstract class SubscriptionModule {
         @Singleton
         fun provideSubscriptionApiService(
             client: HttpClient,
-            dataStore: DataStore<Preferences>
+            dataStore: DataStore<Preferences>,
         ): SubscriptionApiService = SubscriptionApiService(client, dataStore)
     }
 } 
