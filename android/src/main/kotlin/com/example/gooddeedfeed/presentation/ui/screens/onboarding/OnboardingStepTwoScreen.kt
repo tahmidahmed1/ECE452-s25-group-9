@@ -6,24 +6,34 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -47,6 +57,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
+import com.example.gooddeedfeed.domain.model.SocialMediaLink
+import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.OrganizationType
 import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
@@ -59,6 +71,7 @@ import java.io.File
 fun OnboardingStepTwoScreen(
     userType: DomainUserType?,
     onComplete: (fullName: String, phone: String, organizationName: String?, profilePictureFile: File?, organizerProfile: DomainOrganizerProfile?) -> Unit,
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -75,6 +88,15 @@ fun OnboardingStepTwoScreen(
     var organizationDescription by remember { mutableStateOf("") }
     var organizationWebsite by remember { mutableStateOf("") }
     var organizationCustomType by remember { mutableStateOf("") }
+    
+    // Social media fields
+    var instagramHandle by remember { mutableStateOf("") }
+    var twitterHandle by remember { mutableStateOf("") }
+    var facebookPage by remember { mutableStateOf("") }
+    
+    // Organization images
+    var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+    var mainOrgImageIndex by remember { mutableStateOf(0) }
 
     // UI state
     var isOrgTypeDropdownExpanded by remember { mutableStateOf(false) }
@@ -87,6 +109,19 @@ fun OnboardingStepTwoScreen(
             val file = ImageUtils.saveUriToFile(context, it)
             profilePictureFile = file
             profilePictureUri = it
+        }
+    }
+    
+    // Organization image launcher
+    val orgImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri: Uri? ->
+        uri?.let {
+            ImageUtils.saveUriToFile(context, it)?.let { file -> 
+                if (organizationImageFiles.size < 10) {
+                    organizationImageFiles = organizationImageFiles + file
+                }
+            }
         }
     }
 
@@ -116,14 +151,34 @@ fun OnboardingStepTwoScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Header
-        Text(
-            text = "Complete Your Profile",
-            style = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold,
-            ),
-            textAlign = TextAlign.Center,
-        )
+        // Header with back arrow
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            
+            Text(
+                text = "Complete Your Profile",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                ),
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+            )
+            
+            // Invisible spacer to center the title
+            Box(modifier = Modifier.size(48.dp))
+        }
 
         VerticalSpacer(SpacingSize.Small)
 
@@ -222,6 +277,7 @@ fun OnboardingStepTwoScreen(
                     onValueChange = { fullName = it },
                     label = { Text("Full Name") },
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                     isError = fullNameError != null,
                 )
 
@@ -241,6 +297,7 @@ fun OnboardingStepTwoScreen(
                     onValueChange = { phone = it },
                     label = { Text("Phone Number") },
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     isError = phoneError != null,
                 )
@@ -284,6 +341,7 @@ fun OnboardingStepTwoScreen(
                             onValueChange = { organizationName = it },
                             label = { Text("Organization Name") },
                             modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
                             isError = organizationError != null,
                         )
 
@@ -308,6 +366,7 @@ fun OnboardingStepTwoScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { isOrgTypeDropdownExpanded = true },
+                                shape = RoundedCornerShape(12.dp),
                                 trailingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.ArrowDropDown,
@@ -349,6 +408,7 @@ fun OnboardingStepTwoScreen(
                             onValueChange = { organizationDescription = it },
                             label = { Text("Description (Optional)") },
                             modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
                             minLines = 3,
                             maxLines = 5,
                         )
@@ -360,6 +420,7 @@ fun OnboardingStepTwoScreen(
                             onValueChange = { organizationWebsite = it },
                             label = { Text("Website (Optional)") },
                             modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         )
 
@@ -371,8 +432,86 @@ fun OnboardingStepTwoScreen(
                                 onValueChange = { organizationCustomType = it },
                                 label = { Text("Custom Organization Type") },
                                 modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
                             )
                         }
+                        
+                        VerticalSpacer(SpacingSize.Medium)
+                        
+                        // Social media fields
+                        Text(
+                            text = "Social Media (Optional)",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                        )
+                        
+                        VerticalSpacer(SpacingSize.Small)
+                        
+                        OutlinedTextField(
+                            value = instagramHandle,
+                            onValueChange = { instagramHandle = it },
+                            label = { Text("Instagram Handle") },
+                            placeholder = { Text("@username") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                        
+                        VerticalSpacer(SpacingSize.Small)
+                        
+                        OutlinedTextField(
+                            value = twitterHandle,
+                            onValueChange = { twitterHandle = it },
+                            label = { Text("Twitter Handle") },
+                            placeholder = { Text("@username") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                        
+                        VerticalSpacer(SpacingSize.Small)
+                        
+                        OutlinedTextField(
+                            value = facebookPage,
+                            onValueChange = { facebookPage = it },
+                            label = { Text("Facebook Page") },
+                            placeholder = { Text("Page name or URL") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                        )
+                        
+                        VerticalSpacer(SpacingSize.Medium)
+                        
+                        // Organization images carousel
+                        Text(
+                            text = "Organization Images",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                        )
+                        
+                        VerticalSpacer(SpacingSize.Small)
+                        
+                        OrganizerImageCarousel(
+                            selectedImages = organizationImageFiles,
+                            mainImageIndex = mainOrgImageIndex,
+                            onAddImage = { 
+                                if (organizationImageFiles.size < 10) {
+                                    orgImageLauncher.launch("image/*")
+                                }
+                            },
+                            onRemoveImage = { index ->
+                                organizationImageFiles = organizationImageFiles.filterIndexed { i, _ -> i != index }
+                                if (mainOrgImageIndex >= organizationImageFiles.size && organizationImageFiles.isNotEmpty()) {
+                                    mainOrgImageIndex = organizationImageFiles.size - 1
+                                } else if (organizationImageFiles.isEmpty()) {
+                                    mainOrgImageIndex = 0
+                                }
+                            },
+                            onSetMainImage = { index ->
+                                mainOrgImageIndex = index
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
@@ -387,6 +526,18 @@ fun OnboardingStepTwoScreen(
         Button(
             onClick = {
                 val organizerProfile = if (userType == DomainUserType.ORGANIZER) {
+                    val socialMedia = mutableListOf<SocialMediaLink>().apply {
+                        if (instagramHandle.isNotBlank()) {
+                            add(SocialMediaLink(SocialMediaPlatform.INSTAGRAM, instagramHandle))
+                        }
+                        if (twitterHandle.isNotBlank()) {
+                            add(SocialMediaLink(SocialMediaPlatform.TWITTER, twitterHandle))
+                        }
+                        if (facebookPage.isNotBlank()) {
+                            add(SocialMediaLink(SocialMediaPlatform.FACEBOOK, facebookPage))
+                        }
+                    }.takeIf { it.isNotEmpty() }
+                    
                     DomainOrganizerProfile(
                         fullName = fullName,
                         phone = phone,
@@ -394,8 +545,8 @@ fun OnboardingStepTwoScreen(
                         organizationType = organizationType!!,
                         organizationDescription = organizationDescription.takeIf { it.isNotBlank() },
                         organizationWebsite = organizationWebsite.takeIf { it.isNotBlank() },
-                        organizationSocialMedia = null,
-                        organizationImages = null,
+                        organizationSocialMedia = socialMedia,
+                        organizationImages = organizationImageFiles.takeIf { it.isNotEmpty() }?.map { it.absolutePath },
                         organizationCustomType = organizationCustomType.takeIf { it.isNotBlank() },
                     )
                 } else {
@@ -413,6 +564,7 @@ fun OnboardingStepTwoScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
             enabled = isFormValid,
         ) {
             Text(
@@ -424,5 +576,174 @@ fun OnboardingStepTwoScreen(
         }
 
         VerticalSpacer(SpacingSize.Medium)
+    }
+}
+
+@Composable
+private fun OrganizerImageCarousel(
+    selectedImages: List<File>,
+    mainImageIndex: Int,
+    onAddImage: () -> Unit,
+    onRemoveImage: (Int) -> Unit,
+    onSetMainImage: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.height(200.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    ) {
+        if (selectedImages.isEmpty()) {
+            // Empty state - entire tile clickable
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onAddImage() },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Image",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Add Organization Images",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Showcase your organization (up to 10 images)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            // Show carousel with images
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Main image display
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(8.dp)
+                ) {
+                    AsyncImage(
+                        model = selectedImages[mainImageIndex],
+                        contentDescription = "Main Organization Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    
+                    // Main image badge
+                    androidx.compose.material3.Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "MAIN",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    
+                    // Remove button
+                    androidx.compose.material3.IconButton(
+                        onClick = { onRemoveImage(mainImageIndex) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .background(
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                                CircleShape
+                            )
+                            .size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Remove Image",
+                            tint = MaterialTheme.colorScheme.onError,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                
+                // Thumbnail row
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(selectedImages.size) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onSetMainImage(index) }
+                                .then(
+                                    if (index == mainImageIndex) {
+                                        Modifier.border(
+                                            2.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                        ) {
+                            AsyncImage(
+                                model = selectedImages[index],
+                                contentDescription = "Organization Image ${index + 1}",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                    
+                    // Add more button
+                    if (selectedImages.size < 10) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onAddImage() }
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(8.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add More Images",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 } 

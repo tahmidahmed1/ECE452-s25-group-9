@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserType
 
 @Composable
 fun AppTopBar(
@@ -228,7 +229,7 @@ fun AppTopBar(
                                 },
                             )
                             ModernDropdownMenuItem(
-                                text = "Privacy & Notifications",
+                                text = if (user.userType == DomainUserType.ORGANIZER) "Notifications" else "Privacy & Notifications",
                                 icon = Icons.Default.Notifications,
                                 onClick = {
                                     onEditPrivacy()

@@ -167,7 +167,24 @@ class Event(Base):
     karma_points = Column(Integer, default=10, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationship to event images
+    images = relationship("EventImage", back_populates="event", cascade="all, delete-orphan")
+
+
+class EventImage(Base):
+    __tablename__ = "event_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    image_url = Column(String, nullable=False)
+    is_main = Column(Boolean, default=False, nullable=False)  # Mark if this is the main image
+    display_order = Column(Integer, default=0, nullable=False)  # Order for carousel display
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationship back to event
+    event = relationship("Event", back_populates="images")
 
 
 # Association table for many-to-many relationship between users (volunteers) and organizers (subscriptions)

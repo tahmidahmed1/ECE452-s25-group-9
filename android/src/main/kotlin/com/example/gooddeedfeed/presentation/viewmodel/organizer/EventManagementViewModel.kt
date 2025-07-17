@@ -107,4 +107,10 @@ class EventManagementViewModel @Inject constructor(
             .onSuccess { loadEvents() }
             .onFailure { e -> _uiState.value = UiState.Error("Failed to upload image: ${e.message}") }
     }
+
+    suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean) {
+        manageEventsUseCase.uploadEventImageToCarousel(eventId, file, isMain)
+            .onSuccess { loadEvents() }
+            .onFailure { e -> _uiState.value = UiState.Error("Failed to upload image: ${e.message}") }
+    }
 } 

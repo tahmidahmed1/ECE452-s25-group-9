@@ -74,7 +74,7 @@ constructor(
                 result.onSuccess { response ->
                     Log.d(TAG, "✅ DevMode signUp successful")
                     Log.d(TAG, "🔄 Setting user type to: $userType")
-                    
+
                     // Set the user type after successful signup
                     authRepository.setUserType(userType).onSuccess {
                         Log.d(TAG, "✅ User type set successfully")

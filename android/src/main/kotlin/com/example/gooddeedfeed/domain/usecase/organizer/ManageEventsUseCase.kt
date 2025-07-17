@@ -39,4 +39,8 @@ class ManageEventsUseCase @Inject constructor(
     suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit> {
         return repository.uploadEventImage(eventId, file)
     }
+
+    suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean): Result<Unit> {
+        return repository.uploadEventImageToCarousel(eventId, file, isMain)
+    }
 } 

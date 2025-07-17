@@ -89,4 +89,23 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
     }
+
+    suspend fun uploadEventImageToCarousel(token: String, eventId: Int, file: java.io.File, isMain: Boolean) {
+        client.submitFormWithBinaryData(
+            url = buildUrl("events/$eventId/images/upload"),
+            formData = formData {
+                append(
+                    "file",
+                    file.readBytes(),
+                    Headers.build {
+                        append(HttpHeaders.ContentType, "image/jpeg")
+                        append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                    },
+                )
+                append("is_main", isMain.toString())
+            },
+        ) {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+    }
 } 

@@ -224,5 +224,22 @@ class ObjectStorageService:
             logger.error(f"Unexpected error uploading image: {e}")
             raise HTTPException(status_code=500, detail="Failed to upload image")
 
+    async def delete_file_from_url(self, file_url: str):
+        """Delete a file from storage using its URL."""
+        try:
+            # Extract object name from URL
+            # Expected format: http://localhost:9001/bucket-name/object-name
+            parts = file_url.split('/')
+            object_name = parts[-1]  # Get the filename part
+            
+            self.client.remove_object(self.bucket_name, object_name)
+            logger.info(f"Successfully deleted object: {object_name}")
+        except S3Error as e:
+            logger.error(f"Error deleting from MinIO: {e}")
+            raise HTTPException(status_code=500, detail="Failed to delete image")
+        except Exception as e:
+            logger.error(f"Unexpected error deleting image: {e}")
+            raise HTTPException(status_code=500, detail="Failed to delete image")
+
 # Global instance
 storage_service = ObjectStorageService() 

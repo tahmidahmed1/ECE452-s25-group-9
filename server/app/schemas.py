@@ -184,6 +184,22 @@ class UserUpdate(BaseModel):
 
 # ------------------ Event Schemas ------------------
 
+class EventImageBase(BaseModel):
+    image_url: str
+    is_main: bool = False
+    display_order: int = 0
+
+class EventImageCreate(EventImageBase):
+    pass
+
+class EventImageOut(EventImageBase):
+    id: int
+    event_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class EventBase(BaseModel):
     title: str
     description: Optional[str] = None
@@ -212,6 +228,7 @@ class EventCreate(EventBase):
 class EventOut(EventBase):
     id: int
     organizer_id: int
+    images: List[EventImageOut] = []
 
     class Config:
         from_attributes = True

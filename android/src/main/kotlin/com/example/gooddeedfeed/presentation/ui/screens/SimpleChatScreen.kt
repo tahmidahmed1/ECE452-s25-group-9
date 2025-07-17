@@ -189,7 +189,10 @@ private fun ChatListScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                text = "Start a conversation with an organizer",
+                                text = when (user.userType) {
+                                    com.example.gooddeedfeed.domain.model.DomainUserType.ORGANIZER -> "Wait for incoming messages from volunteers"
+                                    else -> "Start a conversation with an organizer"
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,

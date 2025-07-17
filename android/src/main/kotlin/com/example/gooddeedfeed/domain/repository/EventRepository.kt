@@ -47,6 +47,11 @@ interface EventRepository {
     suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit>
 
     /**
+     * Upload an image to event carousel (up to 10 images)
+     */
+    suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean): Result<Unit>
+
+    /**
      * Get volunteer applications for an event
      */
     suspend fun getEventApplications(eventId: Int): Flow<List<VolunteerApplicationForOrganizer>>

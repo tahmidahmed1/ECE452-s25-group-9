@@ -6,14 +6,20 @@ import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Emergency
 import androidx.compose.material.icons.filled.Fastfood
@@ -35,10 +41,13 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
@@ -89,12 +98,13 @@ fun CreateEventScreen(
     var latitudeText by remember { mutableStateOf("") }
     var longitudeText by remember { mutableStateOf("") }
     var showMapPicker by remember { mutableStateOf(false) }
-    var selectedImageFile by remember { mutableStateOf<File?>(null) }
+    var selectedImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+    var mainImageIndex by remember { mutableStateOf(0) }
 
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
-    
+
     // Date and time picker states
     val datePickerState = rememberDatePickerState()
     val startTimePickerState = rememberTimePickerState()
@@ -114,10 +124,14 @@ fun CreateEventScreen(
         }
     }
 
-    // Launcher for gallery image (simple)
+    // Launcher for multiple gallery images
     val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
-            ImageUtils.saveUriToFile(context, it)?.let { file -> selectedImageFile = file }
+            ImageUtils.saveUriToFile(context, it)?.let { file -> 
+                if (selectedImageFiles.size < 10) {
+                    selectedImageFiles = selectedImageFiles + file
+                }
+            }
         }
     }
 
@@ -129,7 +143,7 @@ fun CreateEventScreen(
 
     // Debounce location query and fetch predictions
     LaunchedEffect(locationText) {
-        if (locationText.length >= 3) {
+        if (locationText.length >= 2) { // Reduced from 3 to 2 characters
             delay(300)
             try {
                 val request = FindAutocompletePredictionsRequest.builder()
@@ -139,9 +153,10 @@ fun CreateEventScreen(
                 val response = placesClient.findAutocompletePredictions(request).await()
                 predictions = response.autocompletePredictions
                 locationDropdownExpanded = predictions.isNotEmpty()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 predictions = emptyList()
                 locationDropdownExpanded = false
+                // For debugging: you can add Log.e("PlacesAPI", "Error: ${e.message}")
             }
         } else {
             predictions = emptyList()
@@ -201,28 +216,22 @@ fun CreateEventScreen(
             // Location input with autocomplete and map button
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom,
             ) {
                 ExposedDropdownMenuBox(
                     expanded = locationDropdownExpanded,
-                    onExpandedChange = { locationDropdownExpanded = it },
-                    modifier = Modifier.weight(1f)
+                    onExpandedChange = { expanded ->
+                        // Only allow manual dismissal, not opening
+                        if (!expanded) {
+                            locationDropdownExpanded = false
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
                 ) {
                     OutlinedTextField(
                         value = locationText,
                         onValueChange = { locationText = it },
                         label = { Text("Location") },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    val fields = listOf(Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
-                                    val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields).build(context)
-                                    placeLauncher.launch(intent)
-                                },
-                            ) {
-                                Icon(Icons.Default.Search, contentDescription = "Search location")
-                            }
-                        },
                         colors = ExposedDropdownMenuDefaults.textFieldColors(),
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         singleLine = true,
@@ -260,27 +269,45 @@ fun CreateEventScreen(
                         }
                     }
                 }
-                
+
                 // Map picker button
                 OutlinedButton(
                     onClick = { showMapPicker = true },
                     shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.height(56.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = "Select on Map",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
 
-            // Image picker
-            OutlinedButton(
-                onClick = { imagePickerLauncher.launch("image/*") },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (selectedImageFile == null) "Select Event Image (optional)" else "Image Selected: Tap to Change")
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Image carousel picker
+            EventImageCarousel(
+                selectedImages = selectedImageFiles,
+                mainImageIndex = mainImageIndex,
+                onAddImage = { 
+                    if (selectedImageFiles.size < 10) {
+                        imagePickerLauncher.launch("image/*")
+                    }
+                },
+                onRemoveImage = { index ->
+                    selectedImageFiles = selectedImageFiles.filterIndexed { i, _ -> i != index }
+                    if (mainImageIndex >= selectedImageFiles.size && selectedImageFiles.isNotEmpty()) {
+                        mainImageIndex = selectedImageFiles.size - 1
+                    } else if (selectedImageFiles.isEmpty()) {
+                        mainImageIndex = 0
+                    }
+                },
+                onSetMainImage = { index ->
+                    mainImageIndex = index
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
             OutlinedTextField(
                 value = date,
@@ -300,7 +327,7 @@ fun CreateEventScreen(
                     IconButton(onClick = { showDatePicker = true }) {
                         Icon(Icons.Default.DateRange, contentDescription = "Select Date")
                     }
-                }
+                },
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -322,7 +349,7 @@ fun CreateEventScreen(
                         IconButton(onClick = { showStartTimePicker = true }) {
                             Icon(Icons.Default.Schedule, contentDescription = "Select Start Time")
                         }
-                    }
+                    },
                 )
                 OutlinedTextField(
                     value = endTime,
@@ -342,7 +369,7 @@ fun CreateEventScreen(
                         IconButton(onClick = { showEndTimePicker = true }) {
                             Icon(Icons.Default.Schedule, contentDescription = "Select End Time")
                         }
-                    }
+                    },
                 )
             }
 
@@ -371,7 +398,7 @@ fun CreateEventScreen(
                     word.lowercase().replaceFirstChar { ch -> ch.titlecase() }
                 }
             }
-            
+
             val getCategoryIcon: (OpportunityCategory) -> androidx.compose.ui.graphics.vector.ImageVector = { cat ->
                 when (cat) {
                     OpportunityCategory.COMMUNITY_SERVICE -> Icons.Default.Group
@@ -396,7 +423,7 @@ fun CreateEventScreen(
                             imageVector = getCategoryIcon(category),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                     },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
@@ -406,24 +433,24 @@ fun CreateEventScreen(
                 ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     OpportunityCategory.values().forEach { cat ->
                         DropdownMenuItem(
-                            text = { 
+                            text = {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     Icon(
                                         imageVector = getCategoryIcon(cat),
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(20.dp),
                                     )
                                     Text(displayName(cat))
                                 }
-                            }, 
+                            },
                             onClick = {
                                 category = cat
                                 expanded = false
-                            }
+                            },
                         )
                     }
                 }
@@ -473,9 +500,10 @@ fun CreateEventScreen(
                         )
                         val created = viewModel.createEvent(data)
 
-                        // Upload image if selected
-                        selectedImageFile?.let { file ->
-                            viewModel.uploadEventImage(created.id, file)
+                        // Upload images if selected
+                        selectedImageFiles.forEachIndexed { index, file ->
+                            val isMain = index == mainImageIndex
+                            viewModel.uploadEventImageToCarousel(created.id, file, isMain)
                         }
 
                         onBack()
@@ -509,7 +537,7 @@ fun CreateEventScreen(
             onDismiss = { showMapPicker = false },
         )
     }
-    
+
     // Date Picker Dialog
     if (showDatePicker) {
         DatePickerDialog(
@@ -525,10 +553,10 @@ fun CreateEventScreen(
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                     ),
                     shape = RoundedCornerShape(CornerRadius.medium),
-                    modifier = Modifier.padding(end = 8.dp)
+                    modifier = Modifier.padding(end = 8.dp),
                 ) {
                     Text("OK")
                 }
@@ -537,11 +565,11 @@ fun CreateEventScreen(
                 OutlinedButton(
                     onClick = { showDatePicker = false },
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                        contentColor = MaterialTheme.colorScheme.error,
                     ),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                     shape = RoundedCornerShape(CornerRadius.medium),
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier.padding(start = 8.dp),
                 ) {
                     Text("Cancel")
                 }
@@ -549,8 +577,8 @@ fun CreateEventScreen(
             colors = DatePickerDefaults.colors(
                 containerColor = MaterialTheme.colorScheme.surface,
                 titleContentColor = MaterialTheme.colorScheme.onSurface,
-                headlineContentColor = MaterialTheme.colorScheme.onSurface
-            )
+                headlineContentColor = MaterialTheme.colorScheme.onSurface,
+            ),
         ) {
             DatePicker(
                 state = datePickerState,
@@ -568,12 +596,12 @@ fun CreateEventScreen(
                     selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
                     selectedDayContainerColor = MaterialTheme.colorScheme.primary,
                     todayContentColor = MaterialTheme.colorScheme.primary,
-                    todayDateBorderColor = MaterialTheme.colorScheme.primary
-                )
+                    todayDateBorderColor = MaterialTheme.colorScheme.primary,
+                ),
             )
         }
     }
-    
+
     // Start Time Picker Dialog
     if (showStartTimePicker) {
         CustomTimePickerDialog(
@@ -586,10 +614,10 @@ fun CreateEventScreen(
                 startTime = formatter.format(calendar.time)
                 showStartTimePicker = false
             },
-            timePickerState = startTimePickerState
+            timePickerState = startTimePickerState,
         )
     }
-    
+
     // End Time Picker Dialog
     if (showEndTimePicker) {
         CustomTimePickerDialog(
@@ -602,7 +630,7 @@ fun CreateEventScreen(
                 endTime = formatter.format(calendar.time)
                 showEndTimePicker = false
             },
-            timePickerState = endTimePickerState
+            timePickerState = endTimePickerState,
         )
     }
 }
@@ -612,7 +640,7 @@ fun CreateEventScreen(
 private fun CustomTimePickerDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (Int, Int) -> Unit,
-    timePickerState: TimePickerState
+    timePickerState: TimePickerState,
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -623,7 +651,7 @@ private fun CustomTimePickerDialog(
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
                 shape = RoundedCornerShape(CornerRadius.medium),
             ) {
@@ -634,7 +662,7 @@ private fun CustomTimePickerDialog(
             OutlinedButton(
                 onClick = onDismissRequest,
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
+                    contentColor = MaterialTheme.colorScheme.error,
                 ),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                 shape = RoundedCornerShape(CornerRadius.medium),
@@ -652,10 +680,10 @@ private fun CustomTimePickerDialog(
                     timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.primary,
                     timeSelectorSelectedContentColor = MaterialTheme.colorScheme.onPrimary,
                     timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             )
-        }
+        },
     )
 }
 
@@ -711,4 +739,172 @@ private fun MapPickerDialog(
             }
         }
     }
-} 
+}
+
+@Composable
+private fun EventImageCarousel(
+    selectedImages: List<File>,
+    mainImageIndex: Int,
+    onAddImage: () -> Unit,
+    onRemoveImage: (Int) -> Unit,
+    onSetMainImage: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.height(200.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    ) {
+        if (selectedImages.isEmpty()) {
+            // Empty state - entire tile clickable
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onAddImage() },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Image",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Add Event Images",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Tap to select up to 10 images",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        } else {
+            // Show carousel with images
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Main image display
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(8.dp)
+                ) {
+                    AsyncImage(
+                        model = selectedImages[mainImageIndex],
+                        contentDescription = "Main Event Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    
+                    // Main image badge
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "MAIN",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    
+                    // Remove button
+                    IconButton(
+                        onClick = { onRemoveImage(mainImageIndex) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .background(
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                                CircleShape
+                            )
+                            .size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Remove Image",
+                            tint = MaterialTheme.colorScheme.onError,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                
+                // Thumbnail row
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(selectedImages.size) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onSetMainImage(index) }
+                                .then(
+                                    if (index == mainImageIndex) {
+                                        Modifier.border(
+                                            2.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                        ) {
+                            AsyncImage(
+                                model = selectedImages[index],
+                                contentDescription = "Event Image ${index + 1}",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                    
+                    // Add more button
+                    if (selectedImages.size < 10) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onAddImage() }
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(8.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add More Images",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

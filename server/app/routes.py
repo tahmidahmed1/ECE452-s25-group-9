@@ -14,7 +14,7 @@ from .models import User, UserType, Sex, Event, Message, Badge, user_badges, use
 from .schemas import (
     UserCreate, User as UserSchema, Token, OnboardingStepOne, 
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
-    UserUpdate, EventCreate,
+    UserUpdate, EventCreate, EventImageOut,
     MessageCreate, MessageOut,
     ProfileBannerUploadResponse,
     LeaderboardResponse, LeaderboardEntry,
@@ -503,6 +503,161 @@ async def upload_event_image(
     db.refresh(event)
 
     return event 
+
+# Multiple event images endpoints
+
+@router.post("/events/{event_id}/images/upload", response_model=EventImageOut)
+async def upload_event_image_to_carousel(
+    event_id: int,
+    file: UploadFile = File(...),
+    is_main: bool = False,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Upload an image to event carousel (up to 10 images)."""
+    from .models import Event, EventImage
+    
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    # Check if event already has 10 images
+    existing_images_count = db.query(EventImage).filter(EventImage.event_id == event_id).count()
+    if existing_images_count >= 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 images allowed per event")
+
+    # Upload to object storage
+    url = await storage_service.upload_event_image(file, event_id)
+
+    # If this is marked as main, unset other main images
+    if is_main:
+        db.query(EventImage).filter(
+            EventImage.event_id == event_id,
+            EventImage.is_main == True
+        ).update({"is_main": False})
+
+    # Get next display order
+    max_order = db.query(func.max(EventImage.display_order)).filter(
+        EventImage.event_id == event_id
+    ).scalar() or 0
+
+    # Create new event image
+    event_image = EventImage(
+        event_id=event_id,
+        image_url=url,
+        is_main=is_main,
+        display_order=max_order + 1
+    )
+    db.add(event_image)
+    db.commit()
+    db.refresh(event_image)
+
+    return event_image
+
+@router.get("/events/{event_id}/images", response_model=List[EventImageOut])
+async def get_event_images(
+    event_id: int,
+    db: Session = Depends(get_db),
+):
+    """Get all images for an event, ordered by display_order."""
+    from .models import EventImage
+    
+    images = db.query(EventImage).filter(
+        EventImage.event_id == event_id
+    ).order_by(EventImage.display_order).all()
+    
+    return images
+
+@router.delete("/events/{event_id}/images/{image_id}")
+async def delete_event_image(
+    event_id: int,
+    image_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Delete an event image."""
+    from .models import Event, EventImage
+    
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    event_image = db.get(EventImage, image_id)
+    if not event_image or event_image.event_id != event_id:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    # Delete from object storage
+    try:
+        await storage_service.delete_file_from_url(event_image.image_url)
+    except Exception:
+        pass  # Continue even if storage deletion fails
+
+    db.delete(event_image)
+    db.commit()
+
+    return {"message": "Image deleted successfully"}
+
+@router.patch("/events/{event_id}/images/{image_id}/set-main")
+async def set_main_event_image(
+    event_id: int,
+    image_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Set an image as the main image for the event."""
+    from .models import Event, EventImage
+    
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    event_image = db.get(EventImage, image_id)
+    if not event_image or event_image.event_id != event_id:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    # Unset all other main images for this event
+    db.query(EventImage).filter(
+        EventImage.event_id == event_id,
+        EventImage.is_main == True
+    ).update({"is_main": False})
+
+    # Set this image as main
+    event_image.is_main = True
+    db.commit()
+
+    return {"message": "Main image updated successfully"}
+
+@router.patch("/events/{event_id}/images/reorder")
+async def reorder_event_images(
+    event_id: int,
+    image_orders: List[dict],  # [{"image_id": 1, "display_order": 1}, ...]
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Reorder event images."""
+    from .models import Event, EventImage
+    
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    # Update display orders
+    for item in image_orders:
+        db.query(EventImage).filter(
+            EventImage.id == item["image_id"],
+            EventImage.event_id == event_id
+        ).update({"display_order": item["display_order"]})
+
+    db.commit()
+    return {"message": "Images reordered successfully"}
 
 # ------------------ Organizer search ------------------
 

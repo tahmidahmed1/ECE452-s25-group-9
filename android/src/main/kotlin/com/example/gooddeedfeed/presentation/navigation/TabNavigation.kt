@@ -233,6 +233,7 @@ fun TabNavigationScreen(
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
         ) {
             com.example.gooddeedfeed.presentation.ui.screens.PrivacySettingsScreen(
+                user = user,
                 onClose = { showPrivacySettings = false },
                 modifier = Modifier.fillMaxSize(),
             )

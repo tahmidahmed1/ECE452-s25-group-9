@@ -140,6 +140,9 @@ fun OnboardingScreen(
                                                 organizerProfile = organizerProfile,
                                             )
                                         },
+                                        onBack = {
+                                            currentStep = 1
+                                        },
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }

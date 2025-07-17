@@ -39,11 +39,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.viewmodel.PrivacySettingsViewModel
 
 @Composable
 fun PrivacySettingsScreen(
+    user: DomainUser,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PrivacySettingsViewModel = hiltViewModel(),
@@ -86,7 +89,7 @@ fun PrivacySettingsScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Privacy & Notifications",
+                    text = if (user.userType == DomainUserType.ORGANIZER) "Notifications" else "Privacy & Notifications",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -100,16 +103,20 @@ fun PrivacySettingsScreen(
                 checked = uiState.notificationsEnabled,
                 onCheckedChange = viewModel::updateNotificationsEnabled,
             )
-            SettingToggleRow(
-                title = "Enable Location Services",
-                checked = uiState.locationEnabled,
-                onCheckedChange = viewModel::updateLocationEnabled,
-            )
-            SettingToggleRow(
-                title = "Share Profile Picture",
-                checked = uiState.shareProfilePictureEnabled,
-                onCheckedChange = viewModel::updateShareProfilePictureEnabled,
-            )
+            
+            // Only show location and profile picture settings for volunteers
+            if (user.userType != DomainUserType.ORGANIZER) {
+                SettingToggleRow(
+                    title = "Enable Location Services",
+                    checked = uiState.locationEnabled,
+                    onCheckedChange = viewModel::updateLocationEnabled,
+                )
+                SettingToggleRow(
+                    title = "Share Profile Picture",
+                    checked = uiState.shareProfilePictureEnabled,
+                    onCheckedChange = viewModel::updateShareProfilePictureEnabled,
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 

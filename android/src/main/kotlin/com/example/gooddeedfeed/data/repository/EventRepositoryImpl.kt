@@ -68,6 +68,10 @@ class EventRepositoryImpl @Inject constructor(
         apiService.uploadEventImage(token(), eventId, file)
     }
 
+    override suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean): Result<Unit> = runCatching {
+        apiService.uploadEventImageToCarousel(token(), eventId, file, isMain)
+    }
+
     private suspend fun token(): String {
         // Get token from DataStore
         val preferences = dataStore.data.first()
