@@ -27,10 +27,11 @@ class LocationService @Inject constructor(
 
     private val locationRequest = LocationRequest.Builder(
         Priority.PRIORITY_HIGH_ACCURACY,
-        10000L, // 10 seconds
+        5000L, // 5 seconds - more frequent updates for better accuracy
     ).apply {
-        setMinUpdateIntervalMillis(5000L) // 5 seconds
-        setMaxUpdateDelayMillis(15000L) // 15 seconds
+        setMinUpdateIntervalMillis(2000L) // 2 seconds
+        setMaxUpdateDelayMillis(10000L) // 10 seconds
+        setMaxUpdateAgeMillis(30000L) // Don't use location older than 30 seconds
     }.build()
 
     @SuppressLint("MissingPermission")
@@ -38,7 +39,12 @@ class LocationService @Inject constructor(
         val locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 result.lastLocation?.let { location ->
+                    // Filter out obviously fake/test locations (like Google Plex HQ)
+                    val isValidLocation = !(location.latitude == 37.4220 && location.longitude == -122.0841)
+                    if (isValidLocation) {
                     trySend(location)
+                    }
+                    // If it's a fake location, we don't send it and let the system try again
                 }
             }
         }
@@ -61,7 +67,17 @@ class LocationService @Inject constructor(
 
     @SuppressLint("MissingPermission")
     suspend fun getCurrentLocation(): Location? = try {
-        fusedLocationClient.lastLocation.await()
+        val location = fusedLocationClient.lastLocation.await()
+        // Filter out obviously fake/test locations (like Google Plex HQ)
+        location?.let {
+            // Google Plex HQ coordinates: 37.4220, -122.0841
+            // If location is exactly at Google Plex, it's likely a mock location
+            if (it.latitude == 37.4220 && it.longitude == -122.0841) {
+                null // Return null to force a fresh location request
+            } else {
+                it
+            }
+        }
     } catch (e: Exception) {
         null
     }

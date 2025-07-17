@@ -2,49 +2,96 @@ package com.example.gooddeedfeed.presentation.ui.screens
 
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Leaderboard
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
+import com.example.gooddeedfeed.presentation.viewmodel.LeaderboardViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
+import com.example.gooddeedfeed.domain.model.DomainBadge
+import com.example.gooddeedfeed.domain.model.DomainUserBadge
+import com.example.gooddeedfeed.presentation.common.UiState
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
 @Composable
-fun StatsScreen() {
+fun StatsScreen(
+    viewModel: LeaderboardViewModel = hiltViewModel(),
+    badgeViewModel: BadgeViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val allBadgesState by badgeViewModel.allBadgesState.collectAsStateWithLifecycle()
+    val userBadgesState by badgeViewModel.userBadgesState.collectAsStateWithLifecycle()
+    
+    // Show error toast if there's an error
+    uiState.errorMessage?.let { error ->
+        LaunchedEffect(error) {
+            ToastUtils.showErrorToast(context, error)
+            viewModel.clearError()
+        }
+    }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -54,7 +101,7 @@ fun StatsScreen() {
         // Header with icon and title (copied from ChatScreen)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp),
+            modifier = Modifier.padding(bottom = 24.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Leaderboard,
@@ -70,41 +117,201 @@ fun StatsScreen() {
 
         // Section: Karma Leaderboard
         SectionCard(title = "Karma Leaderboard") {
-            AppConstants.MOCK_LEADERS.forEachIndexed { index, pair ->
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (uiState.entries.isEmpty()) {
                 Text(
-                    text = "${index + 1}. ${pair.first} – ${pair.second} pts",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = "No leaderboard entries available",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
                 )
-            }
-        }
-
-        // Section: Badges
-        SectionCard(title = "Badges") {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                items(AppConstants.BADGES) { badge ->
-                    BadgeCard(badge)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    itemsIndexed(uiState.entries) { index, entry ->
+                        LeaderboardEntryCard(entry = entry)
+                    }
+                    
+                    // Loading indicator for pagination
+                    if (uiState.isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    }
+                    
+                    // Load more trigger
+                    if (uiState.hasNextPage && !uiState.isLoadingMore) {
+                        item {
+                            LaunchedEffect(Unit) {
+                                viewModel.loadNextPage()
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // Section: Subscriptions
-        SectionCard(title = "Your Subscriptions") {
-            val subscriptions = listOf("Green Earth Org", "TeachTech", "Food For All")
-            subscriptions.forEach { name ->
-                Text(
-                    text = "• $name",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        VerticalSpacer(SpacingSize.Large)
+
+        // Section: Badges
+        SectionCard(title = "Badges") {
+            when (val badgesState = allBadgesState) {
+                is UiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is UiState.Success -> {
+                    val allBadges = badgesState.data
+                    val earnedBadgeIds = when (val userState = userBadgesState) {
+                        is UiState.Success -> userState.data.map { it.badge.id }.toSet()
+                        else -> emptySet()
+                    }
+                    
+                    val earnedBadges = allBadges.filter { earnedBadgeIds.contains(it.id) }
+                    val unearnedBadges = allBadges.filter { !earnedBadgeIds.contains(it.id) }
+                    
+                    if (earnedBadges.isEmpty()) {
+                        // Show explanatory text when no badges are earned
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.EmojiEvents,
+                                contentDescription = "No badges yet",
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No badges earned yet",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Complete volunteer events to earn karma points and unlock badges!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // Show preview of available badges
+                            if (unearnedBadges.isNotEmpty()) {
+                                Text(
+                                    text = "Available badges:",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    items(unearnedBadges.take(3)) { badge ->
+                                        BadgeCard(badge = badge, isEarned = false)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Show earned badges first, then unearned badges
+                        Column {
+                            if (earnedBadges.isNotEmpty()) {
+                                Text(
+                                    text = "Your badges:",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    items(earnedBadges) { badge ->
+                                        BadgeCard(badge = badge, isEarned = true)
+                                    }
+                                }
+                            }
+                            
+                            if (unearnedBadges.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Available badges:",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    items(unearnedBadges.take(3)) { badge ->
+                                        BadgeCard(badge = badge, isEarned = false)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                is UiState.Error -> {
+                    Text(
+                        text = "Failed to load badges",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+                is UiState.Idle -> {
+                    // Idle state - show nothing or loading indicator
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
         }
 
+        VerticalSpacer(SpacingSize.Large)
+
+        // Section: Subscriptions
+        SubscriptionsSection()
+
+        VerticalSpacer(SpacingSize.Large)
+
         // Section: Volunteer History
-        SectionCard(title = "Volunteer History (Institution: Waterloo U.)", showExport = true) {
+                    SectionCard(title = "Volunteer History", showExport = true) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AppConstants.VOLUNTEER_HISTORY_ITEMS.forEach { item ->
                     Card(
@@ -136,37 +343,70 @@ fun StatsScreen() {
 }
 
 @Composable
-private fun BadgeCard(badge: AppConstants.Badge) {
+private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
+    val containerColor = if (isEarned) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    }
+    
+    val contentColor = if (isEarned) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    }
+    
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = Modifier
-            .height(120.dp)
+            .height(140.dp)
+            .width(120.dp)
             .clip(MaterialTheme.shapes.medium),
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             modifier = Modifier
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .fillMaxSize(),
         ) {
+            // Badge icon
             Icon(
-                imageVector = badge.icon,
+                imageVector = getIconForBadgeName(badge.iconName),
                 contentDescription = badge.name,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 16.dp),
+                tint = if (isEarned) MaterialTheme.colorScheme.primary else contentColor,
+                modifier = Modifier.size(32.dp),
             )
-            VerticalSpacer()
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Badge name
             Text(
                 text = badge.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.bodySmall,
+                color = contentColor,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                fontWeight = if (isEarned) FontWeight.Bold else FontWeight.Normal,
             )
-            Text(
-                text = "${badge.requiredPoints} pts",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            VerticalSpacer()
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Required points or earned indicator
+            if (isEarned) {
+                Text(
+                    text = "✓ Earned",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            } else {
+                Text(
+                    text = "${badge.requiredKarmaPoints} pts",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor,
+                )
+            }
         }
     }
 }
@@ -204,7 +444,8 @@ private fun SectionCard(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -229,6 +470,236 @@ private fun SectionCard(
             }
             VerticalSpacer()
             content()
+        }
+    }
+}
+
+@Composable
+private fun LeaderboardEntryCard(
+    entry: DomainLeaderboardEntry,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = when (entry.rank) {
+                1 -> MaterialTheme.colorScheme.primaryContainer
+                2 -> MaterialTheme.colorScheme.secondaryContainer
+                3 -> MaterialTheme.colorScheme.tertiaryContainer
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Rank
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            color = when (entry.rank) {
+                                1 -> MaterialTheme.colorScheme.primary
+                                2 -> MaterialTheme.colorScheme.secondary
+                                3 -> MaterialTheme.colorScheme.tertiary
+                                else -> MaterialTheme.colorScheme.outline
+                            },
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = entry.rank.toString(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = when (entry.rank) {
+                            1, 2, 3 -> MaterialTheme.colorScheme.onPrimary
+                            else -> MaterialTheme.colorScheme.onSurface
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Profile picture or fallback
+                if (entry.profilePictureUrl != null) {
+                    AsyncImage(
+                        model = entry.profilePictureUrl,
+                        contentDescription = "Profile picture",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Default profile",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(8.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Name and username
+                Column {
+                    Text(
+                        text = entry.fullName ?: entry.username,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (entry.fullName != null) {
+                        Text(
+                            text = "@${entry.username}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            // Karma points
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "${entry.karmaPoints}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "karma",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+} 
+
+@Composable
+private fun getIconForBadgeName(iconName: String): ImageVector {
+    return when (iconName) {
+        "Star" -> Icons.Default.Star
+        "LocalFireDepartment" -> Icons.Default.LocalFireDepartment
+        "EmojiEvents" -> Icons.Default.EmojiEvents
+        "WorkspacePremium" -> Icons.Default.WorkspacePremium
+        "Check" -> Icons.Default.CheckCircle
+        "Favorite" -> Icons.Default.Favorite
+        "Shield" -> Icons.Default.Shield
+        "Psychology" -> Icons.Default.Psychology
+        else -> Icons.Default.Star
+    }
+}
+
+@Composable
+private fun SubscriptionsSection(
+    subscriptionViewModel: com.example.gooddeedfeed.presentation.viewmodel.volunteer.SubscriptionViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    
+    LaunchedEffect(Unit) {
+        subscriptionViewModel.getUserSubscriptions()
+    }
+    
+    SectionCard(title = "Your Subscriptions") {
+        // Mock data for now since getUserSubscriptions returns different data structure
+        val mockSubscriptions = listOf(
+            MockSubscription("1", "Green Earth Org", "Environmental cleanup and conservation", true),
+            MockSubscription("2", "TeachTech", "Technology education for underserved communities", true),
+            MockSubscription("3", "Food For All", "Food distribution and hunger relief", true),
+            MockSubscription("4", "Senior Care Connect", "Support services for elderly community members", true)
+        )
+        
+        if (mockSubscriptions.isEmpty()) {
+            Text(
+                text = "No subscriptions yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                mockSubscriptions.forEach { subscription ->
+                    SubscriptionCard(
+                        subscription = subscription,
+                        onUnsubscribe = {
+                            coroutineScope.launch {
+                                // Use real unsubscribe functionality
+                                subscriptionViewModel.unsubscribeFromOrganizer(subscription.id.toInt())
+                                com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Unsubscribed from ${subscription.name}")
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class MockSubscription(
+    val id: String,
+    val name: String,
+    val description: String,
+    val isActive: Boolean
+)
+
+@Composable
+private fun SubscriptionCard(
+    subscription: MockSubscription,
+    onUnsubscribe: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = subscription.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = subscription.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            androidx.compose.material3.TextButton(
+                onClick = onUnsubscribe,
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Unsubscribe")
+            }
         }
     }
 } 

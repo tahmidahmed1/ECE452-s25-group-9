@@ -30,8 +30,8 @@ import com.example.gooddeedfeed.presentation.viewmodel.onboarding.OnboardingView
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
+    viewModel: OnboardingViewModel = hiltViewModel(),
     onOnboardingComplete: () -> Unit,
-    viewModel: OnboardingViewModel = hiltViewModel<OnboardingViewModel>(),
     modifier: Modifier = Modifier,
 ) {
     var currentStep by remember { mutableIntStateOf(1) }
@@ -41,7 +41,9 @@ fun OnboardingScreen(
     var basicProfilePicture: java.io.File? by remember { mutableStateOf(null) }
     val context = LocalContext.current
 
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val isSuccess by viewModel.isSuccess.collectAsStateWithLifecycle()
 
     // Calculate total steps based on user type
     val totalSteps = when (selectedUserType) {
@@ -50,7 +52,7 @@ fun OnboardingScreen(
     }
 
     // Show loading indicator with consistent theme
-    if (uiState.isLoading) {
+    if (isLoading) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
@@ -61,7 +63,7 @@ fun OnboardingScreen(
     }
 
     // Show error message if any
-    uiState.errorMessage?.let { errorMessage ->
+    error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
             ToastUtils.showErrorToast(context, errorMessage)
             viewModel.clearError() // Clear the error after showing it
@@ -69,8 +71,8 @@ fun OnboardingScreen(
     }
 
     // Handle onboarding completion
-    LaunchedEffect(uiState.isOnboardingCompleted) {
-        if (uiState.isOnboardingCompleted) {
+    LaunchedEffect(isSuccess) {
+        if (isSuccess) {
             onOnboardingComplete()
         }
     }
@@ -128,18 +130,15 @@ fun OnboardingScreen(
                                 else -> {
                                     OnboardingStepTwoScreen(
                                         userType = userType,
-                                        onComplete = { fullName, phone, organizationName, institutionName, profilePictureFile ->
+                                    onComplete = { fullName, phone, organizationName, profilePictureFile, organizerProfile ->
                                             viewModel.completeOnboarding(
                                                 userType = userType,
                                                 fullName = fullName,
                                                 phone = phone,
                                                 organizationName = organizationName,
-                                                institutionName = institutionName,
                                                 profilePictureFile = profilePictureFile,
+                                            organizerProfile = organizerProfile
                                             )
-                                        },
-                                        onBack = {
-                                            currentStep = 1
                                         },
                                         modifier = Modifier.fillMaxSize(),
                                     )
@@ -165,9 +164,10 @@ fun OnboardingScreen(
                             },
                             modifier = Modifier.fillMaxSize(),
                         )
-                    }
                 }
             }
         }
     }
 } 
+} 
+

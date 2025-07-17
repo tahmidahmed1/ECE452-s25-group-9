@@ -17,6 +17,7 @@ data class VolunteerOpportunity(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val isActive: Boolean = true,
+    val karmaPoints: Int = 10,
 )
 
 enum class OpportunityCategory {
@@ -26,5 +27,6 @@ enum class OpportunityCategory {
     HEALTHCARE,
     SOCIAL_SERVICES,
     DISASTER_RELIEF,
+    FOOD_SECURITY,
     OTHER,
 } 

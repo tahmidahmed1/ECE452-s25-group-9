@@ -36,6 +36,7 @@ data class HomeActionItem(
 sealed class HomeAction {
     object BrowseOpportunities : HomeAction()
     object ViewMyActivities : HomeAction()
+    object LostAndFound : HomeAction()
     object CreateEvent : HomeAction()
     object ManageEvents : HomeAction()
     object ViewDashboard : HomeAction()
@@ -92,6 +93,12 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                         description = "Track your volunteer history and hours",
                         action = HomeAction.ViewMyActivities,
                     ),
+                    HomeActionItem(
+                        iconName = "search",
+                        title = "Lost & Found",
+                        description = "Report lost items or browse found items",
+                        action = HomeAction.LostAndFound,
+                    ),
                 ),
             )
             DomainUserType.ORGANIZER -> UserTypeDisplay(
@@ -112,27 +119,9 @@ class HomeViewModel @Inject constructor() : ViewModel() {
                     ),
                 ),
             )
-            DomainUserType.INSTITUTION -> UserTypeDisplay(
-                title = "Welcome, Institution!",
-                subtitle = "Review and validate volunteer activities",
-                actionItems = listOf(
-                    HomeActionItem(
-                        iconName = "dashboard",
-                        title = "Review Dashboard",
-                        description = "Review pending volunteer activities",
-                        action = HomeAction.ViewDashboard,
-                    ),
-                    HomeActionItem(
-                        iconName = "business",
-                        title = "Manage Programs",
-                        description = "Oversee volunteer programs and organizations",
-                        action = HomeAction.ManagePrograms,
-                    ),
-                ),
-            )
-            else -> UserTypeDisplay(
-                title = "Welcome!",
-                subtitle = "Discover volunteer opportunities",
+            null -> UserTypeDisplay(
+                title = "Welcome to Good Deed Feed!",
+                subtitle = "Complete your profile to get started",
                 actionItems = listOf(
                     HomeActionItem(
                         iconName = "explore",

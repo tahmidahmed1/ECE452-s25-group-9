@@ -1,519 +1,462 @@
 package com.example.gooddeedfeed.data.remote
 
 import android.util.Log
-import com.example.gooddeedfeed.data.mapper.toData
-import com.example.gooddeedfeed.data.remote.dto.AuthResponse
-import com.example.gooddeedfeed.data.remote.dto.ErrorResponse
-import com.example.gooddeedfeed.data.remote.dto.InstitutionName
-import com.example.gooddeedfeed.data.remote.dto.InstitutionOption
-import com.example.gooddeedfeed.data.remote.dto.OnboardingCompleteRequest
-import com.example.gooddeedfeed.data.remote.dto.OnboardingResponse
-import com.example.gooddeedfeed.data.remote.dto.OnboardingStepOneRequest
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.gooddeedfeed.data.remote.dto.AuthResponseDto
+import com.example.gooddeedfeed.data.remote.dto.BannerUploadResponse
+import com.example.gooddeedfeed.data.remote.dto.OnboardingStepOneDto
+import com.example.gooddeedfeed.data.remote.dto.OnboardingStepTwoOrganizerDto
+import com.example.gooddeedfeed.data.remote.dto.OnboardingStepThreeVolunteerDto
+import com.example.gooddeedfeed.data.remote.dto.OrganizationImagesResponseDto
 import com.example.gooddeedfeed.data.remote.dto.ProfilePictureUploadResponse
-import com.example.gooddeedfeed.data.remote.dto.SignUpRequest
-import com.example.gooddeedfeed.data.remote.dto.TokenResponse
-import com.example.gooddeedfeed.data.remote.dto.User
+import com.example.gooddeedfeed.data.remote.dto.SignInRequestDto
+import com.example.gooddeedfeed.data.remote.dto.SignUpRequestDto
+import com.example.gooddeedfeed.data.remote.dto.TokenResponseDto
+import com.example.gooddeedfeed.data.remote.dto.UserDto
 import com.example.gooddeedfeed.data.remote.dto.UserType
-import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.data.remote.dto.UserUpdateDto
+import com.example.gooddeedfeed.data.mapper.toDto
+import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.plugins.RedirectResponseException
-import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
-import io.ktor.client.request.headers
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.put
+import io.ktor.http.contentType
+import kotlinx.coroutines.flow.first
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class AuthApiService(client: HttpClient) : BaseApiService(client) {
+@Singleton
+class AuthApiService @Inject constructor(
+    client: HttpClient,
+    private val dataStore: DataStore<Preferences>
+) : BaseApiService(client) {
+    
     companion object {
         private const val TAG = "AuthApiService"
+        private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
     }
 
-    suspend fun signUp(
-        username: String,
-        email: String,
-        password: String,
-    ): AuthResponse {
-        val allErrors = mutableListOf<String>()
-        var lastResponseBody: String? = null
+    // Override the base URLs to use the correct server port (9000)
+    override val possibleUrls: List<String> = listOf(
+        "http://10.0.2.2:9000/api", // Android emulator → Windows host
+        "http://172.28.7.154:9000/api", // Current WSL IP
+        "http://172.28.0.1:9000/api", // Windows host from WSL
+        "http://localhost:9000/api", // Localhost
+        "http://127.0.0.1:9000/api", // Loopback
+    )
 
-        // Try each URL until one works
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                val requestBody = SignUpRequest(username, email, password)
+    private suspend fun getTokenFromDataStore(): String? {
+        return try {
+            val token = dataStore.data.first()[JWT_TOKEN_KEY]
+            Log.d(TAG, "🔍 Token from DataStore: ${if (token != null) "Found (${token.take(20)}...)" else "Not found"}")
+            token
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to get token from DataStore", e)
+            null
+        }
+    }
 
-                val httpResponse = client.post("$url/register") {
-                    headers {
-                        append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    }
-                    setBody(requestBody)
+    suspend fun signUp(username: String, email: String, password: String): AuthResponseDto {
+        Log.d(TAG, "🚀 Starting signUp request")
+        Log.d(TAG, "📝 SignUp details - Username: $username, Email: $email")
+        
+        val request = SignUpRequestDto(username, email, password)
+        
+        return try {
+            Log.d(TAG, "📤 Sending signUp request with URL fallback...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying signUp URL: $baseUrl/register")
+                client.post("$baseUrl/register") {
+                    contentType(ContentType.Application.Json)
+                    setBody(request)
                 }
-
-                // Success case (created or ok) – parse token
-                if (httpResponse.status == HttpStatusCode.Created || httpResponse.status == HttpStatusCode.OK) {
-                    val tokenResp: TokenResponse = httpResponse.body()
-                    return AuthResponse(success = true, token = tokenResp.access_token, message = "Registration successful")
-                }
-
-                // Failure case – try to parse structured error first
-                try {
-                    val error = httpResponse.body<ErrorResponse>()
-                    return AuthResponse(false, message = error.message)
-                } catch (ex: Exception) {
-                    // Fallback to raw text
-                    val rawError = httpResponse.bodyAsText()
-                    return AuthResponse(false, message = rawError)
-                }
-            } catch (e: ClientRequestException) {
-                // Try to get detailed error response
-                try {
-                    lastResponseBody = e.response.body<String>()
-                } catch (bodyException: Exception) {
-                }
-
-                // Handle 422 validation errors specifically
-                if (e.response.status == HttpStatusCode.UnprocessableEntity) {
-                    try {
-                        // Try to parse as ErrorResponse first
-                        val errorResponse = e.response.body<ErrorResponse>()
-                        if (!errorResponse.errors.isNullOrEmpty()) {
-                            // Extract the first detailed validation message
-                            val firstError = errorResponse.errors.first()
-                            val detailedMessage = firstError.msg
-                            return AuthResponse(false, message = detailedMessage)
-                        }
-                        return AuthResponse(false, message = errorResponse.message)
-                    } catch (bodyException: Exception) {
-                        // Try to get raw response text to extract the actual error
-                        try {
-                            val rawBody = lastResponseBody ?: "Unknown validation error"
-
-                            // pass raw server message to be formatted client side
-                            return AuthResponse(false, message = rawBody)
-                        } catch (ex: Exception) {
-                            return AuthResponse(false, message = "Please check your input and try again")
-                        }
-                    }
-                }
-
-                // Handle 409 conflict (user already exists)
-                if (e.response.status == HttpStatusCode.Conflict) {
-                    try {
-                        val errorResponse = e.response.body<ErrorResponse>()
-                        return AuthResponse(false, message = errorResponse.message)
-                    } catch (bodyException: Exception) {
-                        return AuthResponse(false, message = "User with this username or email already exists.")
-                    }
-                }
-
-                // For other 4xx errors, try to extract meaningful error message
-                if (e.response.status.value in 400..499) {
-                    try {
-                        val errorResponse = e.response.body<ErrorResponse>()
-                        allErrors.add("URL $index (${e.response.status}): ${errorResponse.message}")
-
-                        // If this is the last URL, return the error
-                        if (index == possibleUrls.size - 1) {
-                            return AuthResponse(false, message = errorResponse.message)
-                        }
-                    } catch (bodyException: Exception) {
-                        val errorMsg = "Registration failed with status ${e.response.status}"
-                        allErrors.add("URL $index: $errorMsg")
-
-                        // If this is the last URL, return a generic error
-                        if (index == possibleUrls.size - 1) {
-                            return AuthResponse(false, message = errorMsg)
-                        }
-                    }
-                }
-
-                // For connection-related errors, continue to next URL
-                allErrors.add("URL $index: Connection failed - ${e.message}")
-                continue
-            } catch (e: ServerResponseException) {
-                try {
-                    lastResponseBody = e.response.body<String>()
-                } catch (bodyException: Exception) {
-                }
-
-                val errorMsg = "Server error (${e.response.status}): ${e.message}"
-                allErrors.add("URL $index: $errorMsg")
-
-                // For 5xx errors, try to get server error message but don't continue to other URLs
-                try {
-                    val errorResponse = e.response.body<ErrorResponse>()
-                    return AuthResponse(false, message = "Server error: ${errorResponse.message}")
-                } catch (bodyException: Exception) {
-                    return AuthResponse(false, message = errorMsg)
-                }
-            } catch (e: RedirectResponseException) {
-                allErrors.add("URL $index: Unexpected redirect - ${e.message}")
-                continue
-            } catch (e: SerializationException) {
-                allErrors.add("URL $index: Response format error - ${e.message}")
-                continue
-            } catch (e: Exception) {
-                allErrors.add("URL $index: ${e.message}")
-                continue
             }
+            
+            Log.d(TAG, "📥 SignUp response status: ${response.status}")
+            Log.d(TAG, "📥 SignUp response headers: ${response.headers}")
+            
+            val tokenResponse: TokenResponseDto = response.body()
+            Log.d(TAG, "✅ SignUp successful - Token type: ${tokenResponse.token_type}")
+            
+            // Now get user info
+            Log.d(TAG, "📤 Getting user info after sign up...")
+            val userResponse = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying getCurrentUser URL: $baseUrl/users/me")
+                client.get("$baseUrl/users/me") {
+                    header("Authorization", "Bearer ${tokenResponse.access_token}")
+                }
+            }
+            
+            val userDto: UserDto = userResponse.body()
+            Log.d(TAG, "✅ User info retrieved - User ID: ${userDto.id}")
+            Log.d(TAG, "✅ User info retrieved - Username: ${userDto.username}")
+            
+            // Return combined response
+            AuthResponseDto(
+                access_token = tokenResponse.access_token,
+                token_type = tokenResponse.token_type,
+                user = userDto
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ SignUp failed with exception", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            throw e
         }
-
-        // All URLs failed - create detailed error message
-        val detailedError = if (allErrors.isNotEmpty()) {
-            "Connection failed. Attempted servers:\n${allErrors.joinToString("\n")}"
-        } else {
-            "Could not connect to server. Please check your network connection."
-        }
-
-        return AuthResponse(false, message = detailedError)
     }
 
-    suspend fun signIn(
-        username: String,
-        password: String,
-    ): AuthResponse {
-        val allErrors = mutableListOf<String>()
-        var lastResponseBody: String? = null
-
-        // Try each URL until one works
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                val response: TokenResponse = client.post("$url/token") {
-                    headers {
-                        append(HttpHeaders.ContentType, ContentType.Application.FormUrlEncoded.toString())
-                    }
+    suspend fun signIn(username: String, password: String): AuthResponseDto {
+        Log.d(TAG, "🚀 Starting signIn request")
+        Log.d(TAG, "📝 SignIn details - Username: $username")
+        
+        return try {
+            Log.d(TAG, "📤 Sending signIn request with URL fallback...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying signIn URL: $baseUrl/token")
+                client.post("$baseUrl/token") {
+                    contentType(ContentType.Application.FormUrlEncoded)
                     setBody("username=$username&password=$password")
-                }.body()
-
-                return AuthResponse(success = true, token = response.access_token, message = "Login successful")
-            } catch (e: ClientRequestException) {
-                // Try to get detailed error response
-                try {
-                    lastResponseBody = e.response.body<String>()
-                } catch (bodyException: Exception) {
                 }
-
-                // Handle 401 unauthorized specifically
-                if (e.response.status == HttpStatusCode.Unauthorized) {
-                    try {
-                        val errorResponse = e.response.body<ErrorResponse>()
-                        return AuthResponse(false, message = errorResponse.message)
-                    } catch (bodyException: Exception) {
-                        return AuthResponse(false, message = "Invalid username or password")
-                    }
-                }
-
-                // Handle 422 validation errors
-                if (e.response.status == HttpStatusCode.UnprocessableEntity) {
-                    try {
-                        val errorResponse = e.response.body<ErrorResponse>()
-                        if (!errorResponse.errors.isNullOrEmpty()) {
-                            // Extract the first detailed validation message
-                            val firstError = errorResponse.errors.first()
-                            val detailedMessage = firstError.msg
-                            return AuthResponse(false, message = detailedMessage)
-                        }
-                        return AuthResponse(false, message = errorResponse.message)
-                    } catch (bodyException: Exception) {
-                        val errorMsg = if (lastResponseBody != null) {
-                            "Login failed: $lastResponseBody"
-                        } else {
-                            "Invalid login data. Please check your username and password."
-                        }
-                        return AuthResponse(false, message = errorMsg)
-                    }
-                }
-
-                // For other 4xx errors, try to extract meaningful error message
-                if (e.response.status.value in 400..499) {
-                    try {
-                        val errorResponse = e.response.body<ErrorResponse>()
-                        allErrors.add("URL $index (${e.response.status}): ${errorResponse.message}")
-
-                        // If this is the last URL, return the error
-                        if (index == possibleUrls.size - 1) {
-                            return AuthResponse(false, message = errorResponse.message)
-                        }
-                    } catch (bodyException: Exception) {
-                        val errorMsg = "Login failed with status ${e.response.status}"
-                        allErrors.add("URL $index: $errorMsg")
-
-                        // If this is the last URL, return a generic error
-                        if (index == possibleUrls.size - 1) {
-                            return AuthResponse(false, message = errorMsg)
-                        }
-                    }
-                }
-
-                // For connection-related errors, continue to next URL
-                allErrors.add("URL $index: Connection failed - ${e.message}")
-                continue
-            } catch (e: ServerResponseException) {
-                try {
-                    lastResponseBody = e.response.body<String>()
-                } catch (bodyException: Exception) {
-                }
-
-                val errorMsg = "Server error (${e.response.status}): ${e.message}"
-                allErrors.add("URL $index: $errorMsg")
-
-                // For 5xx errors, try to get server error message but don't continue to other URLs
-                try {
-                    val errorResponse = e.response.body<ErrorResponse>()
-                    return AuthResponse(false, message = "Server error: ${errorResponse.message}")
-                } catch (bodyException: Exception) {
-                    return AuthResponse(false, message = errorMsg)
-                }
-            } catch (e: RedirectResponseException) {
-                allErrors.add("URL $index: Unexpected redirect - ${e.message}")
-                continue
-            } catch (e: SerializationException) {
-                allErrors.add("URL $index: Response format error - ${e.message}")
-                continue
-            } catch (e: Exception) {
-                allErrors.add("URL $index: ${e.message}")
-                continue
             }
+            
+            Log.d(TAG, "📥 SignIn response status: ${response.status}")
+            Log.d(TAG, "📥 SignIn response headers: ${response.headers}")
+            
+            val tokenResponse: TokenResponseDto = response.body()
+            Log.d(TAG, "✅ SignIn successful - Token type: ${tokenResponse.token_type}")
+            
+            // Now get user info
+            Log.d(TAG, "📤 Getting user info after sign in...")
+            val userResponse = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying getCurrentUser URL: $baseUrl/users/me")
+                client.get("$baseUrl/users/me") {
+                    header("Authorization", "Bearer ${tokenResponse.access_token}")
+                }
+            }
+            
+            val userDto: UserDto = userResponse.body()
+            Log.d(TAG, "✅ User info retrieved - User ID: ${userDto.id}")
+            Log.d(TAG, "✅ User info retrieved - Username: ${userDto.username}")
+            
+            // Return combined response
+            AuthResponseDto(
+                access_token = tokenResponse.access_token,
+                token_type = tokenResponse.token_type,
+                user = userDto
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ SignIn failed with exception", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            throw e
         }
-
-        // All URLs failed - create detailed error message
-        val detailedError = if (allErrors.isNotEmpty()) {
-            "Connection failed. Attempted servers:\n${allErrors.joinToString("\n")}"
-        } else {
-            "Could not connect to server. Please check your network connection."
-        }
-
-        return AuthResponse(false, message = detailedError)
     }
 
-    suspend fun getCurrentUser(token: String): User {
-        // Try each URL until one works
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                return client.get("$url/users/me") {
-                    headers {
-                        append(HttpHeaders.Authorization, "Bearer $token")
-                    }
-                }.body()
-            } catch (e: ClientRequestException) {
-                // Handle 401 unauthorized specifically
-                if (e.response.status == HttpStatusCode.Unauthorized) {
-                    throw Exception("Invalid or expired token")
+    suspend fun getCurrentUser(): UserDto {
+        Log.d(TAG, "🚀 Starting getCurrentUser request")
+        
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore")
+            throw Exception("No authentication token found")
+        }
+        
+        return try {
+            Log.d(TAG, "📤 Sending getCurrentUser request with manual Authorization header...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying getCurrentUser URL: $baseUrl/users/me")
+                client.get("$baseUrl/users/me") {
+                    header("Authorization", "Bearer $token")
                 }
-
-                continue
-            } catch (e: ServerResponseException) {
-                throw Exception("Server error: ${e.response.status}")
-            } catch (e: RedirectResponseException) {
-                continue
-            } catch (e: SerializationException) {
-                continue
-            } catch (e: Exception) {
-                continue
             }
+            
+            Log.d(TAG, "📥 getCurrentUser response status: ${response.status}")
+            Log.d(TAG, "📥 getCurrentUser response headers: ${response.headers}")
+            
+            if (response.status.value == 401) {
+                Log.e(TAG, "❌ getCurrentUser received 401 Unauthorized - token not sent or invalid")
+                throw Exception("Authentication failed: ${response.status}")
+            }
+            
+            val userDto: UserDto = response.body()
+            Log.d(TAG, "✅ getCurrentUser successful - User ID: ${userDto.id}")
+            Log.d(TAG, "✅ getCurrentUser successful - Username: ${userDto.username}")
+            
+            userDto
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ getCurrentUser failed with exception", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            throw e
         }
-
-        throw Exception("Could not connect to server")
     }
 
-    // Onboarding API calls
-    suspend fun completeOnboardingStepOne(token: String, userType: UserType): Boolean {
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                val response: OnboardingResponse = client.post("$url/onboarding/step-one") {
-                    headers {
-                        append(HttpHeaders.Authorization, "Bearer $token")
-                        append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    suspend fun setUserType(userType: UserType): Boolean {
+        Log.d(TAG, "🚀 Starting setUserType request")
+        Log.d(TAG, "📝 UserType: $userType")
+        
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for setUserType")
+            return false
+        }
+        
+        val request = OnboardingStepOneDto(userType)
+        return try {
+            Log.d(TAG, "📤 Sending setUserType request with manual Authorization header...")
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying setUserType URL: $baseUrl/onboarding/step-one")
+                client.post("$baseUrl/onboarding/step-one") {
+                    contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $token")
+                    setBody(request)
+                }
+            }
+            Log.d(TAG, "✅ setUserType successful")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ setUserType failed with exception", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun uploadProfilePicture(file: File): ProfilePictureUploadResponse {
+        Log.d(TAG, "🚀 Starting uploadProfilePicture request")
+        
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for uploadProfilePicture")
+            throw Exception("No authentication token found")
+        }
+        
+        return withFallbackUrls { baseUrl ->
+            Log.d(TAG, "🌐 Trying uploadProfilePicture URL: $baseUrl/upload-profile-picture")
+            client.post("$baseUrl/upload-profile-picture") {
+                header("Authorization", "Bearer $token")
+                setBody(MultiPartFormDataContent(
+                    formData {
+                        append("file", file.readBytes(), Headers.build {
+                            append(HttpHeaders.ContentType, "image/*")
+                            append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                        })
                     }
-                    setBody(OnboardingStepOneRequest(userType))
-                }.body()
-
-                return true
-            } catch (e: Exception) {
-                continue
+                ))
             }
-        }
-
-        return false
+        }.body()
     }
 
-    suspend fun completeOnboarding(
-        token: String,
-        userType: UserType,
-        fullName: String,
-        phone: String,
-        organizationName: String? = null,
-        institutionName: InstitutionName? = null,
+    suspend fun uploadBannerImage(file: File): BannerUploadResponse {
+        Log.d(TAG, "🚀 Starting uploadBannerImage request")
+        
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for uploadBannerImage")
+            throw Exception("No authentication token found")
+        }
+        
+        return withFallbackUrls { baseUrl ->
+            Log.d(TAG, "🌐 Trying uploadBannerImage URL: $baseUrl/upload-profile-banner")
+            client.post("$baseUrl/upload-profile-banner") {
+                header("Authorization", "Bearer $token")
+                setBody(MultiPartFormDataContent(
+                    formData {
+                        append("file", file.readBytes(), Headers.build {
+                            append(HttpHeaders.ContentType, "image/*")
+                            append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                        })
+                    }
+                ))
+            }
+        }.body()
+    }
+
+    suspend fun uploadOrganizationImages(files: List<File>): OrganizationImagesResponseDto {
+        Log.d(TAG, "🚀 Starting uploadOrganizationImages request")
+        
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for uploadOrganizationImages")
+            throw Exception("No authentication token found")
+        }
+        
+        return withFallbackUrls { baseUrl ->
+            Log.d(TAG, "🌐 Trying uploadOrganizationImages URL: $baseUrl/upload-organization-images")
+            client.post("$baseUrl/upload-organization-images") {
+                header("Authorization", "Bearer $token")
+                setBody(MultiPartFormDataContent(
+                    formData {
+                        files.forEach { file ->
+                            append("files", file.readBytes(), Headers.build {
+                                append(HttpHeaders.ContentType, "image/*")
+                                append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                            })
+                        }
+                    }
+                ))
+            }
+        }.body<OrganizationImagesResponseDto>()
+    }
+
+    suspend fun completeOrganizerOnboarding(
+        profile: DomainOrganizerProfile,
+        profilePictureFile: File?
     ): Boolean {
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                val requestBody = OnboardingCompleteRequest(
-                    user_type = userType,
-                    full_name = fullName,
-                    phone = phone,
-                    organization_name = organizationName,
-                    institution_name = institutionName,
-                )
-
-                val response: OnboardingResponse = client.post("$url/onboarding/complete") {
-                    headers {
-                        append(HttpHeaders.Authorization, "Bearer $token")
-                        append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    }
-                    setBody(requestBody)
-                }.body()
-
-                return true
-            } catch (e: Exception) {
-                continue
-            }
+        Log.d(TAG, "🚀 Starting completeOrganizerOnboarding")
+        Log.d(TAG, "📝 Profile: $profile")
+        
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for completeOrganizerOnboarding")
+            return false
         }
-
-        return false
-    }
-
-    suspend fun getInstitutions(): List<InstitutionOption> {
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                return client.get("$url/institutions").body()
-            } catch (e: Exception) {
-                continue
+        
+        return try {
+            // First upload profile picture if provided
+            var profilePictureUrl: String? = null
+            profilePictureFile?.let {
+                Log.d(TAG, "📤 Uploading profile picture...")
+                profilePictureUrl = uploadProfilePicture(it).profile_picture_url
+                Log.d(TAG, "✅ Profile picture uploaded: $profilePictureUrl")
             }
-        }
 
-        return emptyList()
-    }
-
-    suspend fun uploadProfilePicture(token: String, imageFile: File): ProfilePictureUploadResponse? {
-        Log.d(TAG, "Attempting to upload profile picture: ${imageFile.absolutePath} (${imageFile.length()} bytes)")
-
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                Log.d(TAG, "[${index + 1}/${possibleUrls.size}] Uploading to $url")
-                val response: ProfilePictureUploadResponse = client.post("$url/upload-profile-picture") {
-                    headers {
-                        append(HttpHeaders.Authorization, "Bearer $token")
-                    }
-                    setBody(
-                        MultiPartFormDataContent(
-                            formData {
-                                append(
-                                    "file",
-                                    imageFile.readBytes(),
-                                    Headers.build {
-                                        append(HttpHeaders.ContentType, "image/jpeg")
-                                        append(HttpHeaders.ContentDisposition, "filename=\"${imageFile.name}\"")
-                                    },
-                                )
-                            },
-                        ),
-                    )
-                }.body()
-
-                Log.d(TAG, "Upload successful – server responded with URL: ${response.profile_picture_url}")
-                return response
-            } catch (e: Exception) {
-                Log.e(TAG, "Upload attempt to $url failed: ${e.message}")
-                continue
+            // Then complete onboarding
+            Log.d(TAG, "📤 Sending organizer onboarding request...")
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying URL: $baseUrl/complete-organizer-onboarding")
+                client.post("$baseUrl/complete-organizer-onboarding") {
+                    contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $token")
+                    setBody(OnboardingStepTwoOrganizerDto(
+                        full_name = profile.fullName,
+                        phone = profile.phone,
+                        organization_name = profile.organizationName,
+                        organization_type = profile.organizationType.toDto(),
+                        organization_description = profile.organizationDescription,
+                        organization_website = profile.organizationWebsite,
+                        organization_social_media = profile.organizationSocialMedia?.map { it.toDto() },
+                        organization_images = profile.organizationImages,
+                        organization_custom_type = profile.organizationCustomType
+                    ))
+                }
             }
+            Log.d(TAG, "✅ Organizer onboarding completed successfully")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Organizer onboarding failed", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            false
         }
-
-        Log.e(TAG, "All upload attempts failed – returning null")
-        return null
     }
 
     suspend fun completeVolunteerOnboarding(
-        token: String,
-        volunteerProfile: DomainVolunteerProfile,
-        profilePictureUrl: String? = null,
+        profile: DomainVolunteerProfile,
+        profilePictureFile: File?
     ): Boolean {
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                val requestBody = OnboardingCompleteRequest(
-                    user_type = UserType.VOLUNTEER,
-                    full_name = volunteerProfile.fullName,
-                    phone = volunteerProfile.phone,
-                    sex = volunteerProfile.sex.toData(),
-                    description = volunteerProfile.description,
-                    skills = volunteerProfile.skills,
-                    age = volunteerProfile.age,
-                    emergency_contact_name = volunteerProfile.emergencyContactName,
-                    emergency_contact_phone = volunteerProfile.emergencyContactPhone,
-                    location_area = volunteerProfile.locationArea,
-                    has_drivers_license = volunteerProfile.hasDriversLicense,
-                    disabilities = volunteerProfile.disabilities,
-                )
-
-                val response: OnboardingResponse = client.post("$url/onboarding/volunteer-complete") {
-                    headers {
-                        append(HttpHeaders.Authorization, "Bearer $token")
-                        append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    }
-                    setBody(requestBody)
-                }.body()
-
-                return true
-            } catch (e: Exception) {
-                continue
-            }
+        Log.d(TAG, "🚀 Starting completeVolunteerOnboarding")
+        Log.d(TAG, "📝 Profile: $profile")
+        
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for completeVolunteerOnboarding")
+            return false
         }
+        
+        return try {
+            // First upload profile picture if provided
+            var profilePictureUrl: String? = null
+            profilePictureFile?.let {
+                Log.d(TAG, "📤 Uploading profile picture...")
+                profilePictureUrl = uploadProfilePicture(it).profile_picture_url
+                Log.d(TAG, "✅ Profile picture uploaded: $profilePictureUrl")
+            }
 
-        return false
+            // Then complete onboarding
+            Log.d(TAG, "📤 Sending volunteer onboarding request...")
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying URL: $baseUrl/complete-volunteer-onboarding")
+                client.post("$baseUrl/complete-volunteer-onboarding") {
+                    contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $token")
+                    setBody(OnboardingStepThreeVolunteerDto(
+                        full_name = profile.fullName,
+                        phone = profile.phone,
+                        sex = profile.sex.toDto(),
+                        description = profile.description,
+                        skills = profile.skills,
+                        age = profile.age,
+                        emergency_contact_name = profile.emergencyContactName,
+                        emergency_contact_phone = profile.emergencyContactPhone,
+                        location_area = profile.locationArea,
+                        has_drivers_license = profile.hasDriversLicense,
+                        disabilities = profile.disabilities
+                    ))
+                }
+            }
+            Log.d(TAG, "✅ Volunteer onboarding completed successfully")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Volunteer onboarding failed", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            false
+        }
     }
 
-    // ------------------ Profile Update ------------------
-
-    suspend fun updateUserProfile(token: String, update: DomainUserUpdate): Boolean {
-        for ((index, url) in possibleUrls.withIndex()) {
-            try {
-                // Prepare payload with snake_case keys expected by backend
-                val payload = buildJsonObject {
-                    update.fullName?.let { put("full_name", it) }
-                    update.phone?.let { put("phone", it) }
-                    update.organizationName?.let { put("organization_name", it) }
-                    update.institutionName?.let { put("institution_name", it.name) }
-
-                    update.sex?.let { put("sex", it.name.lowercase()) }
-                    update.description?.let { put("description", it) }
-                    update.skills?.let { put("skills", Json.encodeToJsonElement(it)) }
-                    update.age?.let { put("age", it) }
-                    update.emergencyContactName?.let { put("emergency_contact_name", it) }
-                    update.emergencyContactPhone?.let { put("emergency_contact_phone", it) }
-                    update.locationArea?.let { put("location_area", it) }
-                    update.hasDriversLicense?.let { put("has_drivers_license", it) }
-                    update.disabilities?.let { put("disabilities", it) }
-                }
-
-                client.put("$url/users/me") {
-                    headers {
-                        append(HttpHeaders.Authorization, "Bearer $token")
-                        append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    }
-                    setBody(payload)
-                }.body<User>()
-
-                return true
-            } catch (e: Exception) {
-                continue
-            }
+    suspend fun updateProfile(updates: UserUpdateDto): UserDto {
+        Log.d(TAG, "🚀 Starting updateProfile request")
+        
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for updateProfile")
+            throw Exception("No authentication token found")
         }
+        
+        return withFallbackUrls { baseUrl ->
+            Log.d(TAG, "🌐 Trying updateProfile URL: $baseUrl/profile")
+            client.put("$baseUrl/profile") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+                setBody(updates)
+            }
+        }.body()
+    }
 
-        return false
+    suspend fun signOut(): Boolean {
+        Log.d(TAG, "🚀 Starting signOut request")
+        Log.d(TAG, "ℹ️ No server logout endpoint - performing client-side logout")
+        
+        return try {
+            Log.d(TAG, "✅ SignOut successful (client-side)")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ SignOut failed with exception", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            false
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.example.gooddeedfeed.presentation.viewmodel.volunteer
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
 import com.example.gooddeedfeed.data.services.LocationService
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.usecase.GetMapEventsUseCase
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -36,6 +38,7 @@ data class MapUiState(
 class MapViewModel @Inject constructor(
     private val locationService: LocationService,
     private val getMapEventsUseCase: GetMapEventsUseCase,
+    val locationSettingsRepository: LocationSettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapUiState())
@@ -101,8 +104,49 @@ class MapViewModel @Inject constructor(
     }
 
     fun onLocationPermissionGranted() {
+        viewModelScope.launch {
+            val locationEnabled = locationSettingsRepository.isLocationEnabled.first()
+            if (locationEnabled) {
         _uiState.update { it.copy(isLocationPermissionGranted = true, errorMessage = null) }
+                // First try to get last known location for immediate feedback
+                getCurrentLocation()
+                // Then start continuous location updates
         startLocationUpdates()
+            } else {
+                _uiState.update { 
+                    it.copy(
+                        isLocationPermissionGranted = false,
+                        errorMessage = "Location services are disabled in settings"
+                    )
+                }
+            }
+        }
+    }
+    
+    private fun getCurrentLocation() {
+        viewModelScope.launch {
+            try {
+                val location = locationService.getCurrentLocation()
+                location?.let { loc ->
+                    _uiState.update { currentState ->
+                        val newState = currentState.copy(
+                            currentLocation = loc,
+                            isLocationPermissionGranted = true,
+                            errorMessage = null
+                        )
+                        val resState = filterEventsByRadius(newState)
+                        
+                        // Load events with current location
+                        loadEvents(loc.latitude, loc.longitude)
+                        resState
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(errorMessage = "Failed to get current location: ${e.message}")
+                }
+            }
+        }
     }
 
     fun onLocationPermissionDenied() {

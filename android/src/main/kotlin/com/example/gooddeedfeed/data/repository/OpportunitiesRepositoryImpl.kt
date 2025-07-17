@@ -6,6 +6,8 @@ import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
+import com.example.gooddeedfeed.domain.model.DateFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
@@ -95,5 +97,41 @@ class OpportunitiesRepositoryImpl @Inject constructor(
 
     override suspend fun getCategories(): List<OpportunityCategory> {
         return OpportunityCategory.values().toList()
+    }
+
+    override suspend fun getOpportunitiesWithFilters(
+        lat: Double?,
+        lon: Double?,
+        radiusKm: Float,
+        filters: OpportunityFilters
+    ): Flow<List<VolunteerOpportunity>> = flow {
+        val opportunities = try {
+            // Convert filters to API parameters
+            val categoryParam = if (filters.selectedCategories.isNotEmpty()) {
+                filters.selectedCategories.first().name.lowercase()
+            } else null
+            
+            val dateFilterParam = when (filters.dateFilter) {
+                DateFilter.ALL -> null
+                DateFilter.TODAY -> "today"
+                DateFilter.THIS_WEEK -> "this_week"
+                DateFilter.THIS_MONTH -> "this_month"
+            }
+            
+            apiService.getAllEvents(
+                lat = lat,
+                lon = lon,
+                radiusKm = radiusKm,
+                category = categoryParam,
+                onlyAvailable = filters.onlyAvailable,
+                almostFull = filters.almostFull,
+                minKarmaPoints = filters.minKarmaPoints,
+                maxKarmaPoints = filters.maxKarmaPoints,
+                dateFilter = dateFilterParam
+            ).map { it.toOpportunity() }
+        } catch (e: Exception) {
+            emptyList()
+        }
+        emit(opportunities)
     }
 } 

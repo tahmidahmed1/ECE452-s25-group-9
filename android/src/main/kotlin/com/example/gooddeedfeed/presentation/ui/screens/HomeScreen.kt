@@ -83,6 +83,10 @@ fun HomeScreen(
     }
 
     when (val currentState = uiState) {
+        is UiState.Idle -> {
+            // Initial idle state – show nothing or a small placeholder
+            Box(modifier = Modifier.fillMaxSize()) {}
+        }
         is UiState.Loading -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -141,7 +145,7 @@ private fun HomeContent(
                     imageVector = when (user.userType) {
                         DomainUserType.VOLUNTEER -> Icons.Default.Person
                         DomainUserType.ORGANIZER -> Icons.Default.Star
-                        DomainUserType.INSTITUTION -> Icons.Default.Home
+                        null -> Icons.Default.Home
                         null -> Icons.Default.Person
                     },
                     contentDescription = null,

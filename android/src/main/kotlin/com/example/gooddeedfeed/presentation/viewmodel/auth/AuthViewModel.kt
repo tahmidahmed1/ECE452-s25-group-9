@@ -33,9 +33,9 @@ sealed class AuthUiState {
 class AuthViewModel
 @Inject
 constructor(
-    private val signUp: SignUpUseCase,
-    private val signIn: SignInUseCase,
-    private val signOut: SignOutUseCase,
+    private val signUpUseCase: SignUpUseCase,
+    private val signInUseCase: SignInUseCase,
+    private val signOutUseCase: SignOutUseCase,
     private val getCurrentUser: GetCurrentUserUseCase,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
@@ -50,91 +50,139 @@ constructor(
      * Development mode: Quick sign in with auto-generated user
      */
     fun devModeSignIn(userType: DomainUserType = DomainUserType.VOLUNTEER) {
+        Log.d(TAG, "🎯 DevMode signIn initiated")
+        Log.d(TAG, "📝 DevMode userType: $userType")
+        
         if (!BuildConfig.DEV_MODE) {
+            Log.w(TAG, "⚠️ DevMode not available in release builds")
             _uiState.value = AuthUiState.Error("Dev mode is not available in release builds")
             return
         }
 
+        Log.d(TAG, "🔄 Setting loading state...")
         _uiState.value = AuthUiState.Loading
+        
         viewModelScope.launch {
             try {
                 val timestamp = System.currentTimeMillis().toString().takeLast(6)
                 val devUsername = "dev_${userType.name.lowercase()}_$timestamp"
-                val responseFlow = this@AuthViewModel.signUp.invoke(devUsername, "$devUsername@example.com", "dev_password_123")
-                val result = responseFlow.first()
+                
+                Log.d(TAG, "🔄 Generated dev username: $devUsername")
+                Log.d(TAG, "📞 Calling signUpUseCase...")
+                
+                val result = signUpUseCase.invoke(devUsername, "$devUsername@example.com", "dev_password_123")
+                
                 result.onSuccess { response ->
+                    Log.d(TAG, "✅ DevMode signUp successful")
+                    Log.d(TAG, "🔄 Fetching user details...")
                     fetchUser()
                 }.onFailure { error ->
+                    Log.e(TAG, "❌ DevMode signUp failed", error)
                     val detailedMessage = "Dev mode sign-in failed: ${error.message ?: "Unknown error"}"
                     _uiState.value = AuthUiState.Error(detailedMessage)
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "❌ DevMode exception", e)
                 _uiState.value = AuthUiState.Error("Dev mode error: ${e.message ?: "Unknown exception"}")
             }
         }
     }
 
     fun signUp(username: String, email: String, password: String) {
+        Log.d(TAG, "🎯 SignUp initiated")
+        Log.d(TAG, "📝 SignUp params - Username: $username, Email: $email")
+        
+        Log.d(TAG, "🔄 Setting loading state...")
         _uiState.value = AuthUiState.Loading
+        
         viewModelScope.launch {
             try {
-                val responseFlow = this@AuthViewModel.signUp.invoke(username, email, password)
-                val result = responseFlow.first()
+                Log.d(TAG, "📞 Calling signUpUseCase...")
+                val result = signUpUseCase.invoke(username, email, password)
+                
                 result.onSuccess { response ->
+                    Log.d(TAG, "✅ SignUp successful")
+                    Log.d(TAG, "🔄 Fetching user details...")
                     fetchUser()
                 }.onFailure { error ->
+                    Log.e(TAG, "❌ SignUp failed", error)
                     _uiState.value = AuthUiState.Error(error.message ?: "Sign up failed")
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "❌ SignUp exception", e)
                 _uiState.value = AuthUiState.Error("Network error: ${e.message}")
             }
         }
     }
 
     fun signIn(username: String, password: String) {
+        Log.d(TAG, "🎯 SignIn initiated")
+        Log.d(TAG, "📝 SignIn params - Username: $username")
+        
+        Log.d(TAG, "🔄 Setting loading state...")
         _uiState.value = AuthUiState.Loading
+        
         viewModelScope.launch {
             try {
-                val responseFlow = this@AuthViewModel.signIn.invoke(username, password)
-                val result = responseFlow.first()
+                Log.d(TAG, "📞 Calling signInUseCase...")
+                val result = signInUseCase.invoke(username, password)
+                
                 result.onSuccess { response ->
+                    Log.d(TAG, "✅ SignIn successful")
+                    Log.d(TAG, "🔄 Fetching user details...")
                     fetchUser()
                 }.onFailure { error ->
+                    Log.e(TAG, "❌ SignIn failed", error)
                     _uiState.value = AuthUiState.Error(error.message ?: "Sign in failed")
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "❌ SignIn exception", e)
                 _uiState.value = AuthUiState.Error("Network error: ${e.message}")
             }
         }
     }
 
     fun signOut() {
+        Log.d(TAG, "🎯 SignOut initiated")
+        
         viewModelScope.launch {
             try {
-                val responseFlow = this@AuthViewModel.signOut.invoke()
-                val result = responseFlow.first()
+                Log.d(TAG, "📞 Calling signOutUseCase...")
+                val result = signOutUseCase.invoke()
+                
                 result.onSuccess {
+                    Log.d(TAG, "✅ SignOut successful")
                     _uiState.value = AuthUiState.SignedOut
                 }.onFailure { error ->
+                    Log.e(TAG, "❌ SignOut failed", error)
                     _uiState.value = AuthUiState.Error("Sign out failed: ${error.message}")
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "❌ SignOut exception", e)
                 _uiState.value = AuthUiState.Error("Sign out failed: ${e.message}")
             }
         }
     }
 
     private fun fetchUser() {
+        Log.d(TAG, "🔄 FetchUser initiated")
+        
         viewModelScope.launch {
             try {
-                val userFlow = this@AuthViewModel.getCurrentUser.invoke()
-                val result = userFlow.first()
-                result.onSuccess { user ->
+                Log.d(TAG, "📞 Calling getCurrentUser...")
+                val result = getCurrentUser.invoke()
+                
+                result.onSuccess { user: DomainUser ->
+                    Log.d(TAG, "✅ FetchUser successful")
+                    Log.d(TAG, "✅ User details - ID: ${user.id}, Username: ${user.username}")
+                    Log.d(TAG, "✅ User onboarding completed: ${user.onboardingCompleted}")
                     _uiState.value = AuthUiState.Success(user)
-                }.onFailure { error ->
+                }.onFailure { error: Throwable ->
+                    Log.e(TAG, "❌ FetchUser failed", error)
                     _uiState.value = AuthUiState.Error(error.message ?: "Failed to fetch user")
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "❌ FetchUser exception", e)
                 _uiState.value = AuthUiState.Error(e.message ?: "Failed to fetch user")
             }
         }
@@ -148,11 +196,11 @@ constructor(
         // keep current UI state but show loading maybe
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
-            val result = authRepository.updateUserProfile(update)
-            result.onSuccess {
-                // Fetch updated user
-                fetchUser()
-            }.onFailure { error ->
+            val result = authRepository.updateProfile(update)
+            result.onSuccess { user: DomainUser ->
+                // Update with the returned user
+                _uiState.value = AuthUiState.Success(user)
+            }.onFailure { error: Throwable ->
                 _uiState.value = AuthUiState.Error(error.message ?: "Failed to update profile")
             }
         }
@@ -161,36 +209,42 @@ constructor(
     // ------------------ Profile Picture ------------------
 
     fun uploadProfilePicture(file: File) {
-        Log.d(TAG, "AuthViewModel.uploadProfilePicture called with file: ${file.absolutePath}")
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             try {
-                authRepository.uploadProfilePicture(file).first().onSuccess {
-                    Log.d(TAG, "Profile picture upload succeeded; refreshing user")
+                val result = authRepository.uploadProfilePicture(file)
+                result.onSuccess { url: String ->
                     // Refresh user after successful upload
                     fetchUser()
-                }.onFailure { err ->
-                    Log.e(TAG, "Profile picture upload failed: ${err.message}")
+                }.onFailure { err: Throwable ->
                     _uiState.value = AuthUiState.Error(err.message ?: "Failed to upload picture")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Exception uploading profile picture: ${e.message}", e)
                 _uiState.value = AuthUiState.Error(e.message ?: "Failed to upload picture")
             }
         }
     }
 
     private fun checkCurrentUser() {
+        Log.d(TAG, "🔄 CheckCurrentUser initiated")
+        
         viewModelScope.launch {
             try {
-                val userFlow = this@AuthViewModel.getCurrentUser.invoke()
-                val result = userFlow.first()
-                result.onSuccess { user ->
+                Log.d(TAG, "📞 Calling getCurrentUser for auth check...")
+                val result = getCurrentUser.invoke()
+                
+                result.onSuccess { user: DomainUser ->
+                    Log.d(TAG, "✅ CheckCurrentUser successful - user is authenticated")
+                    Log.d(TAG, "✅ User details - ID: ${user.id}, Username: ${user.username}")
                     _uiState.value = AuthUiState.Success(user)
-                }.onFailure { error ->
+                }.onFailure { error: Throwable ->
+                    Log.d(TAG, "ℹ️ CheckCurrentUser failed - user not authenticated")
+                    Log.d(TAG, "ℹ️ Error: ${error.message}")
                     _uiState.value = AuthUiState.SignedOut
                 }
             } catch (e: Exception) {
+                Log.d(TAG, "ℹ️ CheckCurrentUser exception - user not authenticated")
+                Log.d(TAG, "ℹ️ Exception: ${e.message}")
                 _uiState.value = AuthUiState.SignedOut
             }
         }

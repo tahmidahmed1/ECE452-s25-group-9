@@ -23,6 +23,7 @@ data class VolunteerEvent(
     val updatedAt: String,
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
+    val karmaPoints: Int = 10,
 )
 
 enum class EventStatus {
@@ -48,4 +49,5 @@ data class CreateEventData(
     val requirements: List<String>,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val karmaPoints: Int = 10,
 )

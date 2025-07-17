@@ -35,11 +35,13 @@ import androidx.compose.ui.window.Dialog
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.util.calculateDistanceKm
+import com.example.gooddeedfeed.presentation.ui.components.base.LocationPermissionHandler
 import com.example.gooddeedfeed.presentation.ui.components.base.PermissionRationaleCard
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.MapUiContract
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.shouldShowRationale
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -52,6 +54,8 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlin.math.cos
+import kotlin.math.ln
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -59,18 +63,48 @@ fun MapView(
     uiState: MapUiContract,
     locationPermissionState: PermissionState,
     modifier: Modifier = Modifier,
+    zoomLevel: Float = 12f,
     onEventSelected: (VolunteerEvent) -> Unit,
 ) {
-    val defaultLocation = LatLng(43.6532, -79.3832)
+    // Use user's current location if available, otherwise use a neutral default
+    val initialLocation = uiState.currentLocation?.let { 
+        LatLng(it.latitude, it.longitude) 
+    } ?: LatLng(43.6532, -79.3832) // Toronto as fallback only
+    
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLocation, 12f)
+        position = CameraPosition.fromLatLngZoom(initialLocation, zoomLevel)
     }
 
+    // Only animate camera when we get a valid user location for the first time
     LaunchedEffect(uiState.currentLocation) {
         uiState.currentLocation?.let { loc ->
+            val userLocation = LatLng(loc.latitude, loc.longitude)
+            // Only animate if the camera is significantly far from user location
+            val currentTarget = cameraPositionState.position.target
+            val distance = FloatArray(1)
+            Location.distanceBetween(
+                currentTarget.latitude, currentTarget.longitude,
+                userLocation.latitude, userLocation.longitude,
+                distance
+            )
+            
+            // Only animate if we're more than 1km away (to avoid constant updates)
+            if (distance[0] > 1000) {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel),
+                    1000,
+                )
+            }
+        }
+    }
+
+    // Update zoom when radius changes
+    LaunchedEffect(zoomLevel) {
+        uiState.currentLocation?.let { loc ->
+            val userLocation = LatLng(loc.latitude, loc.longitude)
             cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(LatLng(loc.latitude, loc.longitude), 13f),
-                1000,
+                CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel),
+                800,
             )
         }
     }
@@ -79,16 +113,29 @@ fun MapView(
         GoogleMap(
             modifier = modifier,
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(isMyLocationEnabled = true, mapType = MapType.NORMAL),
-            uiSettings = MapUiSettings(myLocationButtonEnabled = true, zoomControlsEnabled = false),
+            properties = MapProperties(
+                isMyLocationEnabled = true, 
+                mapType = MapType.NORMAL,
+                // Disable any automatic location centering that might interfere
+                isIndoorEnabled = false
+            ),
+            uiSettings = MapUiSettings(
+                myLocationButtonEnabled = true,
+                zoomControlsEnabled = false,
+                compassEnabled = true,
+                rotationGesturesEnabled = true,
+                scrollGesturesEnabled = true,
+                tiltGesturesEnabled = true,
+                zoomGesturesEnabled = true
+            ),
         ) {
             uiState.currentLocation?.let { loc ->
                 Circle(
                     center = LatLng(loc.latitude, loc.longitude),
                     radius = (uiState.radiusKm * 1000).toDouble(),
-                    strokeColor = Color.Blue.copy(alpha = 0.5f),
-                    fillColor = Color.Blue.copy(alpha = 0.1f),
-                    strokeWidth = 2f,
+                    strokeColor = Color(0xFF1976D2).copy(alpha = 0.8f), // More vibrant blue
+                    fillColor = Color(0xFF1976D2).copy(alpha = 0.15f), // Slightly more visible fill
+                    strokeWidth = 3f, // Thicker stroke for better visibility
                 )
             }
 
@@ -106,7 +153,16 @@ fun MapView(
             }
         }
     } else {
+        // Check if permission is permanently denied
+        if (locationPermissionState.status.shouldShowRationale) {
+            // Permission denied but not permanently - show rationale
         PermissionRationaleCard { locationPermissionState.launchPermissionRequest() }
+        } else {
+            // Permission permanently denied - show "Uh Oh" state with settings option
+            LocationPermissionHandler(
+                onOpenSettings = { /* This is handled within the component */ }
+            )
+        }
     }
 }
 
@@ -137,20 +193,57 @@ fun LegendPanel(filteredEvents: List<VolunteerEvent>, modifier: Modifier = Modif
 }
 
 @Composable
-fun RadiusSlider(radiusKm: Float, onRadiusChange: (Float) -> Unit, modifier: Modifier = Modifier) {
+fun RadiusSlider(radiusKm: Float, onRadiusChange: (Float) -> Unit, onZoomChange: (Float) -> Unit, modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Search radius", fontWeight = FontWeight.Medium)
                 Text("${radiusKm.toInt()} km", fontWeight = FontWeight.Bold)
             }
-            Slider(value = radiusKm, onValueChange = onRadiusChange, valueRange = 1f..50f, steps = 49)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("1 km", fontSize = 12.sp)
-                Text("50 km", fontSize = 12.sp)
-            }
+            Spacer(Modifier.height(8.dp))
+            Slider(
+                value = radiusKm, 
+                onValueChange = { newRadius ->
+                    onRadiusChange(newRadius)
+                    // Calculate zoom level to fit the radius circle within screen bounds
+                    val zoomLevel = calculateZoomForRadius(newRadius)
+                    onZoomChange(zoomLevel)
+                }, 
+                valueRange = 1f..50f, 
+                steps = 49
+            )
         }
     }
+}
+
+/**
+ * Calculate zoom level to ensure the radius circle fits within the screen bounds
+ * This uses the approximate relationship between Google Maps zoom levels and visible distance
+ */
+private fun calculateZoomForRadius(radiusKm: Float): Float {
+    // We want the radius circle to fit within the screen with some padding
+    // Assume we want the circle to take up about 60% of the screen width
+    // This means the total diameter should be about 60% of visible distance
+    
+    // Convert radius to meters and add padding factor
+    val radiusMeters = radiusKm * 1000.0
+    val paddingFactor = 1.8 // This ensures the circle fits comfortably with some padding
+    val requiredViewDistance = radiusMeters * paddingFactor
+    
+    // Google Maps zoom formula approximation at latitude ~45 degrees (reasonable global average)
+    // meters_per_pixel = 156543.03392 * cos(latitude) / 2^zoom_level
+    // For latitude ~45°, cos(45°) ≈ 0.7071
+    // Assume screen width is ~400dp ≈ 1000 pixels (rough mobile screen approximation)
+    
+    val metersPerPixelAtZoom0 = 156543.03392 * 0.7071
+    val screenWidthPixels = 1000.0
+    val requiredMetersPerPixel = requiredViewDistance / screenWidthPixels
+    
+    // Calculate zoom level: zoom = log2(metersPerPixelAtZoom0 / requiredMetersPerPixel)
+    val zoomLevel = ln(metersPerPixelAtZoom0 / requiredMetersPerPixel) / ln(2.0)
+    
+    // Clamp zoom level to reasonable bounds (Google Maps supports 1-20)
+    return zoomLevel.toFloat().coerceIn(8f, 18f)
 }
 
 @Composable

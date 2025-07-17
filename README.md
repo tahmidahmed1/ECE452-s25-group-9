@@ -92,7 +92,7 @@ For faster development and testing, the Android app includes a **Development Mod
 ### Features
 
 - **Quick Sign-in**: Auto-generates unique users with realistic data
-- **Multiple User Types**: Create Volunteer, Organizer, or Institution accounts instantly  
+- **Multiple User Types**: Create Volunteer or Organizer accounts instantly  
 - **No Server Required**: Works even when the backend is unavailable
 - **Unique Identifiers**: Each dev user gets a unique hash-based username and email
 
@@ -100,7 +100,7 @@ For faster development and testing, the Android app includes a **Development Mod
 
 1. **Debug Builds Only**: Dev mode is automatically enabled in debug builds
 2. **Sign-in Screen**: Look for the "🚀 Development Mode" card at the bottom
-3. **Choose User Type**: Click on 👤 Volunteer, ⭐ Organizer, or 🏛️ Institution
+3. **Choose User Type**: Click on 👤 Volunteer or ⭐ Organizer
 4. **Instant Access**: Get signed in immediately with a pre-configured account
 
 ### Generated Data

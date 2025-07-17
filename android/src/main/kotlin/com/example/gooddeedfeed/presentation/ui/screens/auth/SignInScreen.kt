@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,12 +11,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,20 +39,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.BuildConfig
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.FormTextField
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SecondaryButton
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 
+// Validation functions for sign in
+private fun validateSignInInput(username: String, password: String): String? {
+    if (username.isBlank()) return "Username is required"
+    if (password.isBlank()) return "Password is required"
+    return null
+}
+
 @Composable
 fun SignInScreen(
     uiState: AuthUiState,
     onSignIn: (String, String) -> Unit,
-    onDevModeSignIn: (DomainUserType) -> Unit = {},
+    onDevModeSignIn: (com.example.gooddeedfeed.domain.model.DomainUserType) -> Unit,
     onNavigateToSignUp: () -> Unit,
-    onNavigateToOnboarding: () -> Unit = {},
-    onNavigateToHome: () -> Unit = {},
+    onNavigateToOnboarding: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -60,18 +72,28 @@ fun SignInScreen(
     LaunchedEffect(uiState) {
         when (uiState) {
             is AuthUiState.Success -> {
-                ToastUtils.showSuccessToast(context, "Welcome back to GoodDeedFeed!")
                 val user = uiState.user
-                if (!user.onboardingCompleted) {
-                    onNavigateToOnboarding()
-                } else {
+                ToastManager.showSuccess("Welcome back, ${user.username}!")
+                if (user.onboardingCompleted) {
                     onNavigateToHome()
+                } else {
+                    onNavigateToOnboarding()
                 }
             }
             is AuthUiState.Error -> {
-                ToastUtils.showErrorToast(context, uiState.message)
+                ToastManager.showError(uiState.message)
             }
             else -> {}
+        }
+    }
+
+    // Handle sign in with validation
+    val handleSignIn = {
+        val validationError = validateSignInInput(username, password)
+        if (validationError != null) {
+            ToastManager.showError(validationError)
+        } else {
+            onSignIn(username, password)
         }
     }
 
@@ -162,7 +184,7 @@ fun SignInScreen(
 
                     PrimaryButton(
                         text = "Sign In",
-                        onClick = { onSignIn(username, password) },
+                        onClick = handleSignIn,
                         enabled = username.isNotBlank() && password.isNotBlank(),
                         isLoading = isLoading,
                         modifier = Modifier.fillMaxWidth(),
@@ -178,64 +200,90 @@ fun SignInScreen(
                 enabled = !isLoading,
             )
 
-            // Development Mode Section
+            // Development Mode - Only show in debug builds
             if (BuildConfig.DEV_MODE) {
-                Spacer(modifier = Modifier.height(32.dp))
-
+                Spacer(modifier = Modifier.height(24.dp))
+                
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     ),
-                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Text(
                             text = "🚀 Development Mode",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
-
+                        
                         Text(
-                            text = "Quick sign-in with auto-generated accounts",
+                            text = "Quick sign in for testing",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
-
+                        
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            DevModeButton(
-                                icon = "👤",
+                            FloatingActionButton(
+                                onClick = { if (!isLoading) onDevModeSignIn(DomainUserType.VOLUNTEER) },
+                                modifier = Modifier.size(64.dp),
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Sign In as Volunteer",
+                                    modifier = Modifier.size(32.dp),
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.width(16.dp))
+                            
+                            FloatingActionButton(
+                                onClick = { if (!isLoading) onDevModeSignIn(DomainUserType.ORGANIZER) },
+                                modifier = Modifier.size(64.dp),
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Sign In as Organizer",
+                                    modifier = Modifier.size(32.dp),
+                                )
+                            }
+                        }
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            Text(
                                 text = "Volunteer",
-                                userType = DomainUserType.VOLUNTEER,
-                                onDevModeSignIn = onDevModeSignIn,
-                                enabled = !isLoading,
-                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-
-                            DevModeButton(
-                                icon = "⭐",
+                            
+                            Spacer(modifier = Modifier.width(32.dp))
+                            
+                            Text(
                                 text = "Organizer",
-                                userType = DomainUserType.ORGANIZER,
-                                onDevModeSignIn = onDevModeSignIn,
-                                enabled = !isLoading,
-                                modifier = Modifier.weight(1f),
-                            )
-
-                            DevModeButton(
-                                icon = "🏛️",
-                                text = "Institution",
-                                userType = DomainUserType.INSTITUTION,
-                                onDevModeSignIn = onDevModeSignIn,
-                                enabled = !isLoading,
-                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -245,38 +293,3 @@ fun SignInScreen(
     }
 }
 
-@Composable
-private fun DevModeButton(
-    icon: String,
-    text: String,
-    userType: DomainUserType,
-    onDevModeSignIn: (DomainUserType) -> Unit,
-    enabled: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    OutlinedButton(
-        onClick = { onDevModeSignIn(userType) },
-        enabled = enabled,
-        modifier = modifier,
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.primary,
-        ),
-        shape = RoundedCornerShape(12.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = icon,
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
-            )
-        }
-    }
-}

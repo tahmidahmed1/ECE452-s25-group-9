@@ -1,5 +1,8 @@
 package com.example.gooddeedfeed.data.repository
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.remote.EventApiService
 import com.example.gooddeedfeed.data.remote.dto.toDomain
 import com.example.gooddeedfeed.domain.model.CreateEventData
@@ -8,6 +11,7 @@ import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.repository.EventRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
@@ -17,11 +21,16 @@ import javax.inject.Singleton
 class EventRepositoryImpl @Inject constructor(
     private val apiService: EventApiService,
     private val authRepository: AuthRepository,
+    private val dataStore: DataStore<Preferences>,
 ) : EventRepository {
 
+    companion object {
+        private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
+    }
+
     override suspend fun getMyEvents(): Flow<List<VolunteerEvent>> = flow {
-        val currentUserResult = authRepository.getCurrentUser().firstOrNull()
-        val userId = currentUserResult?.getOrNull()?.id
+        val currentUserResult = authRepository.getCurrentUser()
+        val userId = currentUserResult.getOrNull()?.id
         val dtos = if (userId != null) {
             apiService.getOrganizerEvents(userId)
         } else {
@@ -61,6 +70,8 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     private suspend fun token(): String {
-        return authRepository.getToken().firstOrNull() ?: ""
+        // Get token from DataStore
+        val preferences = dataStore.data.first()
+        return preferences[JWT_TOKEN_KEY] ?: throw Exception("No authentication token found")
     }
 } 

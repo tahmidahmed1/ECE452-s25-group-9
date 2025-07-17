@@ -115,6 +115,7 @@ fun HorizontalSpacer(size: SpacingSize = SpacingSize.Medium) {
 }
 
 enum class SpacingSize(val dp: Dp) {
+    ExtraSmall(Spacing.xs),
     Small(Spacing.sm),
     Medium(Spacing.md),
     Large(Spacing.lg),

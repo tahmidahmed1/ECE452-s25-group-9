@@ -1,12 +1,12 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
+import android.Manifest
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,22 +16,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,13 +42,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,17 +58,27 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainOrganizerWithSubscriptionStatus
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
-import com.example.gooddeedfeed.presentation.ui.components.base.PermissionRationaleCard
+import com.example.gooddeedfeed.presentation.ui.components.base.EnhancedLocationPermissionManager
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
-import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
+import com.example.gooddeedfeed.presentation.ui.components.volunteer.OpportunitiesList
+import com.example.gooddeedfeed.presentation.ui.components.volunteer.FiltersDrawer
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesData
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.volunteer.SubscriptionViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
+import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
+import com.example.gooddeedfeed.presentation.navigation.ModernDropdownMenu
+import com.example.gooddeedfeed.presentation.navigation.ModernDropdownMenuItem
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
+import com.example.gooddeedfeed.domain.model.DateFilter
+import com.example.gooddeedfeed.presentation.ui.screens.volunteer.VolunteerOpportunityDetailScreen
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -75,194 +87,229 @@ fun ListScreen(
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: OpportunitiesViewModel = hiltViewModel<OpportunitiesViewModel>(),
+    subscriptionViewModel: SubscriptionViewModel = hiltViewModel<SubscriptionViewModel>(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val subscriptionUiState by subscriptionViewModel.uiState.collectAsStateWithLifecycle()
     var organizerSearch by remember { mutableStateOf("") }
-    var selectedOrganizer by remember { mutableStateOf<AppConstants.OrganizerProfile?>(null) }
-    val subscriptions = remember { mutableStateListOf<String>() }
+    var selectedOrganizer by remember { mutableStateOf<DomainOrganizerWithSubscriptionStatus?>(null) }
+    var openChat by remember { mutableStateOf(false) }
     var selectedOpportunity by remember { mutableStateOf<VolunteerOpportunity?>(null) }
+    var filtersExpanded by remember { mutableStateOf(false) }
+    var filters by remember { mutableStateOf(OpportunityFilters()) }
+    val context = LocalContext.current
 
     // Location permission handling
-    val locationPermissionState = rememberPermissionState(android.Manifest.permission.ACCESS_FINE_LOCATION) { granted ->
+    val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted() else viewModel.onLocationPermissionDenied()
     }
 
-    LaunchedEffect(locationPermissionState.status.isGranted) {
-        if (locationPermissionState.status.isGranted) {
-            viewModel.onLocationPermissionGranted()
-        }
-    }
+    // Use enhanced location permission manager
+    EnhancedLocationPermissionManager(
+        locationPermissionState = locationPermissionState,
+        locationSettingsRepository = viewModel.locationSettingsRepository,
+        onPermissionGranted = { viewModel.onLocationPermissionGranted() },
+        onPermissionDenied = { viewModel.onLocationPermissionDenied() },
+        onLocationDisabled = { viewModel.onLocationPermissionDenied() },
+        content = {
+            // Main content when location is properly configured
+            if (openChat) {
+                ChatScreen(user = user, modifier = Modifier.fillMaxSize())
+            } else if (selectedOpportunity != null) {
+                VolunteerOpportunityDetailScreen(opportunity = selectedOpportunity!!, onBack = { selectedOpportunity = null })
+            } else {
+                // Main list screen content
+                Column(modifier = modifier.fillMaxSize()) {
+                    // Header with search and filters
+                    HeaderSection(
+                        organizerSearch = organizerSearch,
+                        onOrganizerSearchChange = { organizerSearch = it },
+                        selectedOrganizer = selectedOrganizer,
+                        onOrganizerSelected = { selectedOrganizer = it },
+                        onFiltersClick = { filtersExpanded = true },
+                        onChatClick = { openChat = true },
+                    )
 
-    if (!locationPermissionState.status.isGranted) {
-        PermissionRationaleCard { locationPermissionState.launchPermissionRequest() }
-        return
-    }
-
-    if (selectedOpportunity != null) {
-        VolunteerOpportunityDetailScreen(opportunity = selectedOpportunity!!, onBack = { selectedOpportunity = null })
-        return
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-    ) {
-        // Search radius slider
-        if (uiState is UiState.Success<*>) {
-            val radiusKm = (uiState as UiState.Success<OpportunitiesData>).data.radiusKm
-            RadiusSlider(radiusKm = radiusKm, onRadiusChange = viewModel::updateRadius, modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp))
-        }
-
-        OutlinedTextField(
-            value = organizerSearch,
-            onValueChange = { organizerSearch = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 12.dp),
-            label = { Text("Search organizers") },
-            singleLine = true,
-            trailingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = "Search") },
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary),
-        )
-
-        if (organizerSearch.isNotBlank()) {
-            // show organizer search mode
-            val filteredOrganizers = AppConstants.MOCK_ORGANIZERS.filter { it.name.contains(organizerSearch, ignoreCase = true) }
-
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(
-                    items = filteredOrganizers,
-                    key = { org -> org.name },
-                ) { org ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedOrganizer = org },
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Column {
-                                Text(org.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(org.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // Main content
+                    when (val state = uiState) {
+                        is UiState.Loading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator()
                             }
-                            Button(onClick = {
-                                if (org.name !in subscriptions) subscriptions += org.name
-                            }) {
-                                Icon(
-                                    imageVector = if (org.name in subscriptions) Icons.Default.Check else Icons.Default.Add,
-                                    contentDescription = null,
+                        }
+                        is UiState.Success -> {
+                            OpportunitiesList(
+                                opportunities = state.data.opportunities,
+                                onJoinOpportunity = { opportunityId -> viewModel.joinOpportunity(opportunityId) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        is UiState.Error -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = state.message,
+                                    color = MaterialTheme.colorScheme.error,
+                                    textAlign = TextAlign.Center,
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(if (org.name in subscriptions) "Subscribed" else "Subscribe")
+                            }
+                        }
+                        else -> {
+                            // Handle any other states
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "Unknown state",
+                                    color = MaterialTheme.colorScheme.error,
+                                    textAlign = TextAlign.Center,
+                                )
                             }
                         }
                     }
                 }
+
+                // Filters drawer
+                if (filtersExpanded) {
+                    FiltersDrawer(
+                        isExpanded = filtersExpanded,
+                        onToggle = { filtersExpanded = !filtersExpanded },
+                        filters = filters,
+                        onFiltersChange = { filters = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
+        },
+        modifier = Modifier.fillMaxSize(),
+    )
+}
 
-            selectedOrganizer?.let { org ->
-                OrganizerProfileScreen(org, onBack = { selectedOrganizer = null })
-            }
-
-            return // skip rendering opportunities when searching
-        }
-
+@Composable
+private fun HeaderSection(
+    organizerSearch: String,
+    onOrganizerSearchChange: (String) -> Unit,
+    selectedOrganizer: DomainOrganizerWithSubscriptionStatus?,
+    onOrganizerSelected: (DomainOrganizerWithSubscriptionStatus?) -> Unit,
+    onFiltersClick: () -> Unit,
+    onChatClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(16.dp)) {
+        // Header row with title and chat button
         Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp),
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.List,
-                contentDescription = "List",
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Volunteer Opportunities",
                 style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
             )
+            
+            IconButton(onClick = onChatClick) {
+                Icon(
+                    imageVector = Icons.Default.Chat,
+                    contentDescription = "Chat",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
-
-        when (val currentState = uiState) {
-            is UiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            is UiState.Success<OpportunitiesData> -> {
-                val opportunitiesData = currentState.data
-
-                if (opportunitiesData.opportunities.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.List,
-                                contentDescription = "No Opportunities",
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "No opportunities available",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = "Check back later for new volunteer opportunities",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(
-                            items = if (organizerSearch.isBlank()) opportunitiesData.opportunities else emptyList(),
-                            key = { opportunity -> opportunity.id },
-                        ) { opportunity ->
-                            OpportunityCard(
-                                opportunity = opportunity,
-                                onJoinClick = { viewModel.joinOpportunity(opportunity.id) },
-                                onClick = { selectedOpportunity = opportunity },
-                            )
-                        }
-                    }
-                }
-            }
-            is UiState.Error -> {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    Text(
-                        text = currentState.message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center,
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Search and filters row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedTextField(
+                value = organizerSearch,
+                onValueChange = onOrganizerSearchChange,
+                placeholder = { Text("Search organizers...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { viewModel.loadOpportunities() },
-                    ) {
-                        Text("Retry")
-                    }
+                },
+                modifier = Modifier.weight(1f),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                ),
+                shape = RoundedCornerShape(12.dp),
+            )
+            
+            IconButton(onClick = onFiltersClick) {
+                Icon(
+                    imageVector = Icons.Default.FilterList,
+                    contentDescription = "Filters",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrganizerCard(
+    organizer: DomainOrganizerWithSubscriptionStatus,
+    onSubscriptionClick: () -> Unit,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = organizer.organizationName ?: organizer.fullName ?: organizer.username,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = organizer.organizationDescription ?: "No description available",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (organizer.subscriberCount > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${organizer.subscriberCount} subscribers",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+            }
+            Button(
+                onClick = onSubscriptionClick,
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Icon(
+                    imageVector = if (organizer.isSubscribed) Icons.Default.Check else Icons.Default.Add,
+                    contentDescription = null,
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(if (organizer.isSubscribed) "Subscribed" else "Subscribe")
             }
         }
     }
@@ -363,23 +410,24 @@ private fun OpportunityCard(
 }
 
 @Composable
-private fun OrganizerProfileScreen(profile: AppConstants.OrganizerProfile, onBack: () -> Unit) {
+private fun OrganizerProfileScreen(
+    organizer: DomainOrganizerWithSubscriptionStatus,
+    onBack: () -> Unit,
+    onMessage: () -> Unit,
+) {
     val context = LocalContext.current
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(profile.name, style = MaterialTheme.typography.headlineMedium)
+            Text(organizer.organizationName ?: organizer.fullName ?: organizer.username, style = MaterialTheme.typography.headlineMedium)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        Text(profile.description, style = MaterialTheme.typography.bodyMedium)
+        Text(organizer.organizationDescription ?: "No description available", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(16.dp))
 
-        FilledTonalButton(onClick = {
-            // Mock: open chat
-            ToastUtils.showSuccessToast(context, "Chat opened (mock)")
-        }) {
+        Button(onClick = onMessage) {
             Icon(Icons.Default.Chat, contentDescription = null)
             Spacer(modifier = Modifier.width(4.dp))
             Text("Message")
@@ -388,23 +436,16 @@ private fun OrganizerProfileScreen(profile: AppConstants.OrganizerProfile, onBac
         Spacer(modifier = Modifier.height(24.dp))
         Text("Events", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         VerticalSpacer()
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(
-                items = profile.events,
-                key = { event -> event.title + event.date },
-            ) { event ->
+        // TODO: Implement events loading from backend
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            // TODO: navigate to event detail
-                        },
+            modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(event.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                        Text(event.date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
+                Text(
+                    text = "Events will be loaded here",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

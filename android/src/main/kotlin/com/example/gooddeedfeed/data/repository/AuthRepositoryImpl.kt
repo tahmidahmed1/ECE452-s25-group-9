@@ -1,138 +1,237 @@
 package com.example.gooddeedfeed.data.repository
 
-import android.content.Context
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import com.example.gooddeedfeed.data.mapper.toData
 import com.example.gooddeedfeed.data.mapper.toDomain
+import com.example.gooddeedfeed.data.mapper.toDto
 import com.example.gooddeedfeed.data.remote.AuthApiService
-import com.example.gooddeedfeed.domain.model.DomainAuthResponse
-import com.example.gooddeedfeed.domain.model.DomainInstitutionName
-import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.domain.repository.AuthRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
-private val Context.dataStore by preferencesDataStore(name = "auth")
-private val TOKEN_KEY = stringPreferencesKey("jwt_token")
-
-class AuthRepositoryImpl(
-    private val context: Context,
+@Singleton
+class AuthRepositoryImpl @Inject constructor(
     private val api: AuthApiService,
+    private val dataStore: DataStore<Preferences>
 ) : AuthRepository {
 
-    override suspend fun signUp(
-        username: String,
-        email: String,
-        password: String,
-    ): Flow<Result<DomainAuthResponse>> = flow {
-        val result = try {
-            val resp = api.signUp(username, email, password)
-            if (resp?.success == true && resp.token != null) {
-                saveToken(resp.token)
-                Result.success(resp.toDomain())
-            } else {
-                Result.failure(Exception(resp?.message ?: "Sign up failed"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-        emit(result)
+    companion object {
+        private const val TAG = "AuthRepositoryImpl"
+        private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
+        private val USER_ID_KEY = stringPreferencesKey("user_id")
+        private val USERNAME_KEY = stringPreferencesKey("username")
     }
 
-    override suspend fun signIn(
-        username: String,
-        password: String,
-    ): Flow<Result<DomainAuthResponse>> = flow {
-        val result = try {
-            val resp = api.signIn(username, password)
-            resp.token?.let { token -> saveToken(token) }
-            Result.success(resp.toDomain())
-        } catch (e: Exception) {
-            Result.failure(e)
+    private suspend fun saveAuthData(token: String, userId: String, username: String) {
+        Log.d(TAG, "💾 Saving auth data to DataStore")
+        Log.d(TAG, "💾 Token: ${token.take(20)}...")
+        Log.d(TAG, "💾 User ID: $userId")
+        Log.d(TAG, "💾 Username: $username")
+        
+        dataStore.edit { preferences ->
+            preferences[JWT_TOKEN_KEY] = token
+            preferences[USER_ID_KEY] = userId
+            preferences[USERNAME_KEY] = username
         }
-        emit(result)
+        
+        Log.d(TAG, "✅ Auth data saved successfully")
     }
 
-    override suspend fun signOut(): Flow<Result<Unit>> = flow {
-        val result = try {
-            saveToken("")
+    private suspend fun getToken(): String? {
+        val token = dataStore.data.first()[JWT_TOKEN_KEY]
+        Log.d(TAG, "🔍 Retrieved token from DataStore: ${if (token != null) "Found" else "Not found"}")
+        return token
+    }
+
+    private suspend fun clearAuthData() {
+        Log.d(TAG, "🧹 Clearing auth data from DataStore")
+        dataStore.edit { preferences ->
+            preferences.remove(JWT_TOKEN_KEY)
+            preferences.remove(USER_ID_KEY)
+            preferences.remove(USERNAME_KEY)
+        }
+        Log.d(TAG, "✅ Auth data cleared successfully")
+    }
+
+    override suspend fun signUp(username: String, email: String, password: String): Result<DomainUser> {
+        Log.d(TAG, "🔄 Repository signUp called")
+        Log.d(TAG, "📝 SignUp params - Username: $username, Email: $email")
+        
+        return try {
+            Log.d(TAG, "📞 Calling AuthApiService.signUp...")
+            val response = api.signUp(username, email, password)
+            
+            Log.d(TAG, "🔄 Converting response to domain model...")
+            val domainUser = response.user.toDomain()
+            
+            Log.d(TAG, "💾 Saving authentication data...")
+            saveAuthData(
+                token = response.access_token,
+                userId = response.user.id.toString(),
+                username = response.user.username
+            )
+            
+            Log.d(TAG, "✅ Repository signUp successful")
+            Log.d(TAG, "✅ Domain user - ID: ${domainUser.id}, Username: ${domainUser.username}")
+            
+            Result.success(domainUser)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Repository signUp failed", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun signIn(username: String, password: String): Result<DomainUser> {
+        Log.d(TAG, "🔄 Repository signIn called")
+        Log.d(TAG, "📝 SignIn params - Username: $username")
+        
+        return try {
+            Log.d(TAG, "📞 Calling AuthApiService.signIn...")
+            val response = api.signIn(username, password)
+            
+            Log.d(TAG, "🔄 Converting response to domain model...")
+            val domainUser = response.user.toDomain()
+            
+            Log.d(TAG, "💾 Saving authentication data...")
+            saveAuthData(
+                token = response.access_token,
+                userId = response.user.id.toString(),
+                username = response.user.username
+            )
+            
+            Log.d(TAG, "✅ Repository signIn successful")
+            Log.d(TAG, "✅ Domain user - ID: ${domainUser.id}, Username: ${domainUser.username}")
+            
+            Result.success(domainUser)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Repository signIn failed", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun signOut(): Result<Unit> {
+        Log.d(TAG, "🔄 Repository signOut called")
+        
+        return try {
+            Log.d(TAG, "📞 Calling AuthApiService.signOut...")
+            api.signOut()
+            
+            Log.d(TAG, "🧹 Clearing stored authentication data...")
+            clearAuthData()
+            
+            Log.d(TAG, "✅ Repository signOut successful")
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e(TAG, "❌ Repository signOut failed", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            
+            // Even if API call fails, clear local data
+            Log.d(TAG, "🧹 Clearing local auth data despite API failure...")
+            clearAuthData()
+            
             Result.failure(e)
         }
-        emit(result)
     }
 
-    override suspend fun getCurrentUser(): Flow<Result<DomainUser>> = flow {
-        val result = try {
-            val token = getTokenString()
-            if (token.isNullOrBlank()) {
-                Result.failure(Exception("No authentication token found"))
-            } else {
-                val user = api.getCurrentUser(token)
-                Result.success(user.toDomain())
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Result.failure(e)
-        }
-        emit(result)
-    }
-
-    override suspend fun updateUserType(userType: DomainUserType): Result<Unit> {
+    override suspend fun getCurrentUser(): Result<DomainUser> {
+        Log.d(TAG, "🔄 Repository getCurrentUser called")
+        
         return try {
-            val token = getTokenString()
-            if (token.isNullOrBlank()) {
-                Result.failure(Exception("No authentication token found"))
-            } else {
-                val success = api.completeOnboardingStepOne(token, userType.toData())
-                if (success) {
-                    Result.success(Unit)
-                } else {
-                    Result.failure(Exception("Failed to update user type"))
-                }
+            val token = getToken()
+            if (token == null) {
+                Log.w(TAG, "⚠️ No token found - user not authenticated")
+                return Result.failure(Exception("No authentication token found"))
             }
+            
+            Log.d(TAG, "📞 Calling AuthApiService.getCurrentUser...")
+            val user = api.getCurrentUser()
+            
+            Log.d(TAG, "🔄 Converting user to domain model...")
+            val domainUser = user.toDomain()
+            
+            Log.d(TAG, "✅ Repository getCurrentUser successful")
+            Log.d(TAG, "✅ Domain user - ID: ${domainUser.id}, Username: ${domainUser.username}")
+            
+            Result.success(domainUser)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Repository getCurrentUser failed", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            
+            // If getCurrentUser fails, it might be due to invalid token
+            if (e.message?.contains("401") == true || e.message?.contains("unauthorized") == true) {
+                Log.d(TAG, "🧹 Clearing invalid authentication data...")
+                clearAuthData()
+            }
+            
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun setUserType(userType: DomainUserType): Result<Unit> {
+        return try {
+            api.setUserType(userType.toDto())
+                    Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun completeOnboarding(
-        userType: DomainUserType,
-        fullName: String,
-        phone: String,
-        organizationName: String?,
-        institutionName: DomainInstitutionName?,
-        profilePictureUrl: String?,
+    override suspend fun uploadProfilePicture(file: File): Result<String> {
+        return try {
+            val response = api.uploadProfilePicture(file)
+            Result.success(response.profile_picture_url)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun uploadBannerImage(file: File): Result<String> {
+        return try {
+            val response = api.uploadBannerImage(file)
+            Result.success(response.banner_url)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun uploadOrganizationImages(files: List<File>): Result<List<String>> {
+        return try {
+            val response = api.uploadOrganizationImages(files)
+            Result.success(response.organization_images)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun completeOrganizerOnboarding(
+        profile: DomainOrganizerProfile,
+        profilePictureFile: File?
     ): Result<Unit> {
         return try {
-            val token = getTokenString()
-            if (token.isNullOrBlank()) {
-                Result.failure(Exception("No authentication token found"))
-            } else {
-                val success = api.completeOnboarding(
-                    token = token,
-                    userType = userType.toData(),
-                    fullName = fullName,
-                    phone = phone,
-                    organizationName = organizationName,
-                    institutionName = institutionName?.toData(),
+            val success = api.completeOrganizerOnboarding(
+                profile = profile,
+                profilePictureFile = profilePictureFile
                 )
                 if (success) {
                     Result.success(Unit)
                 } else {
-                    Result.failure(Exception("Failed to complete onboarding"))
-                }
+                Result.failure(Exception("Failed to complete organizer onboarding"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -140,83 +239,31 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun completeVolunteerOnboarding(
-        volunteerProfile: DomainVolunteerProfile,
-        profilePictureUrl: String?,
+        profile: DomainVolunteerProfile,
+        profilePictureFile: File?
     ): Result<Unit> {
         return try {
-            val token = getTokenString()
-            if (token.isNullOrBlank()) {
-                Result.failure(Exception("No authentication token found"))
+            val success = api.completeVolunteerOnboarding(
+                profile = profile,
+                profilePictureFile = profilePictureFile
+            )
+            if (success) {
+                Result.success(Unit)
             } else {
-                val success = api.completeVolunteerOnboarding(
-                    token = token,
-                    volunteerProfile = volunteerProfile,
-                    profilePictureUrl = profilePictureUrl,
-                )
-                if (success) {
-                    Result.success(Unit)
-                } else {
-                    Result.failure(Exception("Failed to complete volunteer onboarding"))
-                }
+                Result.failure(Exception("Failed to complete volunteer onboarding"))
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun uploadProfilePicture(file: File): Flow<Result<DomainProfilePictureUploadResponse>> = flow {
-        Log.d(TAG, "uploadProfilePicture() invoked with file: ${file.absolutePath} (${file.length()} bytes)")
-
-        val result = try {
-            val token = getTokenString()
-            if (token.isNullOrBlank()) {
-                Log.e(TAG, "No auth token available – cannot upload profile picture")
-                Result.failure(Exception("No authentication token found"))
-            } else {
-                val response = api.uploadProfilePicture(token, file)
-                if (response != null) {
-                    Log.d(TAG, "Upload succeeded – URL returned: ${response.profile_picture_url}")
-                    Result.success(response.toDomain())
-                } else {
-                    Log.e(TAG, "Upload failed – API returned null response")
-                    Result.failure(Exception("Failed to upload profile picture"))
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during upload: ${e.message}", e)
-            Result.failure(e)
-        }
-
-        emit(result)
-    }
-
-    override fun getToken(): Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[TOKEN_KEY]
-    }
-
-    private suspend fun getTokenString(): String? = getToken().firstOrNull()
-
-    private suspend fun saveToken(token: String) {
-        context.dataStore.edit { preferences ->
-            preferences[TOKEN_KEY] = token
-        }
-    }
-
-    override suspend fun updateUserProfile(update: DomainUserUpdate): Result<Unit> {
+    override suspend fun updateProfile(updates: DomainUserUpdate): Result<DomainUser> {
         return try {
-            val token = getTokenString()
-            if (token.isNullOrBlank()) {
-                Result.failure(Exception("No authentication token found"))
-            } else {
-                val success = api.updateUserProfile(token, update)
-                if (success) Result.success(Unit) else Result.failure(Exception("Failed to update profile"))
-            }
+            val user = api.updateProfile(updates.toDto())
+            Result.success(user.toDomain())
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    companion object {
-        private const val TAG = "AuthRepositoryImpl"
     }
 }
+

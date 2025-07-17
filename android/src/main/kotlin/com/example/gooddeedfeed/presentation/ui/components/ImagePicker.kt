@@ -42,11 +42,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.OrganizationType
 import java.io.File
 import java.io.FileOutputStream
 
@@ -139,20 +139,16 @@ object ImageUtils {
             return if (phone.isBlank()) "Phone number is required" else null
         }
 
-        fun validateOrganization(organizationName: String, userType: DomainUserType?): String? {
-            return if (userType == DomainUserType.ORGANIZER && organizationName.isBlank()) {
+        fun validateOrganizationName(organizationName: String?, userType: DomainUserType?): String? {
+            return if (userType == DomainUserType.ORGANIZER && organizationName.isNullOrBlank()) {
                 "Organization name is required"
-            } else {
-                null
-            }
+            } else null
         }
 
-        fun validateInstitution(selectedInstitution: DomainInstitutionName?, userType: DomainUserType?): String? {
-            return if (userType == DomainUserType.INSTITUTION && selectedInstitution == null) {
-                "Institution is required"
-            } else {
-                null
-            }
+        fun validateOrganizationType(organizationType: OrganizationType?, userType: DomainUserType?): String? {
+            return if (userType == DomainUserType.ORGANIZER && organizationType == null) {
+                "Organization type is required"
+            } else null
         }
 
         fun validateAge(age: String): String? {

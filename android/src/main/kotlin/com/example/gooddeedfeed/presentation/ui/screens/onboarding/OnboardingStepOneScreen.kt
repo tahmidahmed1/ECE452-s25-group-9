@@ -44,7 +44,7 @@ fun OnboardingStepOneScreen(
         SelectableOptionCard(
             icon = Icons.Default.Person,
             title = "Volunteer",
-            description = "I want to participate in community service activities",
+            description = "Find and participate in volunteer opportunities in your community",
             isSelected = selectedUserType == DomainUserType.VOLUNTEER,
             onClick = { selectedUserType = DomainUserType.VOLUNTEER },
         )
@@ -54,19 +54,9 @@ fun OnboardingStepOneScreen(
         SelectableOptionCard(
             icon = Icons.Default.Star,
             title = "Organizer",
-            description = "I want to organize and manage community events",
+            description = "Create and manage volunteer events and opportunities for your organization",
             isSelected = selectedUserType == DomainUserType.ORGANIZER,
             onClick = { selectedUserType = DomainUserType.ORGANIZER },
-        )
-
-        VerticalSpacer(SpacingSize.Small)
-
-        SelectableOptionCard(
-            icon = Icons.Default.Home,
-            title = "Institution",
-            description = "I represent an organization or institution",
-            isSelected = selectedUserType == DomainUserType.INSTITUTION,
-            onClick = { selectedUserType = DomainUserType.INSTITUTION },
         )
 
         VerticalSpacer(SpacingSize.Large)

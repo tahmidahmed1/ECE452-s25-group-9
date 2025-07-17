@@ -38,12 +38,11 @@ import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
-
-data class TabItem(
-    val title: String,
-    val icon: ImageVector,
-    val screen: @Composable (DomainUser, () -> Unit) -> Unit,
-)
+import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
+import com.example.gooddeedfeed.presentation.ui.components.BadgeManager
+import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundScreen
+import com.example.gooddeedfeed.presentation.navigation.TabItem
+import com.example.gooddeedfeed.domain.model.DomainUserType
 
 @Composable
 fun FloatingNavBarItem(
@@ -134,22 +133,40 @@ fun TabNavigationScreen(
 ) {
     // Observe home navigation events to switch bottom bar tabs
     val homeViewModel: HomeViewModel = hiltViewModel()
+    val badgeViewModel: BadgeViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showEditProfile by remember { mutableStateOf(false) }
     var showPreviewProfile by remember { mutableStateOf(false) }
     var showPrivacySettings by remember { mutableStateOf(false) }
+    var showLostAndFound by remember { mutableStateOf(false) }
 
     // Generate tabs based on user type early
-    val tabs = NavigationConfig.getTabsForUserType(user.userType)
+    val tabs = getTabsForUserType(user.userType ?: DomainUserType.VOLUNTEER)
 
     // Handle navigation events from HomeScreen using precomputed tabs
     LaunchedEffect(homeViewModel) {
         homeViewModel.navigationEvent.collect { action ->
             selectedTabIndex = when (action) {
-                HomeAction.BrowseOpportunities -> tabs.indexOfFirst { it.title.contains("Opp") }.let { if (it >= 0) it else selectedTabIndex }
-                HomeAction.ViewMyActivities -> tabs.indexOfFirst { it.title.contains("My Activities") }.let { if (it >= 0) it else selectedTabIndex }
-                HomeAction.CreateEvent, HomeAction.ManageEvents -> tabs.indexOfFirst { it.title == "Events" }.let { if (it >= 0) it else selectedTabIndex }
-                HomeAction.ViewDashboard, HomeAction.ManagePrograms -> tabs.indexOfFirst { it.title.contains("Review") || it.title.contains("Programs") }.let { if (it >= 0) it else selectedTabIndex }
+                HomeAction.BrowseOpportunities -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title.contains("Opp") }
+                    if (index >= 0) index else selectedTabIndex
+                }
+                HomeAction.ViewMyActivities -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title.contains("My Activities") }
+                    if (index >= 0) index else selectedTabIndex
+                }
+                HomeAction.LostAndFound -> {
+                    showLostAndFound = true
+                    selectedTabIndex
+                }
+                HomeAction.CreateEvent, HomeAction.ManageEvents -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title == "Events" }
+                    if (index >= 0) index else selectedTabIndex
+                }
+                HomeAction.ViewDashboard, HomeAction.ManagePrograms -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title.contains("Review") || tab.title.contains("Programs") }
+                    if (index >= 0) index else selectedTabIndex
+                }
             }
         }
     }
@@ -221,5 +238,24 @@ fun TabNavigationScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+
+        // Lost & Found Overlay
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showLostAndFound,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+        ) {
+            LostAndFoundScreen(
+                user = user,
+                onBack = { showLostAndFound = false },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // Badge achievement manager for showing badge popups
+        BadgeManager(
+            badgeViewModel = badgeViewModel,
+            userKarmaPoints = user.karmaPoints,
+        )
     }
 }

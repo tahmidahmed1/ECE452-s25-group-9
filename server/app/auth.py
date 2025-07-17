@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from .database import get_db
-from .models import User
+from .models import User, UserType
 from .schemas import TokenData
 
 # Load JWT secret from environment variables
@@ -31,6 +31,7 @@ def authenticate_user(db: Session, username: str, password: str):
         return False
     if not verify_password(password, user.hashed_password):
         return False
+    
     return user
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -66,3 +67,4 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+

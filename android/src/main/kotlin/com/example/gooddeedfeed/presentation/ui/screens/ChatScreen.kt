@@ -92,7 +92,7 @@ data class ChatMessage(
     val id: String,
     val content: String,
     val senderName: String,
-    val senderType: String, // "volunteer", "organizer", "institution"
+    val senderType: String, // "volunteer", "organizer"
     val timestamp: String,
     val isFromCurrentUser: Boolean = false,
 )

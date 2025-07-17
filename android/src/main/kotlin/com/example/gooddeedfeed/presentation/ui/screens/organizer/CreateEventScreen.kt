@@ -58,6 +58,7 @@ fun CreateEventScreen(
     var endTime by remember { mutableStateOf("") }
     var maxVolunteersText by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(OpportunityCategory.OTHER) }
+    var karmaPoints by remember { mutableStateOf(10) }
     var latitudeText by remember { mutableStateOf("") }
     var longitudeText by remember { mutableStateOf("") }
     var showMapPicker by remember { mutableStateOf(false) }
@@ -165,21 +166,21 @@ fun CreateEventScreen(
                 expanded = locationDropdownExpanded,
                 onExpandedChange = { locationDropdownExpanded = it },
             ) {
-                OutlinedTextField(
-                    value = locationText,
-                    onValueChange = { locationText = it },
-                    label = { Text("Location") },
-                    trailingIcon = {
+            OutlinedTextField(
+                value = locationText,
+                onValueChange = { locationText = it },
+                label = { Text("Location") },
+                trailingIcon = {
                         IconButton(
                             onClick = {
-                                val fields = listOf(Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
-                                val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields).build(context)
-                                placeLauncher.launch(intent)
+                        val fields = listOf(Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
+                        val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields).build(context)
+                        placeLauncher.launch(intent)
                             },
                         ) {
-                            Icon(Icons.Default.Search, contentDescription = "Search location")
-                        }
-                    },
+                        Icon(Icons.Default.Search, contentDescription = "Search location")
+                    }
+                },
                     colors = ExposedDropdownMenuDefaults.textFieldColors(),
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
                     singleLine = true,
@@ -289,6 +290,28 @@ fun CreateEventScreen(
                 }
             }
 
+            // Karma Points Slider
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Karma Points: $karmaPoints",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Slider(
+                    value = karmaPoints.toFloat(),
+                    onValueChange = { karmaPoints = (it.toInt() / 10) * 10 }, // Round to nearest 10
+                    valueRange = 10f..200f,
+                    steps = 18, // (200-10)/10 - 1 = 18 steps
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "Volunteers will earn $karmaPoints karma points for completing this event",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             PrimaryButton(
@@ -307,6 +330,7 @@ fun CreateEventScreen(
                             requirements = emptyList(),
                             latitude = latitudeText.toDoubleOrNull(),
                             longitude = longitudeText.toDoubleOrNull(),
+                            karmaPoints = karmaPoints,
                         )
                         val created = viewModel.createEvent(data)
 

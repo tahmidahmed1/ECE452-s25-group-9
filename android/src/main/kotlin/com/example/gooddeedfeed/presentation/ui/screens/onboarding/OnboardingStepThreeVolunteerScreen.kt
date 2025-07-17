@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
@@ -308,7 +309,10 @@ fun OnboardingStepThreeVolunteerScreen(
 
                 OutlinedTextField(
                     value = emergencyContactPhone,
-                    onValueChange = { emergencyContactPhone = it },
+                    onValueChange = { input ->
+                        val digits = input.filter { it.isDigit() }
+                        emergencyContactPhone = ImageUtils.formatPhoneNumber(digits)
+                    },
                     label = { Text("Emergency Contact Phone") },
                     placeholder = { Text("Phone number") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -316,6 +320,14 @@ fun OnboardingStepThreeVolunteerScreen(
                     shape = RoundedCornerShape(12.dp),
                     isError = validationErrors["emergencyPhone"] != null,
                     supportingText = validationErrors["emergencyPhone"]?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
+                )
+
+                Text(
+                    text = "Only +1 North American phone numbers are supported",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start,
                 )
 
                 VerticalSpacer(SpacingSize.Large)

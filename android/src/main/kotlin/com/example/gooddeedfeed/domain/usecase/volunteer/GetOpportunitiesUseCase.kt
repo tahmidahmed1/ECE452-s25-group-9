@@ -3,6 +3,7 @@ package com.example.gooddeedfeed.domain.usecase.volunteer
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -30,5 +31,14 @@ class GetOpportunitiesUseCase @Inject constructor(
         radiusKm: Double,
     ): Flow<List<VolunteerOpportunity>> {
         return repository.getOpportunitiesNearLocation(latitude, longitude, radiusKm)
+    }
+
+    suspend fun getOpportunitiesWithFilters(
+        lat: Double?,
+        lon: Double?,
+        radiusKm: Float,
+        filters: OpportunityFilters
+    ): Flow<List<VolunteerOpportunity>> {
+        return repository.getOpportunitiesWithFilters(lat, lon, radiusKm, filters)
     }
 } 

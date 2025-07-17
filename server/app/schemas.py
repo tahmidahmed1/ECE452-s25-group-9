@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from pydantic import BaseModel, HttpUrl, EmailStr
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
@@ -7,18 +7,39 @@ from enum import Enum
 class UserType(str, Enum):
     VOLUNTEER = "volunteer"
     ORGANIZER = "organizer"
-    INSTITUTION = "institution"
 
-class InstitutionName(str, Enum):
-    INSTITUTION_1 = "Institution 1"
-    INSTITUTION_2 = "Institution 2"
-    INSTITUTION_3 = "Institution 3"
+
+class OpportunityCategory(str, Enum):
+    COMMUNITY_SERVICE = "community_service"
+    EDUCATION = "education"
+    ENVIRONMENTAL = "environmental"
+    HEALTHCARE = "healthcare"
+    SOCIAL_SERVICES = "social_services"
+    DISASTER_RELIEF = "disaster_relief"
+    OTHER = "other"
+
+class OrganizationType(str, Enum):
+    NON_PROFIT = "non_profit"
+    SCHOOL_GROUP = "school_group"
+    CLUB = "club"
+    CHARITY = "charity"
+    CUSTOM = "custom"
 
 class Sex(str, Enum):
     MALE = "male"
     FEMALE = "female"
     NON_BINARY = "non_binary"
     PREFER_NOT_TO_SAY = "prefer_not_to_say"
+
+class SocialMediaPlatform(str, Enum):
+    INSTAGRAM = "instagram"
+    FACEBOOK = "facebook"
+    TWITTER = "twitter"
+    LINKEDIN = "linkedin"
+
+class SocialMediaLink(BaseModel):
+    platform: SocialMediaPlatform
+    url: HttpUrl
 
 # User schemas
 class UserBase(BaseModel):
@@ -36,8 +57,16 @@ class User(UserBase):
     full_name: Optional[str] = None
     phone: Optional[str] = None
     profile_picture_url: Optional[str] = None
+    banner_url: Optional[str] = None
+    
+    # Organization fields (for organizers)
     organization_name: Optional[str] = None
-    institution_name: Optional[InstitutionName] = None
+    organization_type: Optional[OrganizationType] = None
+    organization_description: Optional[str] = None
+    organization_website: Optional[HttpUrl] = None
+    organization_social_media: Optional[List[SocialMediaLink]] = None
+    organization_images: Optional[List[str]] = None
+    organization_custom_type: Optional[str] = None
     
     # Enhanced volunteer profile fields
     sex: Optional[Sex] = None
@@ -49,6 +78,9 @@ class User(UserBase):
     location_area: Optional[str] = None
     has_drivers_license: Optional[bool] = None
     disabilities: Optional[str] = None
+    
+    # Karma points for leaderboard
+    karma_points: int = 0
 
     class Config:
         from_attributes = True
@@ -74,17 +106,23 @@ class OnboardingStepTwoOrganizer(BaseModel):
     full_name: str
     phone: str
     organization_name: str
-
-class OnboardingStepTwoInstitution(BaseModel):
-    full_name: str
-    phone: str
-    institution_name: InstitutionName
+    organization_type: OrganizationType
+    organization_description: Optional[str] = None
+    organization_website: Optional[HttpUrl] = None
+    organization_social_media: Optional[List[SocialMediaLink]] = None
+    organization_images: Optional[List[str]] = None
+    organization_custom_type: Optional[str] = None
 
 class OnboardingComplete(BaseModel):
-    full_name: str
+    full_name: Optional[str] = None
     phone: str
     organization_name: Optional[str] = None
-    institution_name: Optional[InstitutionName] = None
+    organization_type: Optional[OrganizationType] = None
+    organization_description: Optional[str] = None
+    organization_website: Optional[HttpUrl] = None
+    organization_social_media: Optional[List[SocialMediaLink]] = None
+    organization_images: Optional[List[str]] = None
+    organization_custom_type: Optional[str] = None
     # Volunteer-specific fields
     sex: Optional[Sex] = None
     description: Optional[str] = None
@@ -104,12 +142,13 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
 
-class Institution(BaseModel):
-    name: str
-    value: str
-
 class ProfilePictureUploadResponse(BaseModel):
     profile_picture_url: str
+    message: str
+
+# Separate response for banner uploads
+class ProfileBannerUploadResponse(BaseModel):
+    banner_url: str
     message: str
 
 # ------------------ Profile Update ------------------
@@ -119,9 +158,14 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
 
-    # Organizer / Institution specific
+    # Organizer specific
     organization_name: Optional[str] = None
-    institution_name: Optional[InstitutionName] = None
+    organization_type: Optional[OrganizationType] = None
+    organization_description: Optional[str] = None
+    organization_website: Optional[HttpUrl] = None
+    organization_social_media: Optional[List[SocialMediaLink]] = None
+    organization_images: Optional[List[str]] = None
+    organization_custom_type: Optional[str] = None
 
     # Volunteer-specific optional fields
     sex: Optional[Sex] = None
@@ -153,6 +197,12 @@ class EventBase(BaseModel):
     max_volunteers: Optional[int] = None
     current_volunteers: Optional[int] = None
 
+    # Event category
+    category: OpportunityCategory = OpportunityCategory.OTHER
+
+    # Karma points awarded to volunteers who complete this event
+    karma_points: int = 10
+
 class EventCreate(EventBase):
     pass
 
@@ -162,7 +212,7 @@ class EventOut(EventBase):
     organizer_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Backwards compatibility alias used in routes
 class EventSchema(EventOut):
@@ -187,4 +237,95 @@ class MessageOut(MessageBase):
     sent_at: datetime
 
     class Config:
-        orm_mode = True 
+        from_attributes = True
+
+# Leaderboard schemas
+class LeaderboardEntry(BaseModel):
+    id: int
+    username: str
+    full_name: Optional[str] = None
+    karma_points: int
+    profile_picture_url: Optional[str] = None
+    user_type: Optional[UserType] = None
+    rank: int
+
+    class Config:
+        from_attributes = True
+
+class LeaderboardResponse(BaseModel):
+    entries: List[LeaderboardEntry]
+    page: int
+    page_size: int
+    total_pages: int
+    total_entries: int
+    has_next: bool
+    has_previous: bool 
+
+# ------------------ Badge Schemas ------------------
+
+class BadgeBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    required_karma_points: int
+    icon_name: str
+    color: Optional[str] = None
+
+class Badge(BadgeBase):
+    id: int
+    is_active: bool = True
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class UserBadge(BaseModel):
+    badge: Badge
+    earned_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class BadgeAchievement(BaseModel):
+    badge_id: int
+    badge_name: str
+    description: str
+    icon_name: str
+    color: Optional[str] = None
+    earned_at: datetime
+
+class BadgeCheckResponse(BaseModel):
+    newly_earned_badges: List[BadgeAchievement]
+    total_badges_earned: int
+    next_badge: Optional[Badge] = None 
+    
+    class Config:
+        from_attributes = True
+
+
+# ------------------ Subscription Schemas ------------------
+
+class SubscriptionCreate(BaseModel):
+    organizer_id: int
+
+class SubscriptionResponse(BaseModel):
+    success: bool
+    message: str
+    is_subscribed: bool
+
+class SubscriptionStatus(BaseModel):
+    organizer_id: int
+    is_subscribed: bool
+    subscribed_at: Optional[datetime] = None
+
+class UserSubscriptionsResponse(BaseModel):
+    subscriptions: List[User]  # List of organizers the user is subscribed to
+    
+    class Config:
+        from_attributes = True
+
+class OrganizerWithSubscriptionStatus(User):
+    is_subscribed: bool = False
+    subscriber_count: int = 0
+    
+    class Config:
+        from_attributes = True

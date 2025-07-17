@@ -1,53 +1,28 @@
 package com.example.gooddeedfeed.domain.repository
 
-import com.example.gooddeedfeed.domain.model.DomainAuthResponse
-import com.example.gooddeedfeed.domain.model.DomainInstitutionName
-import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
-import kotlinx.coroutines.flow.Flow
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import java.io.File
 
 interface AuthRepository {
-    suspend fun signUp(
-        username: String,
-        email: String,
-        password: String,
-    ): Flow<Result<DomainAuthResponse>>
-
-    suspend fun signIn(
-        username: String,
-        password: String,
-    ): Flow<Result<DomainAuthResponse>>
-
-    suspend fun signOut(): Flow<Result<Unit>>
-
-    fun getToken(): Flow<String?>
-
-    suspend fun getCurrentUser(): Flow<Result<DomainUser>>
-
-    // Onboarding methods
-    suspend fun updateUserType(userType: DomainUserType): Result<Unit>
-
-    suspend fun completeOnboarding(
-        userType: DomainUserType,
-        fullName: String,
-        phone: String,
-        organizationName: String?,
-        institutionName: DomainInstitutionName?,
-        profilePictureUrl: String? = null,
+    suspend fun signUp(username: String, email: String, password: String): Result<DomainUser>
+    suspend fun signIn(username: String, password: String): Result<DomainUser>
+    suspend fun signOut(): Result<Unit>
+    suspend fun getCurrentUser(): Result<DomainUser>
+    suspend fun setUserType(userType: DomainUserType): Result<Unit>
+    suspend fun uploadProfilePicture(file: File): Result<String>
+    suspend fun uploadBannerImage(file: File): Result<String>
+    suspend fun uploadOrganizationImages(files: List<File>): Result<List<String>>
+    suspend fun completeOrganizerOnboarding(
+        profile: DomainOrganizerProfile,
+        profilePictureFile: File?
     ): Result<Unit>
-
     suspend fun completeVolunteerOnboarding(
-        volunteerProfile: DomainVolunteerProfile,
-        profilePictureUrl: String? = null,
+        profile: DomainVolunteerProfile,
+        profilePictureFile: File?
     ): Result<Unit>
-
-    // Profile picture upload
-    suspend fun uploadProfilePicture(file: File): Flow<Result<DomainProfilePictureUploadResponse>>
-
-    // Profile editing
-    suspend fun updateUserProfile(update: DomainUserUpdate): Result<Unit>
+    suspend fun updateProfile(updates: DomainUserUpdate): Result<DomainUser>
 }

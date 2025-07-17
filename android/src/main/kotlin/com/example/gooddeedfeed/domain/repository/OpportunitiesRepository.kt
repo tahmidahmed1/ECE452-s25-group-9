@@ -3,6 +3,7 @@ package com.example.gooddeedfeed.domain.repository
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -33,6 +34,16 @@ interface OpportunitiesRepository {
         latitude: Double,
         longitude: Double,
         radiusKm: Double,
+    ): Flow<List<VolunteerOpportunity>>
+
+    /**
+     * Get opportunities with filters applied
+     */
+    suspend fun getOpportunitiesWithFilters(
+        lat: Double? = null,
+        lon: Double? = null,
+        radiusKm: Float = 50f,
+        filters: OpportunityFilters
     ): Flow<List<VolunteerOpportunity>>
 
     /**

@@ -111,6 +111,9 @@ fun EventManagementScreen(
         }
 
         when (val currentState = uiState) {
+            is UiState.Idle -> {
+                // Idle state – nothing to show yet
+            }
             is UiState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -285,6 +288,19 @@ private fun EventCard(
                     Text(
                         text = "${event.currentVolunteers}/${event.maxVolunteers}",
                         style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = "Karma Points",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "${event.karmaPoints}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }

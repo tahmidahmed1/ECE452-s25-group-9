@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 class ObjectStorageService:
     def __init__(self):
         self.endpoint = os.getenv("MINIO_ENDPOINT", "localhost:9001")
+        # Public endpoint visible to clients (e.g. phone/emulator)
+        # Defaults to localhost:9001 so URL resolves on host machine;
+        # override with MINIO_PUBLIC_ENDPOINT when deploying elsewhere.
+        self.public_endpoint = os.getenv("MINIO_PUBLIC_ENDPOINT", "localhost:9001")
         self.access_key = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
         self.secret_key = os.getenv("MINIO_SECRET_KEY", "minioadmin123")
         self.bucket_name = os.getenv("MINIO_BUCKET_NAME", "profile-pictures")
@@ -121,7 +125,7 @@ class ObjectStorageService:
             )
             
             # Generate public URL
-            url = f"http://{self.endpoint}/{self.bucket_name}/{filename}"
+            url = f"http://{self.public_endpoint}/{self.bucket_name}/{filename}"
             logger.info(f"Uploaded profile picture: {url}")
             
             return url
@@ -147,6 +151,42 @@ class ObjectStorageService:
         except Exception as e:
             logger.error(f"Unexpected error deleting image: {e}")
             return False
+
+    # ---------------- Banner Images ---------------- #
+
+    async def upload_profile_banner(self, file: UploadFile, user_id: int) -> str:
+        """Upload a profile banner image and return the URL"""
+        # Validate file
+        if not self._validate_image(file):
+            raise HTTPException(status_code=400, detail="Invalid image file")
+
+        # Max 5MB
+        if file.size and file.size > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB")
+
+        try:
+            file_extension = "jpg"
+            filename = f"banner_{user_id}_{uuid.uuid4().hex}.{file_extension}"
+
+            resized = self._resize_image(file, max_size=(1000, 400))  # Wider aspect for banners
+
+            self.client.put_object(
+                self.bucket_name,
+                filename,
+                resized,
+                length=resized.getbuffer().nbytes,
+                content_type="image/jpeg",
+            )
+
+            url = f"http://{self.public_endpoint}/{self.bucket_name}/{filename}"
+            logger.info(f"Uploaded profile banner: {url}")
+            return url
+        except S3Error as e:
+            logger.error(f"Error uploading banner to MinIO: {e}")
+            raise HTTPException(status_code=500, detail="Failed to upload image")
+        except Exception as e:
+            logger.error(f"Unexpected error uploading banner image: {e}")
+            raise HTTPException(status_code=500, detail="Failed to upload image")
 
     # ---------------- Event Images ---------------- #
 
@@ -174,7 +214,7 @@ class ObjectStorageService:
                 content_type="image/jpeg",
             )
 
-            url = f"http://{self.endpoint}/{self.bucket_name}/{filename}"
+            url = f"http://{self.public_endpoint}/{self.bucket_name}/{filename}"
             logger.info(f"Uploaded event image: {url}")
             return url
         except S3Error as e:

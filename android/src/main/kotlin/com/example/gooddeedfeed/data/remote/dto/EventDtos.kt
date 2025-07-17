@@ -27,6 +27,7 @@ data class EventDto(
     val image_url: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    val karma_points: Int = 10,
 )
 
 fun EventDto.toDomain(): VolunteerEvent = VolunteerEvent(
@@ -48,6 +49,7 @@ fun EventDto.toDomain(): VolunteerEvent = VolunteerEvent(
     updatedAt = updated_at ?: "",
     latitude = latitude ?: 0.0,
     longitude = longitude ?: 0.0,
+    karmaPoints = karma_points,
 )
 
 fun CreateEventData.toDto(): EventDto = EventDto(
@@ -62,4 +64,5 @@ fun CreateEventData.toDto(): EventDto = EventDto(
     requirements = requirements,
     latitude = latitude,
     longitude = longitude,
+    karma_points = karmaPoints,
 ) 
