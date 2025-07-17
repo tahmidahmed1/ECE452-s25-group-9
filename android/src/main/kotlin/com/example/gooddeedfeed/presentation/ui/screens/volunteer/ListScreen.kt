@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FilterList
@@ -31,7 +32,11 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,7 +47,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,6 +75,7 @@ import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.FiltersDrawer
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.OpportunitiesList
 import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
+import com.example.gooddeedfeed.presentation.ui.theme.CornerRadius
 import com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.SubscriptionViewModel
@@ -133,9 +138,17 @@ fun ListScreen(
                     onSubscriptionToggle = {
                         if (selectedOrganizer!!.isSubscribed) {
                             subscriptionViewModel.unsubscribeFromOrganizer(selectedOrganizer!!.id)
+                            selectedOrganizer = selectedOrganizer!!.copy(
+                                isSubscribed = false,
+                                subscriberCount = selectedOrganizer!!.subscriberCount - 1
+                            )
                             ToastManager.showSuccess("Unsubscribed from ${selectedOrganizer!!.organizationName ?: selectedOrganizer!!.fullName ?: selectedOrganizer!!.username}")
                         } else {
                             subscriptionViewModel.subscribeToOrganizer(selectedOrganizer!!.id)
+                            selectedOrganizer = selectedOrganizer!!.copy(
+                                isSubscribed = true,
+                                subscriberCount = selectedOrganizer!!.subscriberCount + 1
+                            )
                             ToastManager.showSuccess("Subscribed to ${selectedOrganizer!!.organizationName ?: selectedOrganizer!!.fullName ?: selectedOrganizer!!.username}")
                         }
                     },
@@ -315,8 +328,8 @@ private fun HeaderSection(
 
             IconButton(onClick = onChatClick) {
                 Icon(
-                    imageVector = Icons.Default.Chat,
-                    contentDescription = "Chat",
+                    imageVector = Icons.Default.List,
+                    contentDescription = "List",
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -378,6 +391,35 @@ private fun OrganizerCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            // Profile image
+            if (organizer.profilePictureUrl != null && organizer.profilePictureUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = organizer.profilePictureUrl,
+                    contentDescription = "Profile picture",
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Default Profile Picture",
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = organizer.organizationName ?: organizer.fullName ?: organizer.username,
@@ -399,16 +441,35 @@ private fun OrganizerCard(
                     )
                 }
             }
-            Button(
+            
+            OutlinedButton(
                 onClick = onSubscriptionClick,
                 modifier = Modifier.padding(start = 8.dp),
+                shape = RoundedCornerShape(CornerRadius.medium),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (organizer.isSubscribed) 
+                        MaterialTheme.colorScheme.surface 
+                    else 
+                        Color.Transparent,
+                    contentColor = if (organizer.isSubscribed)
+                        MaterialTheme.colorScheme.onSurface
+                    else
+                        MaterialTheme.colorScheme.primary
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (organizer.isSubscribed)
+                        MaterialTheme.colorScheme.outline
+                    else
+                        MaterialTheme.colorScheme.primary
+                ),
             ) {
                 Icon(
                     imageVector = if (organizer.isSubscribed) Icons.Default.Check else Icons.Default.Add,
                     contentDescription = null,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(if (organizer.isSubscribed) "Subscribed" else "Subscribe")
+                Text(if (organizer.isSubscribed) "Unsubscribe" else "Subscribe")
             }
         }
     }
@@ -606,21 +667,45 @@ private fun OrganizerProfileScreen(
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Button(
+            OutlinedButton(
                 onClick = onSubscriptionToggle,
                 modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(CornerRadius.medium),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (organizer.isSubscribed) 
+                        MaterialTheme.colorScheme.surface 
+                    else 
+                        Color.Transparent,
+                    contentColor = if (organizer.isSubscribed)
+                        MaterialTheme.colorScheme.onSurface
+                    else
+                        MaterialTheme.colorScheme.primary
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (organizer.isSubscribed)
+                        MaterialTheme.colorScheme.outline
+                    else
+                        MaterialTheme.colorScheme.primary
+                ),
             ) {
                 Icon(
                     imageVector = if (organizer.isSubscribed) Icons.Default.Check else Icons.Default.Add,
                     contentDescription = null,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(if (organizer.isSubscribed) "Subscribed" else "Subscribe")
+                Text(if (organizer.isSubscribed) "Unsubscribe" else "Subscribe")
             }
 
-            Button(
+            OutlinedButton(
                 onClick = onMessage,
                 modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(CornerRadius.medium),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             ) {
                 Icon(Icons.Default.Chat, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
@@ -760,15 +845,27 @@ private fun MessageDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = onSend,
                 enabled = messageText.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(CornerRadius.medium),
             ) {
                 Text("Send")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            OutlinedButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                shape = RoundedCornerShape(CornerRadius.medium),
+            ) {
                 Text("Cancel")
             }
         },

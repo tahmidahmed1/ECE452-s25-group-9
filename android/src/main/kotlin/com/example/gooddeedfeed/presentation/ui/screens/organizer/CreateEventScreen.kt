@@ -5,17 +5,38 @@ import android.location.Geocoder
 import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Emergency
+import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Nature
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.*
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -23,6 +44,7 @@ import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.ui.theme.CornerRadius
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -41,6 +63,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,6 +80,9 @@ fun CreateEventScreen(
     var date by remember { mutableStateOf("") }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
     var maxVolunteersText by remember { mutableStateOf("") }
     var category by remember { mutableStateOf(OpportunityCategory.OTHER) }
     var karmaPoints by remember { mutableStateOf(10) }
@@ -67,6 +94,11 @@ fun CreateEventScreen(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    
+    // Date and time picker states
+    val datePickerState = rememberDatePickerState()
+    val startTimePickerState = rememberTimePickerState()
+    val endTimePickerState = rememberTimePickerState()
 
     // Launcher for Google Places Autocomplete
     val placeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -121,7 +153,7 @@ fun CreateEventScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .padding(16.dp)
                 .padding(bottom = padding.calculateBottomPadding())
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -129,22 +161,25 @@ fun CreateEventScreen(
             // Title row (aligned with Manage Events style)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 8.dp),
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.primary,
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Create Event",
+                        style = MaterialTheme.typography.headlineMedium,
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Create Event",
-                    style = MaterialTheme.typography.headlineMedium,
-                )
             }
 
             OutlinedTextField(
@@ -152,6 +187,7 @@ fun CreateEventScreen(
                 onValueChange = { title = it },
                 label = { Text("Title") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
             )
 
             OutlinedTextField(
@@ -159,71 +195,83 @@ fun CreateEventScreen(
                 onValueChange = { description = it },
                 label = { Text("Description") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
             )
 
-            // Location input with autocomplete
-            ExposedDropdownMenuBox(
-                expanded = locationDropdownExpanded,
-                onExpandedChange = { locationDropdownExpanded = it },
+            // Location input with autocomplete and map button
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = locationText,
-                    onValueChange = { locationText = it },
-                    label = { Text("Location") },
-                    trailingIcon = {
-                        IconButton(
-                            onClick = {
-                                val fields = listOf(Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
-                                val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields).build(context)
-                                placeLauncher.launch(intent)
-                            },
-                        ) {
-                            Icon(Icons.Default.Search, contentDescription = "Search location")
-                        }
-                    },
-                    colors = ExposedDropdownMenuDefaults.textFieldColors(),
-                    modifier = Modifier.menuAnchor().fillMaxWidth(),
-                    singleLine = true,
-                )
-
-                ExposedDropdownMenu(
+                ExposedDropdownMenuBox(
                     expanded = locationDropdownExpanded,
-                    onDismissRequest = { locationDropdownExpanded = false },
+                    onExpandedChange = { locationDropdownExpanded = it },
+                    modifier = Modifier.weight(1f)
                 ) {
-                    predictions.forEach { prediction ->
-                        DropdownMenuItem(
-                            text = { Text(prediction.getFullText(null).toString()) },
-                            onClick = {
-                                locationText = prediction.getFullText(null).toString()
-                                locationDropdownExpanded = false
-                                scope.launch {
-                                    try {
-                                        val placeRequest = FetchPlaceRequest.builder(
-                                            prediction.placeId,
-                                            listOf(Place.Field.LAT_LNG),
-                                        ).build()
-                                        val placeResult = placesClient.fetchPlace(placeRequest).await()
-                                        placeResult.place.latLng?.let {
-                                            latitudeText = it.latitude.toString()
-                                            longitudeText = it.longitude.toString()
+                    OutlinedTextField(
+                        value = locationText,
+                        onValueChange = { locationText = it },
+                        label = { Text("Location") },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    val fields = listOf(Place.Field.ID, Place.Field.ADDRESS, Place.Field.LAT_LNG)
+                                    val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields).build(context)
+                                    placeLauncher.launch(intent)
+                                },
+                            ) {
+                                Icon(Icons.Default.Search, contentDescription = "Search location")
+                            }
+                        },
+                        colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = locationDropdownExpanded,
+                        onDismissRequest = { locationDropdownExpanded = false },
+                    ) {
+                        predictions.forEach { prediction ->
+                            DropdownMenuItem(
+                                text = { Text(prediction.getFullText(null).toString()) },
+                                onClick = {
+                                    locationText = prediction.getFullText(null).toString()
+                                    locationDropdownExpanded = false
+                                    scope.launch {
+                                        try {
+                                            val placeRequest = FetchPlaceRequest.builder(
+                                                prediction.placeId,
+                                                listOf(Place.Field.LAT_LNG),
+                                            ).build()
+                                            val placeResult = placesClient.fetchPlace(placeRequest).await()
+                                            placeResult.place.latLng?.let {
+                                                latitudeText = it.latitude.toString()
+                                                longitudeText = it.longitude.toString()
+                                            }
+                                        } catch (_: Exception) {
+                                            // Ignore errors fetching place details
                                         }
-                                    } catch (_: Exception) {
-                                        // Ignore errors fetching place details
                                     }
-                                }
-                            },
-                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
-                        )
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                            )
+                        }
                     }
                 }
-            }
-
-            // Map picker button
-            OutlinedButton(
-                onClick = { showMapPicker = true },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Select Location on Map")
+                
+                // Map picker button
+                OutlinedButton(
+                    onClick = { showMapPicker = true },
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Select on Map",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             // Image picker
@@ -236,31 +284,84 @@ fun CreateEventScreen(
 
             OutlinedTextField(
                 value = date,
-                onValueChange = { date = it },
-                label = { Text("Date (YYYY-MM-DD)") },
-                modifier = Modifier.fillMaxWidth(),
+                onValueChange = { },
+                label = { Text("Date") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true }
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            showDatePicker = true
+                        }
+                    },
+                shape = RoundedCornerShape(12.dp),
+                readOnly = true,
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                    }
+                }
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = startTime,
-                    onValueChange = { startTime = it },
-                    label = { Text("Start Time (HH:MM)") },
-                    modifier = Modifier.weight(1f),
+                    onValueChange = { },
+                    label = { Text("Start Time") },
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { showStartTimePicker = true }
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                showStartTimePicker = true
+                            }
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    readOnly = true,
+                    trailingIcon = {
+                        IconButton(onClick = { showStartTimePicker = true }) {
+                            Icon(Icons.Default.Schedule, contentDescription = "Select Start Time")
+                        }
+                    }
                 )
                 OutlinedTextField(
                     value = endTime,
-                    onValueChange = { endTime = it },
-                    label = { Text("End Time (HH:MM)") },
-                    modifier = Modifier.weight(1f),
+                    onValueChange = { },
+                    label = { Text("End Time") },
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { showEndTimePicker = true }
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                showEndTimePicker = true
+                            }
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    readOnly = true,
+                    trailingIcon = {
+                        IconButton(onClick = { showEndTimePicker = true }) {
+                            Icon(Icons.Default.Schedule, contentDescription = "Select End Time")
+                        }
+                    }
                 )
             }
 
             OutlinedTextField(
                 value = maxVolunteersText,
-                onValueChange = { maxVolunteersText = it.filter { c -> c.isDigit() } },
-                label = { Text("Max Volunteers") },
+                onValueChange = { input ->
+                    val digits = input.filter { c -> c.isDigit() }
+                    val number = digits.toIntOrNull()
+                    maxVolunteersText = when {
+                        digits.isEmpty() -> ""
+                        number == null -> maxVolunteersText
+                        number == 0 -> "1"
+                        number > 100 -> "100"
+                        else -> digits
+                    }
+                },
+                label = { Text("Max Volunteers (1-100)") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
             )
 
             // Category dropdown
@@ -270,6 +371,19 @@ fun CreateEventScreen(
                     word.lowercase().replaceFirstChar { ch -> ch.titlecase() }
                 }
             }
+            
+            val getCategoryIcon: (OpportunityCategory) -> androidx.compose.ui.graphics.vector.ImageVector = { cat ->
+                when (cat) {
+                    OpportunityCategory.COMMUNITY_SERVICE -> Icons.Default.Group
+                    OpportunityCategory.EDUCATION -> Icons.Default.Book
+                    OpportunityCategory.ENVIRONMENTAL -> Icons.Default.Nature
+                    OpportunityCategory.HEALTHCARE -> Icons.Default.LocalHospital
+                    OpportunityCategory.SOCIAL_SERVICES -> Icons.Default.VolunteerActivism
+                    OpportunityCategory.DISASTER_RELIEF -> Icons.Default.Emergency
+                    OpportunityCategory.FOOD_SECURITY -> Icons.Default.Fastfood
+                    OpportunityCategory.OTHER -> Icons.Default.MoreHoriz
+                }
+            }
 
             ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                 OutlinedTextField(
@@ -277,21 +391,46 @@ fun CreateEventScreen(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Category") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = getCategoryIcon(category),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                 )
                 ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     OpportunityCategory.values().forEach { cat ->
-                        DropdownMenuItem(text = { Text(displayName(cat)) }, onClick = {
-                            category = cat
-                            expanded = false
-                        })
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = getCategoryIcon(cat),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(displayName(cat))
+                                }
+                            }, 
+                            onClick = {
+                                category = cat
+                                expanded = false
+                            }
+                        )
                     }
                 }
             }
 
             // Karma Points Slider
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 Text(
                     text = "Karma Points: $karmaPoints",
                     style = MaterialTheme.typography.labelLarge,
@@ -370,6 +509,154 @@ fun CreateEventScreen(
             onDismiss = { showMapPicker = false },
         )
     }
+    
+    // Date Picker Dialog
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val formatter = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
+                            date = formatter.format(millis)
+                        }
+                        showDatePicker = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(CornerRadius.medium),
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showDatePicker = false },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(CornerRadius.medium),
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    Text("Cancel")
+                }
+            },
+            colors = DatePickerDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                headlineContentColor = MaterialTheme.colorScheme.onSurface
+            )
+        ) {
+            DatePicker(
+                state = datePickerState,
+                colors = DatePickerDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    headlineContentColor = MaterialTheme.colorScheme.onSurface,
+                    weekdayContentColor = MaterialTheme.colorScheme.onSurface,
+                    subheadContentColor = MaterialTheme.colorScheme.onSurface,
+                    yearContentColor = MaterialTheme.colorScheme.onSurface,
+                    currentYearContentColor = MaterialTheme.colorScheme.primary,
+                    selectedYearContentColor = MaterialTheme.colorScheme.onPrimary,
+                    selectedYearContainerColor = MaterialTheme.colorScheme.primary,
+                    dayContentColor = MaterialTheme.colorScheme.onSurface,
+                    selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
+                    selectedDayContainerColor = MaterialTheme.colorScheme.primary,
+                    todayContentColor = MaterialTheme.colorScheme.primary,
+                    todayDateBorderColor = MaterialTheme.colorScheme.primary
+                )
+            )
+        }
+    }
+    
+    // Start Time Picker Dialog
+    if (showStartTimePicker) {
+        CustomTimePickerDialog(
+            onDismissRequest = { showStartTimePicker = false },
+            onConfirm = { hour, minute ->
+                val calendar = Calendar.getInstance()
+                calendar.set(Calendar.HOUR_OF_DAY, hour)
+                calendar.set(Calendar.MINUTE, minute)
+                val formatter = SimpleDateFormat("h:mm a", Locale.getDefault())
+                startTime = formatter.format(calendar.time)
+                showStartTimePicker = false
+            },
+            timePickerState = startTimePickerState
+        )
+    }
+    
+    // End Time Picker Dialog
+    if (showEndTimePicker) {
+        CustomTimePickerDialog(
+            onDismissRequest = { showEndTimePicker = false },
+            onConfirm = { hour, minute ->
+                val calendar = Calendar.getInstance()
+                calendar.set(Calendar.HOUR_OF_DAY, hour)
+                calendar.set(Calendar.MINUTE, minute)
+                val formatter = SimpleDateFormat("h:mm a", Locale.getDefault())
+                endTime = formatter.format(calendar.time)
+                showEndTimePicker = false
+            },
+            timePickerState = endTimePickerState
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomTimePickerDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: (Int, Int) -> Unit,
+    timePickerState: TimePickerState
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm(timePickerState.hour, timePickerState.minute)
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(CornerRadius.medium),
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismissRequest,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                shape = RoundedCornerShape(CornerRadius.medium),
+            ) {
+                Text("Cancel")
+            }
+        },
+        text = {
+            TimePicker(
+                state = timePickerState,
+                colors = TimePickerDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    selectorColor = MaterialTheme.colorScheme.primary,
+                    clockDialColor = MaterialTheme.colorScheme.surfaceVariant,
+                    timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.primary,
+                    timeSelectorSelectedContentColor = MaterialTheme.colorScheme.onPrimary,
+                    timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
+    )
 }
 
 @Composable

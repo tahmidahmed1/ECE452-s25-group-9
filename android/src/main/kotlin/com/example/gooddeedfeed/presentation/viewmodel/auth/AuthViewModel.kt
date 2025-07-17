@@ -73,8 +73,18 @@ constructor(
 
                 result.onSuccess { response ->
                     Log.d(TAG, "✅ DevMode signUp successful")
-                    Log.d(TAG, "🔄 Fetching user details...")
-                    fetchUser()
+                    Log.d(TAG, "🔄 Setting user type to: $userType")
+                    
+                    // Set the user type after successful signup
+                    authRepository.setUserType(userType).onSuccess {
+                        Log.d(TAG, "✅ User type set successfully")
+                        Log.d(TAG, "🔄 Fetching user details...")
+                        fetchUser()
+                    }.onFailure { error ->
+                        Log.e(TAG, "❌ Failed to set user type", error)
+                        val detailedMessage = "Failed to set user type: ${error.message ?: "Unknown error"}"
+                        _uiState.value = AuthUiState.Error(detailedMessage)
+                    }
                 }.onFailure { error ->
                     Log.e(TAG, "❌ DevMode signUp failed", error)
                     val detailedMessage = "Dev mode sign-in failed: ${error.message ?: "Unknown error"}"
