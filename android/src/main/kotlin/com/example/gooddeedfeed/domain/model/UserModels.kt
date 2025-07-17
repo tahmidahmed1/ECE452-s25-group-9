@@ -15,6 +15,7 @@ data class DomainUser(
     val fullName: String? = null,
     val phone: String? = null,
     val profilePictureUrl: String? = null,
+    val shareProfilePicture: Boolean = true,
     val bannerUrl: String? = null,
     val organizationName: String? = null,
     val organizationType: OrganizationType? = null,
@@ -86,6 +87,7 @@ data class DomainOrganizerProfile(
 data class DomainUserUpdate(
     val fullName: String? = null,
     val phone: String? = null,
+    val shareProfilePicture: Boolean? = null,
     val organizationName: String? = null,
     val organizationType: OrganizationType? = null,
     val organizationDescription: String? = null,

@@ -31,6 +31,7 @@ fun UserDto.toDomain(): DomainUser {
         fullName = full_name,
         phone = phone,
         profilePictureUrl = profile_picture_url,
+        shareProfilePicture = share_profile_picture,
         bannerUrl = banner_url,
         organizationName = organization_name,
         organizationType = organization_type?.toDomain(),
@@ -58,6 +59,7 @@ fun DomainUserUpdate.toDto(): UserUpdateDto {
     return UserUpdateDto(
         full_name = fullName,
         phone = phone,
+        share_profile_picture = shareProfilePicture,
         organization_name = organizationName,
         organization_type = organizationType?.toDto(),
         organization_description = organizationDescription,

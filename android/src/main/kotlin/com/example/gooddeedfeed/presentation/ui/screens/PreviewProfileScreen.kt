@@ -100,13 +100,22 @@ private fun BasicInfoCard(user: DomainUser) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+            user.fullName?.let { fullName ->
+                Text(
+                    text = fullName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+            }
             Text(
-                text = user.fullName ?: user.username,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = "@${user.username}",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = user.email,
                 style = MaterialTheme.typography.bodyMedium,

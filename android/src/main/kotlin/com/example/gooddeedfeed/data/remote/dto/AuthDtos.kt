@@ -69,6 +69,7 @@ data class UserDto(
     val full_name: String? = null,
     val phone: String? = null,
     val profile_picture_url: String? = null,
+    val share_profile_picture: Boolean = true,
     val banner_url: String? = null,
     val organization_name: String? = null,
     val organization_type: OrganizationTypeDto? = null,
@@ -108,6 +109,7 @@ data class OnboardingStepTwoOrganizerDto(
 data class UserUpdateDto(
     val full_name: String? = null,
     val phone: String? = null,
+    val share_profile_picture: Boolean? = null,
     val organization_name: String? = null,
     val organization_type: OrganizationTypeDto? = null,
     val organization_description: String? = null,

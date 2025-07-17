@@ -6,10 +6,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -43,12 +45,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RangeSlider
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.domain.model.DateFilter
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
@@ -183,16 +187,49 @@ fun OpportunitiesList(
     onJoinOpportunity: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(16.dp),
-    ) {
-        items(opportunities) { opportunity ->
-            OpportunityCard(
-                opportunity = opportunity,
-                onJoinClick = { onJoinOpportunity(opportunity.id) },
-            )
+    if (opportunities.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Group,
+                    contentDescription = "No opportunities",
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "No volunteer opportunities available",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Check back later or adjust your filters",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(16.dp),
+        ) {
+            items(opportunities) { opportunity ->
+                OpportunityCard(
+                    opportunity = opportunity,
+                    onJoinClick = { onJoinOpportunity(opportunity.id) },
+                )
+            }
         }
     }
 }
@@ -372,6 +409,29 @@ fun FiltersDrawer(
                                     onFiltersChange(filters.copy(dateFilter = DateFilter.THIS_MONTH))
                                 },
                                 label = { Text("This Month") },
+                            )
+                        }
+                    }
+
+                    // Radius Filter
+                    FilterSection(
+                        title = "Distance",
+                        icon = Icons.Default.LocationOn,
+                    ) {
+                        Column {
+                            Text(
+                                text = "${filters.radiusKm.toInt()} km radius",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                            Slider(
+                                value = filters.radiusKm,
+                                onValueChange = { newRadius ->
+                                    onFiltersChange(filters.copy(radiusKm = newRadius))
+                                },
+                                valueRange = 1f..200f,
+                                steps = 19,
                             )
                         }
                     }

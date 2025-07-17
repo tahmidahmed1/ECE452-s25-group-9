@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainBadge
 import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
+import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
@@ -613,56 +614,67 @@ private fun SubscriptionsSection(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val subscriptionsState by subscriptionViewModel.subscriptionsState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         subscriptionViewModel.getUserSubscriptions()
     }
 
     SectionCard(title = "Your Subscriptions") {
-        // Mock data for now since getUserSubscriptions returns different data structure
-        val mockSubscriptions = listOf(
-            MockSubscription("1", "Green Earth Org", "Environmental cleanup and conservation", true),
-            MockSubscription("2", "TeachTech", "Technology education for underserved communities", true),
-            MockSubscription("3", "Food For All", "Food distribution and hunger relief", true),
-            MockSubscription("4", "Senior Care Connect", "Support services for elderly community members", true),
-        )
-
-        if (mockSubscriptions.isEmpty()) {
-            Text(
-                text = "No subscriptions yet",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp),
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                mockSubscriptions.forEach { subscription ->
-                    SubscriptionCard(
-                        subscription = subscription,
-                        onUnsubscribe = {
-                            coroutineScope.launch {
-                                // Use real unsubscribe functionality
-                                subscriptionViewModel.unsubscribeFromOrganizer(subscription.id.toInt())
-                                com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Unsubscribed from ${subscription.name}")
-                            }
-                        },
-                    )
+        when (val state = subscriptionsState) {
+            is UiState.Loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
                 }
+            }
+            is UiState.Success -> {
+                if (state.data.isEmpty()) {
+                    Text(
+                        text = "No subscriptions yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        state.data.forEach { organizer ->
+                            SubscriptionCard(
+                                organizer = organizer,
+                                onUnsubscribe = {
+                                    coroutineScope.launch {
+                                        subscriptionViewModel.unsubscribeFromOrganizer(organizer.id)
+                                        com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Unsubscribed from ${organizer.organizationName ?: organizer.fullName ?: organizer.username}")
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+            is UiState.Error -> {
+                Text(
+                    text = "Failed to load subscriptions: ${state.message}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            is UiState.Idle -> {
+                // Initial state, show nothing or placeholder
             }
         }
     }
 }
 
-private data class MockSubscription(
-    val id: String,
-    val name: String,
-    val description: String,
-    val isActive: Boolean,
-)
 
 @Composable
 private fun SubscriptionCard(
-    subscription: MockSubscription,
+    organizer: DomainUser,
     onUnsubscribe: () -> Unit,
 ) {
     Card(
@@ -676,12 +688,12 @@ private fun SubscriptionCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = subscription.name,
+                    text = organizer.organizationName ?: organizer.fullName ?: organizer.username,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = subscription.description,
+                    text = organizer.organizationDescription ?: "No description available",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,

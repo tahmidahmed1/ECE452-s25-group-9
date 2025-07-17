@@ -46,7 +46,6 @@ data class ChatMessage(
 
 @Serializable
 data class SendMessageRequest(
-    val sender_id: Int,
     val receiver_id: Int,
     val content: String,
 )
@@ -139,7 +138,7 @@ class ChatViewModel @Inject constructor(
                             content = msg.content,
                             senderName = if (msg.sender_id == currentUser.id) currentUser.fullName ?: currentUser.username else "Other User",
                             senderType = if (msg.sender_id == currentUser.id) currentUser.userType?.name?.lowercase() ?: "volunteer" else "organizer",
-                            timestamp = formatTimestamp(msg.sent_at),
+                            timestamp = formatTimestamp(msg.created_at),
                             isFromCurrentUser = msg.sender_id == currentUser.id,
                             senderId = msg.sender_id,
                             receiverId = msg.receiver_id,
@@ -166,7 +165,6 @@ class ChatViewModel @Inject constructor(
                 }
 
                 val request = SendMessageRequest(
-                    sender_id = currentUser.id,
                     receiver_id = receiverId,
                     content = content,
                 )
@@ -188,7 +186,7 @@ class ChatViewModel @Inject constructor(
                         content = sentMessage.content,
                         senderName = currentUser.fullName ?: currentUser.username,
                         senderType = currentUser.userType?.name?.lowercase() ?: "volunteer",
-                        timestamp = formatTimestamp(sentMessage.sent_at),
+                        timestamp = formatTimestamp(sentMessage.created_at),
                         isFromCurrentUser = true,
                         senderId = currentUser.id,
                         receiverId = receiverId,
@@ -273,5 +271,5 @@ data class MessageResponse(
     val content: String,
     val sender_id: Int,
     val receiver_id: Int,
-    val sent_at: String,
+    val created_at: String,
 ) 

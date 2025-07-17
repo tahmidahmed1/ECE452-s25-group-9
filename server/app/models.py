@@ -41,6 +41,9 @@ class User(Base):
     
     # Profile picture URL
     profile_picture_url = Column(String, nullable=True)
+    
+    # Privacy setting for profile picture sharing
+    share_profile_picture = Column(Boolean, default=True, nullable=False)
 
     # Banner image URL (for organizers)
     banner_url = Column(String, nullable=True)

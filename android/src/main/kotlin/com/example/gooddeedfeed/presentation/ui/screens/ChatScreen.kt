@@ -123,6 +123,7 @@ private val sampleMessages = listOf(
 fun ChatScreen(
     user: DomainUser,
     modifier: Modifier = Modifier,
+    chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
 ) {
     var selectedChatId by remember { mutableStateOf<String?>(null) }
 
@@ -132,12 +133,14 @@ fun ChatScreen(
             ChatMessagesScreen(
                 chat = selectedChat,
                 user = user,
+                chatViewModel = chatViewModel,
                 onBackClick = { selectedChatId = null },
             )
         }
     } else {
         ChatListScreen(
             user = user,
+            chatViewModel = chatViewModel,
             onChatClick = { chatId -> selectedChatId = chatId },
             modifier = modifier,
         )
@@ -148,6 +151,7 @@ fun ChatScreen(
 @Composable
 private fun ChatListScreen(
     user: DomainUser,
+    chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel,
     onChatClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -502,6 +506,7 @@ private fun SwipeableChatItem(
 fun ChatMessagesScreen(
     chat: ChatItem,
     user: DomainUser,
+    chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

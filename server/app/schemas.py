@@ -57,6 +57,7 @@ class User(UserBase):
     full_name: Optional[str] = None
     phone: Optional[str] = None
     profile_picture_url: Optional[str] = None
+    share_profile_picture: bool = True
     banner_url: Optional[str] = None
     
     # Organization fields (for organizers)
@@ -157,6 +158,7 @@ class ProfileBannerUploadResponse(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
+    share_profile_picture: Optional[bool] = None
 
     # Organizer specific
     organization_name: Optional[str] = None
@@ -234,7 +236,7 @@ class MessageCreate(MessageBase):
 class MessageOut(MessageBase):
     id: int
     sender_id: int
-    sent_at: datetime
+    created_at: datetime
 
     class Config:
         from_attributes = True

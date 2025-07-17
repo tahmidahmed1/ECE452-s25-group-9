@@ -673,19 +673,68 @@ def list_organizers_with_subscription_status(
 
 # ------------------ Messaging Endpoints ------------------
 
+@router.get("/conversations", response_model=list[dict])
+def get_conversations(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    """Get all conversations for the current user"""
+    # Get all unique users that the current user has exchanged messages with
+    sent_to = db.query(Message.receiver_id).filter(Message.sender_id == current_user.id).distinct().subquery()
+    received_from = db.query(Message.sender_id).filter(Message.receiver_id == current_user.id).distinct().subquery()
+    
+    # Get users from both sent and received messages
+    conversation_user_ids = db.query(User.id).filter(
+        or_(User.id.in_(sent_to), User.id.in_(received_from))
+    ).all()
+    
+    conversations = []
+    for user_id_tuple in conversation_user_ids:
+        other_user_id = user_id_tuple[0]
+        if other_user_id == current_user.id:
+            continue
+            
+        # Get the other user
+        other_user = db.query(User).filter(User.id == other_user_id).first()
+        if not other_user:
+            continue
+            
+        # Get the last message in this conversation
+        last_message = db.query(Message).filter(
+            ((Message.sender_id == current_user.id) & (Message.receiver_id == other_user_id)) |
+            ((Message.sender_id == other_user_id) & (Message.receiver_id == current_user.id))
+        ).order_by(Message.created_at.desc()).first()
+        
+        if last_message:
+            conversations.append({
+                "id": str(other_user_id),
+                "title": other_user.organization_name or other_user.full_name or other_user.username,
+                "subtitle": f"Chat with {other_user.username}",
+                "lastMessage": last_message.content,
+                "timestamp": last_message.created_at.strftime("%H:%M"),
+                "unreadCount": 0,  # TODO: Implement unread count
+                "isStarred": False,  # TODO: Implement starred conversations
+                "participantCount": 2,
+                "otherUserId": other_user_id
+            })
+    
+    # Sort by last message timestamp
+    conversations.sort(key=lambda x: x["timestamp"], reverse=True)
+    return conversations
+
 @router.get("/messages/{other_user_id}", response_model=list[MessageOut])
 def get_messages_with_user(other_user_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     msgs = db.query(Message).filter(
         ((Message.sender_id == current_user.id) & (Message.receiver_id == other_user_id)) |
         ((Message.sender_id == other_user_id) & (Message.receiver_id == current_user.id))
-    ).order_by(Message.sent_at).all()
+    ).order_by(Message.created_at).all()
     return msgs
 
 @router.post("/messages", response_model=MessageOut)
 def send_message(payload: MessageCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    if payload.sender_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Cannot spoof sender id")
-    msg = Message(**payload.dict())
+    # Create message with current user as sender
+    msg = Message(
+        sender_id=current_user.id,
+        receiver_id=payload.receiver_id,
+        content=payload.content
+    )
     db.add(msg)
     db.commit()
     db.refresh(msg)

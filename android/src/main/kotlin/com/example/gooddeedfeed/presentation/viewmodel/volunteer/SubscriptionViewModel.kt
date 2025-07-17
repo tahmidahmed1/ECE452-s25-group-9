@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.repository.SubscriptionRepository
 import com.example.gooddeedfeed.domain.model.DomainOrganizerWithSubscriptionStatus
+import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +28,9 @@ class SubscriptionViewModel @Inject constructor(
 
     private val _subscriptionActionState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val subscriptionActionState: StateFlow<UiState<String>> = _subscriptionActionState.asStateFlow()
+
+    private val _subscriptionsState = MutableStateFlow<UiState<List<DomainUser>>>(UiState.Idle)
+    val subscriptionsState: StateFlow<UiState<List<DomainUser>>> = _subscriptionsState.asStateFlow()
 
     fun searchOrganizers(query: String) {
         Log.d(TAG, "🔍 Searching organizers with query: $query")
@@ -103,6 +107,13 @@ class SubscriptionViewModel @Inject constructor(
                         }
                         _uiState.value = UiState.Success(updatedOrganizers)
                     }
+
+                    // Update the subscriptions list by removing the unsubscribed organizer
+                    val currentSubscriptionsState = _subscriptionsState.value
+                    if (currentSubscriptionsState is UiState.Success) {
+                        val updatedSubscriptions = currentSubscriptionsState.data.filter { it.id != organizerId }
+                        _subscriptionsState.value = UiState.Success(updatedSubscriptions)
+                    }
                 }
                 .onFailure { exception ->
                     Log.e(TAG, "❌ Failed to unsubscribe from organizer: $organizerId", exception)
@@ -113,15 +124,17 @@ class SubscriptionViewModel @Inject constructor(
 
     fun getUserSubscriptions() {
         Log.d(TAG, "📋 Getting user subscriptions")
+        _subscriptionsState.value = UiState.Loading
 
         viewModelScope.launch {
             subscriptionRepository.getUserSubscriptions()
                 .onSuccess { subscriptions ->
                     Log.d(TAG, "✅ Successfully loaded user subscriptions: ${subscriptions.size}")
-                    // Handle subscriptions if needed
+                    _subscriptionsState.value = UiState.Success(subscriptions)
                 }
                 .onFailure { exception ->
                     Log.e(TAG, "❌ Failed to load user subscriptions", exception)
+                    _subscriptionsState.value = UiState.Error("Failed to load subscriptions: ${exception.message}")
                 }
         }
     }

@@ -35,11 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
-import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.viewmodel.PrivacySettingsViewModel
 
 @Composable
@@ -50,11 +50,18 @@ fun PrivacySettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Handle error messages
+    // Handle error and success messages
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             ToastManager.showError(message)
             viewModel.clearErrorMessage()
+        }
+    }
+
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let { message ->
+            ToastManager.showSuccess(message)
+            viewModel.clearSuccessMessage()
         }
     }
 
@@ -104,25 +111,19 @@ fun PrivacySettingsScreen(
                 onCheckedChange = viewModel::updateShareProfilePictureEnabled,
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
-            PrimaryButton(
-                text = "Save",
-                onClick = {
-                    viewModel.saveAllSettings(
-                        locationEnabled = uiState.locationEnabled,
-                        notificationsEnabled = uiState.notificationsEnabled,
-                        shareProfilePictureEnabled = uiState.shareProfilePictureEnabled,
-                    )
-                    // Show success toast
-                    ToastManager.showSuccess("Settings saved successfully")
-                    onClose()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                isLoading = uiState.isLoading,
+            Text(
+                text = "Settings are saved automatically when you toggle them.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                textAlign = TextAlign.Center
             )
 
-            // Add bottom padding below the button
+            // Add bottom padding
             Spacer(modifier = Modifier.height(48.dp))
         }
     }
