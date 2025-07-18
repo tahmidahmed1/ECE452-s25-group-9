@@ -1,16 +1,16 @@
 package com.example.gooddeedfeed.data.remote
 
-import com.example.gooddeedfeed.data.remote.dto.NotificationTokenDto
-import com.example.gooddeedfeed.data.remote.dto.NotificationPreferencesDto
-import com.example.gooddeedfeed.data.remote.dto.SubscriptionRequestDto
-import com.example.gooddeedfeed.data.remote.dto.InAppNotificationsResponseDto
 import com.example.gooddeedfeed.data.remote.dto.InAppNotificationUpdateDto
+import com.example.gooddeedfeed.data.remote.dto.InAppNotificationsResponseDto
+import com.example.gooddeedfeed.data.remote.dto.NotificationPreferencesDto
+import com.example.gooddeedfeed.data.remote.dto.NotificationTokenDto
+import com.example.gooddeedfeed.data.remote.dto.SubscriptionRequestDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
-import io.ktor.client.request.get
-import io.ktor.client.request.delete
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -19,7 +19,7 @@ import javax.inject.Singleton
 
 @Singleton
 class NotificationApiService @Inject constructor(
-    client: HttpClient
+    client: HttpClient,
 ) : BaseApiService(client) {
 
     /**

@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
 
     private val _notifications = MutableStateFlow<List<DomainInAppNotification>>(emptyList())
@@ -36,7 +36,7 @@ class NotificationViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            
+
             notificationRepository.getInAppNotifications()
                 .onSuccess { response ->
                     _notifications.value = response.notifications
@@ -45,7 +45,7 @@ class NotificationViewModel @Inject constructor(
                 .onFailure { exception ->
                     _error.value = exception.message ?: "Failed to load notifications"
                 }
-            
+
             _isLoading.value = false
         }
     }

@@ -28,12 +28,10 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,9 +52,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.gooddeedfeed.domain.model.DomainInAppNotification
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.domain.model.DomainInAppNotification
 import com.example.gooddeedfeed.presentation.viewmodel.common.NotificationViewModel
 import java.time.format.DateTimeFormatter
 
@@ -68,11 +66,11 @@ fun AppTopBar(
     onEditPrivacy: () -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
-    notificationViewModel: NotificationViewModel = hiltViewModel()
+    notificationViewModel: NotificationViewModel = hiltViewModel(),
 ) {
     var showNotifMenu by remember { mutableStateOf(false) }
     var showProfileMenu by remember { mutableStateOf(false) }
-    
+
     val notifications by notificationViewModel.notifications.collectAsState()
     val unreadCount by notificationViewModel.unreadCount.collectAsState()
 
@@ -181,7 +179,7 @@ fun AppTopBar(
                             onClearAll = {
                                 notificationViewModel.clearAllNotifications()
                                 showNotifMenu = false
-                            }
+                            },
                         )
                     }
 
@@ -347,7 +345,7 @@ fun NotificationDropdownMenu(
     notifications: List<DomainInAppNotification>,
     onNotificationClick: (DomainInAppNotification) -> Unit,
     onClearAll: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     DropdownMenu(
         expanded = expanded,
@@ -363,32 +361,32 @@ fun NotificationDropdownMenu(
     ) {
         // Header
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "Notifications",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 if (notifications.isNotEmpty()) {
                     Text(
                         text = "Clear All",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { onClearAll() }
+                        modifier = Modifier.clickable { onClearAll() },
                     )
                 }
             }
-            
+
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
             )
         }
 
@@ -398,33 +396,33 @@ fun NotificationDropdownMenu(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(32.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = null,
                         modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.outline
+                        tint = MaterialTheme.colorScheme.outline,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "No new notifications",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
+                        color = MaterialTheme.colorScheme.outline,
                     )
                 }
             }
         } else {
             LazyColumn(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 items(notifications) { notification ->
                     NotificationItem(
                         notification = notification,
-                        onClick = { onNotificationClick(notification) }
+                        onClick = { onNotificationClick(notification) },
                     )
                 }
             }
@@ -439,7 +437,7 @@ fun NotificationDropdownMenu(
 fun NotificationItem(
     notification: DomainInAppNotification,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier
@@ -451,15 +449,15 @@ fun NotificationItem(
         } else {
             MaterialTheme.colorScheme.surface
         },
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
     ) {
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Text(
                     text = notification.title,
@@ -467,25 +465,25 @@ fun NotificationItem(
                     fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = notification.createdAt.format(DateTimeFormatter.ofPattern("HH:mm")),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
+                    color = MaterialTheme.colorScheme.outline,
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(4.dp))
-            
+
             Text(
                 text = notification.message,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
-            
+
             if (!notification.isRead) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Box(
@@ -493,8 +491,8 @@ fun NotificationItem(
                         .size(6.dp)
                         .background(
                             MaterialTheme.colorScheme.primary,
-                            CircleShape
-                        )
+                            CircleShape,
+                        ),
                 )
             }
         }

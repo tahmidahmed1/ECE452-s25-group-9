@@ -6,20 +6,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.IconButton
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -81,7 +80,7 @@ fun EditProfileScreen(
     viewModel: AuthViewModel = hiltViewModel<AuthViewModel>(),
 ) {
     val context = LocalContext.current
-    
+
     // Editable fields
     var fullName by remember { mutableStateOf(TextFieldValue(user.fullName ?: "")) }
     var phone by remember { mutableStateOf(TextFieldValue(user.phone ?: "")) }
@@ -105,20 +104,20 @@ fun EditProfileScreen(
     var organizationWebsite by remember { mutableStateOf(TextFieldValue(user.organizationWebsite ?: "")) }
     var organizationCustomType by remember { mutableStateOf(TextFieldValue(user.organizationCustomType ?: "")) }
     var isOrgTypeDropdownExpanded by remember { mutableStateOf(false) }
-    
+
     // Social media fields
     var instagramHandle by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "INSTAGRAM" }?.url ?: "") }
     var twitterHandle by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "TWITTER" }?.url ?: "") }
     var facebookPage by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "FACEBOOK" }?.url ?: "") }
-    
+
     // Organization images
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var organizationImageUrls by remember { mutableStateOf(user.organizationImages ?: emptyList()) }
-    
+
     // Banner image
     var bannerImageFile by remember { mutableStateOf<File?>(null) }
     var bannerImageUri by remember { mutableStateOf<Uri?>(null) }
-    
+
     // Image launchers
     val orgImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -131,7 +130,7 @@ fun EditProfileScreen(
             }
         }
     }
-    
+
     val bannerImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -215,7 +214,7 @@ fun EditProfileScreen(
                             VerticalSpacer(SpacingSize.Medium)
                             ProfileSectionHeader("Organization Information")
                             VerticalSpacer(SpacingSize.Medium)
-                            
+
                             OutlinedTextField(
                                 value = organizationName,
                                 onValueChange = { organizationName = it },
@@ -223,9 +222,9 @@ fun EditProfileScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                             )
-                            
+
                             VerticalSpacer(SpacingSize.Small)
-                            
+
                             // Organization type dropdown
                             ExposedDropdownMenuBox(
                                 expanded = isOrgTypeDropdownExpanded,
@@ -248,7 +247,7 @@ fun EditProfileScreen(
                                         .fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                 )
-                                
+
                                 DropdownMenu(
                                     expanded = isOrgTypeDropdownExpanded,
                                     onDismissRequest = { isOrgTypeDropdownExpanded = false },
@@ -264,7 +263,7 @@ fun EditProfileScreen(
                                     }
                                 }
                             }
-                            
+
                             if (organizationType == OrganizationType.CUSTOM) {
                                 VerticalSpacer(SpacingSize.Small)
                                 OutlinedTextField(
@@ -275,9 +274,9 @@ fun EditProfileScreen(
                                     shape = RoundedCornerShape(12.dp),
                                 )
                             }
-                            
+
                             VerticalSpacer(SpacingSize.Small)
-                            
+
                             OutlinedTextField(
                                 value = organizationDescription,
                                 onValueChange = { organizationDescription = it },
@@ -286,9 +285,9 @@ fun EditProfileScreen(
                                 maxLines = 3,
                                 shape = RoundedCornerShape(12.dp),
                             )
-                            
+
                             VerticalSpacer(SpacingSize.Small)
-                            
+
                             OutlinedTextField(
                                 value = organizationWebsite,
                                 onValueChange = { organizationWebsite = it },
@@ -298,13 +297,13 @@ fun EditProfileScreen(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                                 shape = RoundedCornerShape(12.dp),
                             )
-                            
+
                             VerticalSpacer(SpacingSize.Medium)
-                            
+
                             // Social media section
                             ProfileSectionHeader("Social Media (Optional)")
                             VerticalSpacer(SpacingSize.Small)
-                            
+
                             OutlinedTextField(
                                 value = instagramHandle,
                                 onValueChange = { instagramHandle = it },
@@ -313,9 +312,9 @@ fun EditProfileScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                             )
-                            
+
                             VerticalSpacer(SpacingSize.Small)
-                            
+
                             OutlinedTextField(
                                 value = twitterHandle,
                                 onValueChange = { twitterHandle = it },
@@ -324,9 +323,9 @@ fun EditProfileScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                             )
-                            
+
                             VerticalSpacer(SpacingSize.Small)
-                            
+
                             OutlinedTextField(
                                 value = facebookPage,
                                 onValueChange = { facebookPage = it },
@@ -335,13 +334,13 @@ fun EditProfileScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                             )
-                            
+
                             VerticalSpacer(SpacingSize.Medium)
-                            
+
                             // Banner image section
                             ProfileSectionHeader("Banner Image (Optional)")
                             VerticalSpacer(SpacingSize.Small)
-                            
+
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -390,13 +389,13 @@ fun EditProfileScreen(
                                     }
                                 }
                             }
-                            
+
                             VerticalSpacer(SpacingSize.Medium)
-                            
+
                             // Organization images section
                             ProfileSectionHeader("Organization Images (Optional)")
                             VerticalSpacer(SpacingSize.Small)
-                            
+
                             SimpleImageCarousel(
                                 imageFiles = organizationImageFiles,
                                 imageUrls = organizationImageUrls,
@@ -555,13 +554,17 @@ fun EditProfileScreen(
                                         add(SocialMediaLink(SocialMediaPlatform.FACEBOOK, facebookPage))
                                     }
                                 }.takeIf { it.isNotEmpty() }
-                            } else null
-                            
+                            } else {
+                                null
+                            }
+
                             // Build organization images list
                             val orgImages = if (user.userType?.name == "ORGANIZER") {
                                 (organizationImageUrls + organizationImageFiles.map { it.absolutePath }).takeIf { it.isNotEmpty() }
-                            } else null
-                            
+                            } else {
+                                null
+                            }
+
                             // Save changes
                             val update = ImageUtils.buildProfileUpdate(
                                 user = user,
@@ -584,19 +587,19 @@ fun EditProfileScreen(
                                 organizationSocialMedia = socialMedia,
                                 organizationImages = orgImages,
                             )
-                            
+
                             // Upload banner image if changed
                             bannerImageFile?.let {
                                 // TODO: Implement banner image upload in AuthViewModel
                                 // viewModel.uploadBannerImage(it)
                             }
-                            
+
                             // Upload organization images if any
                             if (organizationImageFiles.isNotEmpty()) {
                                 // TODO: Implement organization images upload in AuthViewModel
                                 // viewModel.uploadOrganizationImages(organizationImageFiles)
                             }
-                            
+
                             viewModel.updateUserProfile(update)
                             onSave()
                         },
@@ -656,7 +659,7 @@ private fun SimpleImageCarousel(
                     modifier = Modifier.align(Alignment.Center),
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                
+
                 if (imageFiles.size + imageUrls.size < 10) {
                     IconButton(
                         onClick = onAddImage,

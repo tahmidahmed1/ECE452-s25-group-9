@@ -6,10 +6,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.example.gooddeedfeed.data.remote.NotificationApiService
-import com.example.gooddeedfeed.domain.repository.NotificationRepository
-import com.example.gooddeedfeed.domain.model.DomainInAppNotificationsResponse
 import com.example.gooddeedfeed.data.mapper.toDomain
+import com.example.gooddeedfeed.data.remote.NotificationApiService
+import com.example.gooddeedfeed.domain.model.DomainInAppNotificationsResponse
+import com.example.gooddeedfeed.domain.repository.NotificationRepository
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -21,7 +21,7 @@ import javax.inject.Singleton
 class NotificationRepositoryImpl @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val notificationApiService: NotificationApiService,
-    private val firebaseMessaging: FirebaseMessaging
+    private val firebaseMessaging: FirebaseMessaging,
 ) : NotificationRepository {
 
     companion object {
@@ -36,10 +36,10 @@ class NotificationRepositoryImpl @Inject constructor(
             dataStore.edit { preferences ->
                 preferences[FCM_TOKEN_KEY] = token
             }
-            
+
             // Send token to backend
             notificationApiService.updateFcmToken(token)
-            
+
             Log.d(TAG, "FCM token updated successfully")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -54,7 +54,7 @@ class NotificationRepositoryImpl @Inject constructor(
             val localToken = dataStore.data.map { preferences ->
                 preferences[FCM_TOKEN_KEY]
             }.first()
-            
+
             if (localToken != null) {
                 Result.success(localToken)
             } else {
@@ -74,10 +74,10 @@ class NotificationRepositoryImpl @Inject constructor(
             dataStore.edit { preferences ->
                 preferences[NOTIFICATIONS_ENABLED_KEY] = enabled
             }
-            
+
             // Update server preference
             notificationApiService.setNotificationPreferences(enabled)
-            
+
             Log.d(TAG, "Notification preferences updated: $enabled")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -91,7 +91,7 @@ class NotificationRepositoryImpl @Inject constructor(
             val enabled = dataStore.data.map { preferences ->
                 preferences[NOTIFICATIONS_ENABLED_KEY] ?: true // Default to enabled
             }.first()
-            
+
             Result.success(enabled)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get notification preferences", e)

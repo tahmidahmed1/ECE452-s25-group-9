@@ -16,13 +16,13 @@ fun InAppNotificationDto.toDomain(): DomainInAppNotification {
         data = data,
         isRead = isRead,
         createdAt = LocalDateTime.parse(createdAt, DateTimeFormatter.ISO_DATE_TIME),
-        readAt = readAt?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME) }
+        readAt = readAt?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME) },
     )
 }
 
 fun InAppNotificationsResponseDto.toDomain(): DomainInAppNotificationsResponse {
     return DomainInAppNotificationsResponse(
         notifications = notifications.map { it.toDomain() },
-        unreadCount = unreadCount
+        unreadCount = unreadCount,
     )
 }

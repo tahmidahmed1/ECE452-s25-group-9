@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -22,7 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUser
-import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -257,14 +255,14 @@ private fun OrganizationInfoCard(user: DomainUser) {
             SectionHeader("Organization Information")
             user.organizationName?.let { InfoRow("Organization", it) }
             user.organizationType?.let { InfoRow("Type", it.displayName) }
-            user.organizationCustomType?.let { 
-                if (it.isNotBlank()) InfoRow("Custom Type", it) 
+            user.organizationCustomType?.let {
+                if (it.isNotBlank()) InfoRow("Custom Type", it)
             }
-            user.organizationDescription?.let { 
-                if (it.isNotBlank()) InfoRow("Description", it) 
+            user.organizationDescription?.let {
+                if (it.isNotBlank()) InfoRow("Description", it)
             }
-            user.organizationWebsite?.let { 
-                if (it.isNotBlank()) InfoRow("Website", it) 
+            user.organizationWebsite?.let {
+                if (it.isNotBlank()) InfoRow("Website", it)
             }
             user.karmaPoints.let { InfoRow("Karma Points", it.toString()) }
         }
@@ -285,7 +283,7 @@ private fun SocialMediaCard(user: DomainUser) {
                     socialMedia.forEach { link ->
                         InfoRow(
                             label = link.platform.displayName,
-                            value = link.url
+                            value = link.url,
                         )
                     }
                 }
@@ -307,7 +305,7 @@ private fun OrganizationImagesCard(user: DomainUser) {
                     SectionHeader("Organization Images")
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(images) { imageUrl ->
                             AsyncImage(

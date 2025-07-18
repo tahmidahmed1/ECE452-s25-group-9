@@ -10,10 +10,10 @@ data class DomainInAppNotification(
     val data: Map<String, String>? = null,
     val isRead: Boolean,
     val createdAt: LocalDateTime,
-    val readAt: LocalDateTime? = null
+    val readAt: LocalDateTime? = null,
 )
 
 data class DomainInAppNotificationsResponse(
     val notifications: List<DomainInAppNotification>,
-    val unreadCount: Int
+    val unreadCount: Int,
 )

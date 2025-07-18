@@ -194,7 +194,7 @@ fun TabNavigationScreen(
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
                 tabs[selectedTabIndex].screen(user, onLogout)
-                
+
                 // Lost & Found Overlay - positioned within scaffold content area
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showLostAndFound,
@@ -251,7 +251,6 @@ fun TabNavigationScreen(
                 modifier = Modifier.fillMaxSize(),
             )
         }
-
 
         // Badge achievement manager for showing badge popups
         BadgeManager(

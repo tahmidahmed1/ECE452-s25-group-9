@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -44,7 +43,7 @@ class NotificationService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d(TAG, "New FCM token: $token")
-        
+
         // Send token to server
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -58,22 +57,22 @@ class NotificationService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        
+
         Log.d(TAG, "Message received from: ${remoteMessage.from}")
-        
+
         // Handle data payload
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Message data payload: ${remoteMessage.data}")
             handleDataMessage(remoteMessage.data)
         }
-        
+
         // Handle notification payload
         remoteMessage.notification?.let {
             Log.d(TAG, "Message notification: ${it.title}, ${it.body}")
             showNotification(
                 title = it.title ?: "Good Deed Feed",
                 body = it.body ?: "You have a new notification",
-                data = remoteMessage.data
+                data = remoteMessage.data,
             )
         }
     }
@@ -83,27 +82,27 @@ class NotificationService : FirebaseMessagingService() {
         val eventId = data["eventId"]
         val organizerName = data["organizerName"]
         val eventTitle = data["eventTitle"]
-        
+
         when (type) {
             "new_event" -> {
                 showNotification(
                     title = "New Volunteer Opportunity!",
                     body = "$organizerName posted: $eventTitle",
-                    data = data
+                    data = data,
                 )
             }
             "event_reminder" -> {
                 showNotification(
                     title = "Event Reminder",
                     body = "Don't forget about: $eventTitle",
-                    data = data
+                    data = data,
                 )
             }
             "subscription_update" -> {
                 showNotification(
                     title = "Organization Update",
                     body = "$organizerName has an update for you",
-                    data = data
+                    data = data,
                 )
             }
         }
@@ -112,17 +111,17 @@ class NotificationService : FirebaseMessagingService() {
     private fun showNotification(title: String, body: String, data: Map<String, String>) {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            
+
             // Add extra data to navigate to specific screen
             data["eventId"]?.let { putExtra("eventId", it) }
             data["type"]?.let { putExtra("notificationType", it) }
         }
-        
+
         val pendingIntent = PendingIntent.getActivity(
-            this, 
-            0, 
-            intent, 
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -144,7 +143,7 @@ class NotificationService : FirebaseMessagingService() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_HIGH,
             ).apply {
                 description = CHANNEL_DESCRIPTION
                 enableLights(true)
