@@ -8,6 +8,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
     id("com.diffplug.spotless")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -103,6 +104,12 @@ dependencies {
     implementation("com.kizitonwose.calendar:compose:2.5.3")
     implementation("io.ktor:ktor-client-websockets:2.3.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
+    
+    // Firebase dependencies
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    
     testImplementation("junit:junit:4.13.2")
     testImplementation("app.cash.turbine:turbine:1.0.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -33,10 +32,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -57,10 +56,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
-import com.example.gooddeedfeed.domain.model.SocialMediaLink
-import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.OrganizationType
+import com.example.gooddeedfeed.domain.model.SocialMediaLink
+import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
@@ -88,12 +87,12 @@ fun OnboardingStepTwoScreen(
     var organizationDescription by remember { mutableStateOf("") }
     var organizationWebsite by remember { mutableStateOf("") }
     var organizationCustomType by remember { mutableStateOf("") }
-    
+
     // Social media fields
     var instagramHandle by remember { mutableStateOf("") }
     var twitterHandle by remember { mutableStateOf("") }
     var facebookPage by remember { mutableStateOf("") }
-    
+
     // Organization images
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var mainOrgImageIndex by remember { mutableStateOf(0) }
@@ -111,13 +110,13 @@ fun OnboardingStepTwoScreen(
             profilePictureUri = it
         }
     }
-    
+
     // Organization image launcher
     val orgImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
         uri?.let {
-            ImageUtils.saveUriToFile(context, it)?.let { file -> 
+            ImageUtils.saveUriToFile(context, it)?.let { file ->
                 if (organizationImageFiles.size < 10) {
                     organizationImageFiles = organizationImageFiles + file
                 }
@@ -157,7 +156,7 @@ fun OnboardingStepTwoScreen(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.Start,
         ) {
             IconButton(onClick = onBack) {
                 Icon(
@@ -166,7 +165,7 @@ fun OnboardingStepTwoScreen(
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
-            
+
             Text(
                 text = "Complete Your Profile",
                 style = MaterialTheme.typography.headlineMedium.copy(
@@ -175,7 +174,7 @@ fun OnboardingStepTwoScreen(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
             )
-            
+
             // Invisible spacer to center the title
             Box(modifier = Modifier.size(48.dp))
         }
@@ -435,9 +434,9 @@ fun OnboardingStepTwoScreen(
                                 shape = RoundedCornerShape(12.dp),
                             )
                         }
-                        
+
                         VerticalSpacer(SpacingSize.Medium)
-                        
+
                         // Social media fields
                         Text(
                             text = "Social Media (Optional)",
@@ -445,9 +444,9 @@ fun OnboardingStepTwoScreen(
                                 fontWeight = FontWeight.SemiBold,
                             ),
                         )
-                        
+
                         VerticalSpacer(SpacingSize.Small)
-                        
+
                         OutlinedTextField(
                             value = instagramHandle,
                             onValueChange = { instagramHandle = it },
@@ -456,9 +455,9 @@ fun OnboardingStepTwoScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                         )
-                        
+
                         VerticalSpacer(SpacingSize.Small)
-                        
+
                         OutlinedTextField(
                             value = twitterHandle,
                             onValueChange = { twitterHandle = it },
@@ -467,9 +466,9 @@ fun OnboardingStepTwoScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                         )
-                        
+
                         VerticalSpacer(SpacingSize.Small)
-                        
+
                         OutlinedTextField(
                             value = facebookPage,
                             onValueChange = { facebookPage = it },
@@ -478,9 +477,9 @@ fun OnboardingStepTwoScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                         )
-                        
+
                         VerticalSpacer(SpacingSize.Medium)
-                        
+
                         // Organization images carousel
                         Text(
                             text = "Organization Images",
@@ -488,13 +487,13 @@ fun OnboardingStepTwoScreen(
                                 fontWeight = FontWeight.SemiBold,
                             ),
                         )
-                        
+
                         VerticalSpacer(SpacingSize.Small)
-                        
+
                         OrganizerImageCarousel(
                             selectedImages = organizationImageFiles,
                             mainImageIndex = mainOrgImageIndex,
-                            onAddImage = { 
+                            onAddImage = {
                                 if (organizationImageFiles.size < 10) {
                                     orgImageLauncher.launch("image/*")
                                 }
@@ -510,7 +509,7 @@ fun OnboardingStepTwoScreen(
                             onSetMainImage = { index ->
                                 mainOrgImageIndex = index
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
@@ -537,7 +536,7 @@ fun OnboardingStepTwoScreen(
                             add(SocialMediaLink(SocialMediaPlatform.FACEBOOK, facebookPage))
                         }
                     }.takeIf { it.isNotEmpty() }
-                    
+
                     DomainOrganizerProfile(
                         fullName = fullName,
                         phone = phone,
@@ -592,8 +591,8 @@ private fun OrganizerImageCarousel(
         modifier = modifier.height(200.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        ),
     ) {
         if (selectedImages.isEmpty()) {
             // Empty state - entire tile clickable
@@ -601,31 +600,31 @@ private fun OrganizerImageCarousel(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable { onAddImage() },
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Add Image",
                         modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Add Organization Images",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Showcase your organization (up to 10 images)",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -637,7 +636,7 @@ private fun OrganizerImageCarousel(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(8.dp)
+                        .padding(8.dp),
                 ) {
                     AsyncImage(
                         model = selectedImages[mainImageIndex],
@@ -645,25 +644,25 @@ private fun OrganizerImageCarousel(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
-                    
+
                     // Main image badge
                     androidx.compose.material3.Surface(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(8.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Text(
                             text = "MAIN",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
-                    
+
                     // Remove button
                     androidx.compose.material3.IconButton(
                         onClick = { onRemoveImage(mainImageIndex) },
@@ -672,26 +671,26 @@ private fun OrganizerImageCarousel(
                             .padding(4.dp)
                             .background(
                                 MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                                CircleShape
+                                CircleShape,
                             )
-                            .size(32.dp)
+                            .size(32.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Remove Image",
                             tint = MaterialTheme.colorScheme.onError,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }
-                
+
                 // Thumbnail row
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(80.dp)
                         .padding(horizontal = 8.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(selectedImages.size) { index ->
                         Box(
@@ -704,22 +703,22 @@ private fun OrganizerImageCarousel(
                                         Modifier.border(
                                             2.dp,
                                             MaterialTheme.colorScheme.primary,
-                                            RoundedCornerShape(8.dp)
+                                            RoundedCornerShape(8.dp),
                                         )
                                     } else {
                                         Modifier
-                                    }
-                                )
+                                    },
+                                ),
                         ) {
                             AsyncImage(
                                 model = selectedImages[index],
                                 contentDescription = "Organization Image ${index + 1}",
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Crop,
                             )
                         }
                     }
-                    
+
                     // Add more button
                     if (selectedImages.size < 10) {
                         item {
@@ -730,14 +729,14 @@ private fun OrganizerImageCarousel(
                                     .clickable { onAddImage() }
                                     .background(
                                         MaterialTheme.colorScheme.surfaceVariant,
-                                        RoundedCornerShape(8.dp)
+                                        RoundedCornerShape(8.dp),
                                     ),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
                                     contentDescription = "Add More Images",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }

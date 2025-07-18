@@ -194,6 +194,19 @@ fun TabNavigationScreen(
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
                 tabs[selectedTabIndex].screen(user, onLogout)
+                
+                // Lost & Found Overlay - positioned within scaffold content area
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showLostAndFound,
+                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+                ) {
+                    LostAndFoundScreen(
+                        user = user,
+                        onBack = { showLostAndFound = false },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
 
@@ -239,18 +252,6 @@ fun TabNavigationScreen(
             )
         }
 
-        // Lost & Found Overlay
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showLostAndFound,
-            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
-            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
-        ) {
-            LostAndFoundScreen(
-                user = user,
-                onBack = { showLostAndFound = false },
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
 
         // Badge achievement manager for showing badge popups
         BadgeManager(

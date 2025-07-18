@@ -47,6 +47,7 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.model.OrganizationType
+import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import java.io.File
 import java.io.FileOutputStream
 
@@ -110,6 +111,12 @@ object ImageUtils {
         locationArea: TextFieldValue? = null,
         hasDriversLicense: Boolean? = null,
         disabilities: TextFieldValue? = null,
+        organizationType: OrganizationType? = null,
+        organizationDescription: TextFieldValue? = null,
+        organizationWebsite: TextFieldValue? = null,
+        organizationCustomType: TextFieldValue? = null,
+        organizationSocialMedia: List<SocialMediaLink>? = null,
+        organizationImages: List<String>? = null,
     ): DomainUserUpdate {
         return DomainUserUpdate(
             fullName = fullName?.text?.takeIf { it.isNotBlank() },
@@ -124,6 +131,12 @@ object ImageUtils {
             locationArea = locationArea?.text?.takeIf { it.isNotBlank() },
             hasDriversLicense = hasDriversLicense,
             disabilities = disabilities?.text?.takeIf { it.isNotBlank() },
+            organizationType = organizationType,
+            organizationDescription = organizationDescription?.text?.takeIf { it.isNotBlank() },
+            organizationWebsite = organizationWebsite?.text?.takeIf { it.isNotBlank() },
+            organizationCustomType = organizationCustomType?.text?.takeIf { it.isNotBlank() },
+            organizationSocialMedia = organizationSocialMedia,
+            organizationImages = organizationImages,
         )
     }
 

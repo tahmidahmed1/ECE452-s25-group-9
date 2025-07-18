@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Nature
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.*
 import androidx.compose.material3.DatePicker
@@ -47,8 +46,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
@@ -64,7 +63,6 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.widget.Autocomplete
-import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -127,7 +125,7 @@ fun CreateEventScreen(
     // Launcher for multiple gallery images
     val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
-            ImageUtils.saveUriToFile(context, it)?.let { file -> 
+            ImageUtils.saveUriToFile(context, it)?.let { file ->
                 if (selectedImageFiles.size < 10) {
                     selectedImageFiles = selectedImageFiles + file
                 }
@@ -274,7 +272,7 @@ fun CreateEventScreen(
                 OutlinedButton(
                     onClick = { showMapPicker = true },
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.height(56.dp)
+                    modifier = Modifier.height(56.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
@@ -290,7 +288,7 @@ fun CreateEventScreen(
             EventImageCarousel(
                 selectedImages = selectedImageFiles,
                 mainImageIndex = mainImageIndex,
-                onAddImage = { 
+                onAddImage = {
                     if (selectedImageFiles.size < 10) {
                         imagePickerLauncher.launch("image/*")
                     }
@@ -306,7 +304,7 @@ fun CreateEventScreen(
                 onSetMainImage = { index ->
                     mainImageIndex = index
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
 
             OutlinedTextField(
@@ -754,8 +752,8 @@ private fun EventImageCarousel(
         modifier = modifier.height(200.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        ),
     ) {
         if (selectedImages.isEmpty()) {
             // Empty state - entire tile clickable
@@ -763,30 +761,30 @@ private fun EventImageCarousel(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable { onAddImage() },
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Add Image",
                         modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Add Event Images",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Tap to select up to 10 images",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
             }
@@ -798,7 +796,7 @@ private fun EventImageCarousel(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(8.dp)
+                        .padding(8.dp),
                 ) {
                     AsyncImage(
                         model = selectedImages[mainImageIndex],
@@ -806,25 +804,25 @@ private fun EventImageCarousel(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
-                    
+
                     // Main image badge
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(8.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Text(
                             text = "MAIN",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
-                    
+
                     // Remove button
                     IconButton(
                         onClick = { onRemoveImage(mainImageIndex) },
@@ -833,26 +831,26 @@ private fun EventImageCarousel(
                             .padding(4.dp)
                             .background(
                                 MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                                CircleShape
+                                CircleShape,
                             )
-                            .size(32.dp)
+                            .size(32.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Remove Image",
                             tint = MaterialTheme.colorScheme.onError,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }
-                
+
                 // Thumbnail row
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(80.dp)
                         .padding(horizontal = 8.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(selectedImages.size) { index ->
                         Box(
@@ -865,22 +863,22 @@ private fun EventImageCarousel(
                                         Modifier.border(
                                             2.dp,
                                             MaterialTheme.colorScheme.primary,
-                                            RoundedCornerShape(8.dp)
+                                            RoundedCornerShape(8.dp),
                                         )
                                     } else {
                                         Modifier
-                                    }
-                                )
+                                    },
+                                ),
                         ) {
                             AsyncImage(
                                 model = selectedImages[index],
                                 contentDescription = "Event Image ${index + 1}",
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Crop,
                             )
                         }
                     }
-                    
+
                     // Add more button
                     if (selectedImages.size < 10) {
                         item {
@@ -891,14 +889,14 @@ private fun EventImageCarousel(
                                     .clickable { onAddImage() }
                                     .background(
                                         MaterialTheme.colorScheme.surfaceVariant,
-                                        RoundedCornerShape(8.dp)
+                                        RoundedCornerShape(8.dp),
                                     ),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Add,
                                     contentDescription = "Add More Images",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }

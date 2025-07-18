@@ -71,6 +71,10 @@ class User(Base):
     # Karma points for leaderboard
     karma_points = Column(Integer, default=0, nullable=False)
     
+    # Push notification fields
+    fcm_token = Column(String, nullable=True)  # Firebase Cloud Messaging token
+    notifications_enabled = Column(Boolean, default=True, nullable=False)  # User notification preference
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -195,4 +199,17 @@ user_subscriptions = Table(
     Column('organizer_id', Integer, ForeignKey('users.id'), primary_key=True),   # The organizer being subscribed to
     Column('subscribed_at', DateTime(timezone=True), server_default=func.now())
 )
+
+
+class InAppNotification(Base):
+    __tablename__ = "in_app_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    data = Column(JSON, nullable=True)  # Additional data like event_id, organizer_id, etc.
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    read_at = Column(DateTime(timezone=True), nullable=True)
 

@@ -1,7 +1,13 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,11 +15,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.IconButton
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,12 +49,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.rememberAsyncImagePainter
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.OrganizationType
+import com.example.gooddeedfeed.domain.model.SocialMediaLink
+import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.toDisplayString
 import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import com.example.gooddeedfeed.presentation.ui.components.ProfileImagePicker
@@ -51,6 +69,7 @@ import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.ProfileSectionHeader
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,10 +80,11 @@ fun EditProfileScreen(
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = hiltViewModel<AuthViewModel>(),
 ) {
+    val context = LocalContext.current
+    
     // Editable fields
     var fullName by remember { mutableStateOf(TextFieldValue(user.fullName ?: "")) }
     var phone by remember { mutableStateOf(TextFieldValue(user.phone ?: "")) }
-    var organizationName by remember { mutableStateOf(TextFieldValue(user.organizationName ?: "")) }
 
     // Volunteer-specific fields
     var sex by remember { mutableStateOf(user.sex ?: DomainSex.PREFER_NOT_TO_SAY) }
@@ -77,6 +97,49 @@ fun EditProfileScreen(
     var locationArea by remember { mutableStateOf(TextFieldValue(user.locationArea ?: "")) }
     var hasDriversLicense by remember { mutableStateOf(user.hasDriversLicense ?: false) }
     var disabilities by remember { mutableStateOf(TextFieldValue(user.disabilities ?: "")) }
+
+    // Organizer-specific fields
+    var organizationName by remember { mutableStateOf(TextFieldValue(user.organizationName ?: "")) }
+    var organizationType by remember { mutableStateOf(user.organizationType) }
+    var organizationDescription by remember { mutableStateOf(TextFieldValue(user.organizationDescription ?: "")) }
+    var organizationWebsite by remember { mutableStateOf(TextFieldValue(user.organizationWebsite ?: "")) }
+    var organizationCustomType by remember { mutableStateOf(TextFieldValue(user.organizationCustomType ?: "")) }
+    var isOrgTypeDropdownExpanded by remember { mutableStateOf(false) }
+    
+    // Social media fields
+    var instagramHandle by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "INSTAGRAM" }?.url ?: "") }
+    var twitterHandle by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "TWITTER" }?.url ?: "") }
+    var facebookPage by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "FACEBOOK" }?.url ?: "") }
+    
+    // Organization images
+    var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+    var organizationImageUrls by remember { mutableStateOf(user.organizationImages ?: emptyList()) }
+    
+    // Banner image
+    var bannerImageFile by remember { mutableStateOf<File?>(null) }
+    var bannerImageUri by remember { mutableStateOf<Uri?>(null) }
+    
+    // Image launchers
+    val orgImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri: Uri? ->
+        uri?.let {
+            ImageUtils.saveUriToFile(context, it)?.let { file ->
+                if (organizationImageFiles.size < 10) {
+                    organizationImageFiles = organizationImageFiles + file
+                }
+            }
+        }
+    }
+    
+    val bannerImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri: Uri? ->
+        uri?.let {
+            bannerImageUri = it
+            bannerImageFile = ImageUtils.saveUriToFile(context, it)
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -147,12 +210,204 @@ fun EditProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
 
+                        // User type specific fields
                         if (user.userType?.name == "ORGANIZER") {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            VerticalSpacer(SpacingSize.Medium)
+                            ProfileSectionHeader("Organization Information")
+                            VerticalSpacer(SpacingSize.Medium)
+                            
                             OutlinedTextField(
                                 value = organizationName,
                                 onValueChange = { organizationName = it },
                                 label = { Text("Organization Name") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            
+                            VerticalSpacer(SpacingSize.Small)
+                            
+                            // Organization type dropdown
+                            ExposedDropdownMenuBox(
+                                expanded = isOrgTypeDropdownExpanded,
+                                onExpandedChange = { isOrgTypeDropdownExpanded = !isOrgTypeDropdownExpanded },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                OutlinedTextField(
+                                    value = organizationType?.displayName ?: "Select organization type",
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Organization Type") },
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = "Dropdown",
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .menuAnchor()
+                                        .fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                )
+                                
+                                DropdownMenu(
+                                    expanded = isOrgTypeDropdownExpanded,
+                                    onDismissRequest = { isOrgTypeDropdownExpanded = false },
+                                ) {
+                                    OrganizationType.values().forEach { type ->
+                                        DropdownMenuItem(
+                                            text = { Text(type.displayName) },
+                                            onClick = {
+                                                organizationType = type
+                                                isOrgTypeDropdownExpanded = false
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            if (organizationType == OrganizationType.CUSTOM) {
+                                VerticalSpacer(SpacingSize.Small)
+                                OutlinedTextField(
+                                    value = organizationCustomType,
+                                    onValueChange = { organizationCustomType = it },
+                                    label = { Text("Custom Organization Type") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                )
+                            }
+                            
+                            VerticalSpacer(SpacingSize.Small)
+                            
+                            OutlinedTextField(
+                                value = organizationDescription,
+                                onValueChange = { organizationDescription = it },
+                                label = { Text("Organization Description") },
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 3,
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            
+                            VerticalSpacer(SpacingSize.Small)
+                            
+                            OutlinedTextField(
+                                value = organizationWebsite,
+                                onValueChange = { organizationWebsite = it },
+                                label = { Text("Website (Optional)") },
+                                placeholder = { Text("https://example.com") },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            
+                            VerticalSpacer(SpacingSize.Medium)
+                            
+                            // Social media section
+                            ProfileSectionHeader("Social Media (Optional)")
+                            VerticalSpacer(SpacingSize.Small)
+                            
+                            OutlinedTextField(
+                                value = instagramHandle,
+                                onValueChange = { instagramHandle = it },
+                                label = { Text("Instagram Handle") },
+                                placeholder = { Text("@username") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            
+                            VerticalSpacer(SpacingSize.Small)
+                            
+                            OutlinedTextField(
+                                value = twitterHandle,
+                                onValueChange = { twitterHandle = it },
+                                label = { Text("Twitter Handle") },
+                                placeholder = { Text("@username") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            
+                            VerticalSpacer(SpacingSize.Small)
+                            
+                            OutlinedTextField(
+                                value = facebookPage,
+                                onValueChange = { facebookPage = it },
+                                label = { Text("Facebook Page") },
+                                placeholder = { Text("Page name or URL") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            
+                            VerticalSpacer(SpacingSize.Medium)
+                            
+                            // Banner image section
+                            ProfileSectionHeader("Banner Image (Optional)")
+                            VerticalSpacer(SpacingSize.Small)
+                            
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(120.dp)
+                                    .clickable { bannerImageLauncher.launch("image/*") },
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    when {
+                                        bannerImageUri != null -> {
+                                            Image(
+                                                painter = rememberAsyncImagePainter(bannerImageUri),
+                                                contentDescription = "Banner Image",
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Crop,
+                                            )
+                                        }
+                                        !user.bannerUrl.isNullOrEmpty() -> {
+                                            Image(
+                                                painter = rememberAsyncImagePainter(user.bannerUrl),
+                                                contentDescription = "Current Banner",
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Crop,
+                                            )
+                                        }
+                                        else -> {
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Add,
+                                                    contentDescription = "Add Banner",
+                                                    modifier = Modifier.size(32.dp),
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                )
+                                                Text(
+                                                    text = "Add Banner Image",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            VerticalSpacer(SpacingSize.Medium)
+                            
+                            // Organization images section
+                            ProfileSectionHeader("Organization Images (Optional)")
+                            VerticalSpacer(SpacingSize.Small)
+                            
+                            SimpleImageCarousel(
+                                imageFiles = organizationImageFiles,
+                                imageUrls = organizationImageUrls,
+                                onAddImage = {
+                                    if (organizationImageFiles.size + organizationImageUrls.size < 10) {
+                                        orgImageLauncher.launch("image/*")
+                                    }
+                                },
+                                onRemoveNewImage = { index ->
+                                    organizationImageFiles = organizationImageFiles.filterIndexed { i, _ -> i != index }
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -287,12 +542,32 @@ fun EditProfileScreen(
 
                     Button(
                         onClick = {
+                            // Build social media links for organizers
+                            val socialMedia = if (user.userType?.name == "ORGANIZER") {
+                                mutableListOf<SocialMediaLink>().apply {
+                                    if (instagramHandle.isNotBlank()) {
+                                        add(SocialMediaLink(SocialMediaPlatform.INSTAGRAM, instagramHandle))
+                                    }
+                                    if (twitterHandle.isNotBlank()) {
+                                        add(SocialMediaLink(SocialMediaPlatform.TWITTER, twitterHandle))
+                                    }
+                                    if (facebookPage.isNotBlank()) {
+                                        add(SocialMediaLink(SocialMediaPlatform.FACEBOOK, facebookPage))
+                                    }
+                                }.takeIf { it.isNotEmpty() }
+                            } else null
+                            
+                            // Build organization images list
+                            val orgImages = if (user.userType?.name == "ORGANIZER") {
+                                (organizationImageUrls + organizationImageFiles.map { it.absolutePath }).takeIf { it.isNotEmpty() }
+                            } else null
+                            
                             // Save changes
                             val update = ImageUtils.buildProfileUpdate(
                                 user = user,
                                 fullName = fullName,
                                 phone = phone,
-                                organizationName = organizationName,
+                                organizationName = if (user.userType?.name == "ORGANIZER") organizationName else null,
                                 sex = sex,
                                 description = description,
                                 skills = skills,
@@ -302,7 +577,26 @@ fun EditProfileScreen(
                                 locationArea = locationArea,
                                 hasDriversLicense = hasDriversLicense,
                                 disabilities = disabilities,
+                                organizationType = if (user.userType?.name == "ORGANIZER") organizationType else null,
+                                organizationDescription = if (user.userType?.name == "ORGANIZER") organizationDescription else null,
+                                organizationWebsite = if (user.userType?.name == "ORGANIZER") organizationWebsite else null,
+                                organizationCustomType = if (user.userType?.name == "ORGANIZER" && organizationType == OrganizationType.CUSTOM) organizationCustomType else null,
+                                organizationSocialMedia = socialMedia,
+                                organizationImages = orgImages,
                             )
+                            
+                            // Upload banner image if changed
+                            bannerImageFile?.let {
+                                // TODO: Implement banner image upload in AuthViewModel
+                                // viewModel.uploadBannerImage(it)
+                            }
+                            
+                            // Upload organization images if any
+                            if (organizationImageFiles.isNotEmpty()) {
+                                // TODO: Implement organization images upload in AuthViewModel
+                                // viewModel.uploadOrganizationImages(organizationImageFiles)
+                            }
+                            
                             viewModel.updateUserProfile(update)
                             onSave()
                         },
@@ -313,6 +607,66 @@ fun EditProfileScreen(
                         ),
                     ) {
                         Text("Save")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimpleImageCarousel(
+    imageFiles: List<File>,
+    imageUrls: List<String>,
+    onAddImage: () -> Unit,
+    onRemoveNewImage: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.height(120.dp),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        if (imageFiles.isEmpty() && imageUrls.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { onAddImage() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Images",
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "Add Organization Images",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Text(
+                    text = "${imageFiles.size + imageUrls.size} image(s) selected",
+                    modifier = Modifier.align(Alignment.Center),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                
+                if (imageFiles.size + imageUrls.size < 10) {
+                    IconButton(
+                        onClick = onAddImage,
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add More Images",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
             }

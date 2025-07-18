@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -117,6 +118,7 @@ fun LostAndFoundScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
         // Header
@@ -140,6 +142,7 @@ fun LostAndFoundScreen(
                 Text(
                     text = "Lost & Found",
                     style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
             }
 
@@ -187,6 +190,7 @@ fun LostAndFoundScreen(
 
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 16.dp),
         ) {
             items(filteredItems) { item ->
                 LostFoundItemCard(
@@ -320,6 +324,7 @@ private fun LostFoundDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -330,6 +335,7 @@ private fun LostFoundDetailScreen(
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 
@@ -447,6 +453,7 @@ private fun CreateLostFoundScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -457,6 +464,7 @@ private fun CreateLostFoundScreen(
             Text(
                 text = "Report Item",
                 style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
 

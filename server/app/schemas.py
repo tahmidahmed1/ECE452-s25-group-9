@@ -82,6 +82,10 @@ class User(UserBase):
     
     # Karma points for leaderboard
     karma_points: int = 0
+    
+    # Push notification fields
+    fcm_token: Optional[str] = None
+    notifications_enabled: bool = True
 
     class Config:
         from_attributes = True
@@ -345,6 +349,55 @@ class UserSubscriptionsResponse(BaseModel):
 class OrganizerWithSubscriptionStatus(User):
     is_subscribed: bool = False
     subscriber_count: int = 0
+    
+    class Config:
+        from_attributes = True
+
+# Notification schemas
+class NotificationTokenUpdate(BaseModel):
+    fcm_token: str
+
+class NotificationPreferences(BaseModel):
+    notifications_enabled: bool
+
+class SubscriptionRequest(BaseModel):
+    organizer_id: int
+
+class NotificationRequest(BaseModel):
+    title: str
+    body: str
+    data: Optional[Dict[str, str]] = None
+    organizer_id: int
+
+class NotificationResponse(BaseModel):
+    success: bool
+    message: Optional[str] = None
+
+# In-app notification schemas
+class InAppNotificationBase(BaseModel):
+    title: str
+    message: str
+    data: Optional[Dict[str, str]] = None
+
+class InAppNotificationCreate(InAppNotificationBase):
+    user_id: int
+
+class InAppNotificationOut(InAppNotificationBase):
+    id: int
+    user_id: int
+    is_read: bool
+    created_at: datetime
+    read_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class InAppNotificationUpdate(BaseModel):
+    is_read: Optional[bool] = None
+
+class InAppNotificationsResponse(BaseModel):
+    notifications: List[InAppNotificationOut]
+    unread_count: int
     
     class Config:
         from_attributes = True

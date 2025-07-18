@@ -103,7 +103,7 @@ fun PrivacySettingsScreen(
                 checked = uiState.notificationsEnabled,
                 onCheckedChange = viewModel::updateNotificationsEnabled,
             )
-            
+
             // Only show location and profile picture settings for volunteers
             if (user.userType != DomainUserType.ORGANIZER) {
                 SettingToggleRow(

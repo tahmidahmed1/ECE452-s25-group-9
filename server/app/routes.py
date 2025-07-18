@@ -10,7 +10,7 @@ import math
 from sqlalchemy import func
 
 from .database import get_db
-from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions
+from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, InAppNotification
 from .schemas import (
     UserCreate, User as UserSchema, Token, OnboardingStepOne, 
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
@@ -21,12 +21,17 @@ from .schemas import (
     Badge as BadgeSchema, UserBadge, BadgeCheckResponse, BadgeAchievement,
     SubscriptionCreate, SubscriptionResponse, SubscriptionStatus,
     UserSubscriptionsResponse, OrganizerWithSubscriptionStatus,
+    NotificationTokenUpdate, NotificationPreferences, SubscriptionRequest,
+    NotificationRequest, NotificationResponse,
+    InAppNotificationCreate, InAppNotificationOut, InAppNotificationUpdate,
+    InAppNotificationsResponse,
 )
 from .auth import (
     authenticate_user, create_access_token, get_password_hash, 
     get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from .storage import storage_service
+from .firebase_service import firebase_service
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -380,7 +385,7 @@ def list_events_nearby(
     return events
 
 @router.post("/events", response_model=EventSchema)
-def create_event(event: EventCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+async def create_event(event: EventCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     if current_user.user_type != UserType.ORGANIZER:
         raise HTTPException(status_code=403, detail="Only organizers can create events")
     event_data = event.dict()
@@ -390,6 +395,33 @@ def create_event(event: EventCreate, current_user: User = Depends(get_current_ac
     db.add(new_event)
     db.commit()
     db.refresh(new_event)
+    
+    # Send notification to subscribers
+    try:
+        await send_event_notification(
+            organizer_id=current_user.id,
+            event_title=new_event.title,
+            organizer_name=current_user.full_name or current_user.username,
+            event_id=new_event.id,
+            db=db
+        )
+    except Exception as e:
+        # Don't fail event creation if notification fails
+        logger.error(f"Failed to send event notification: {e}")
+    
+    # Create in-app notifications for subscribers
+    try:
+        await create_event_in_app_notifications(
+            organizer_id=current_user.id,
+            event_title=new_event.title,
+            organizer_name=current_user.full_name or current_user.username,
+            event_id=new_event.id,
+            db=db
+        )
+    except Exception as e:
+        # Don't fail event creation if in-app notification fails
+        logger.error(f"Failed to create in-app notifications: {e}")
+    
     return new_event
 
 @router.get("/events/{event_id}", response_model=EventSchema)
@@ -1026,4 +1058,508 @@ def check_badge_achievements(
         newly_earned_badges=newly_earned,
         total_badges_earned=total_badges_earned,
         next_badge=next_badge
-    ) 
+    )
+
+# ==================== NOTIFICATION ROUTES ====================
+
+@router.put("/notifications/token", response_model=NotificationResponse)
+async def update_fcm_token(
+    token_update: NotificationTokenUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update FCM token for the current user"""
+    try:
+        current_user.fcm_token = token_update.fcm_token
+        db.commit()
+        
+        logger.info(f"Updated FCM token for user {current_user.id}")
+        return NotificationResponse(success=True, message="FCM token updated successfully")
+    
+    except Exception as e:
+        logger.error(f"Failed to update FCM token: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update FCM token"
+        )
+
+@router.put("/notifications/preferences", response_model=NotificationResponse)
+async def update_notification_preferences(
+    preferences: NotificationPreferences,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update notification preferences for the current user"""
+    try:
+        current_user.notifications_enabled = preferences.notifications_enabled
+        db.commit()
+        
+        logger.info(f"Updated notification preferences for user {current_user.id}: {preferences.notifications_enabled}")
+        return NotificationResponse(success=True, message="Notification preferences updated successfully")
+    
+    except Exception as e:
+        logger.error(f"Failed to update notification preferences: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update notification preferences"
+        )
+
+@router.post("/notifications/subscribe", response_model=NotificationResponse)
+async def subscribe_to_organizer_notifications(
+    subscription: SubscriptionRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Subscribe to notifications from an organizer (same as regular subscription)"""
+    try:
+        # Verify organizer exists and is an organizer
+        organizer = db.query(User).filter(
+            User.id == subscription.organizer_id,
+            User.user_type == UserType.ORGANIZER
+        ).first()
+        
+        if not organizer:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Organizer not found"
+            )
+        
+        # Check if already subscribed
+        existing = db.execute(
+            user_subscriptions.select().where(
+                user_subscriptions.c.subscriber_id == current_user.id,
+                user_subscriptions.c.organizer_id == subscription.organizer_id
+            )
+        ).first()
+        
+        if existing:
+            return NotificationResponse(success=True, message="Already subscribed to this organizer")
+        
+        # Create subscription
+        db.execute(user_subscriptions.insert().values(
+            subscriber_id=current_user.id,
+            organizer_id=subscription.organizer_id
+        ))
+        db.commit()
+        
+        logger.info(f"User {current_user.id} subscribed to organizer {subscription.organizer_id}")
+        return NotificationResponse(success=True, message="Successfully subscribed to organizer notifications")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to subscribe to organizer notifications: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to subscribe to organizer notifications"
+        )
+
+@router.post("/notifications/unsubscribe", response_model=NotificationResponse)
+async def unsubscribe_from_organizer_notifications(
+    subscription: SubscriptionRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Unsubscribe from notifications from an organizer"""
+    try:
+        # Remove subscription
+        result = db.execute(
+            user_subscriptions.delete().where(
+                user_subscriptions.c.subscriber_id == current_user.id,
+                user_subscriptions.c.organizer_id == subscription.organizer_id
+            )
+        )
+        
+        if result.rowcount == 0:
+            return NotificationResponse(success=True, message="Not subscribed to this organizer")
+        
+        db.commit()
+        
+        logger.info(f"User {current_user.id} unsubscribed from organizer {subscription.organizer_id}")
+        return NotificationResponse(success=True, message="Successfully unsubscribed from organizer notifications")
+    
+    except Exception as e:
+        logger.error(f"Failed to unsubscribe from organizer notifications: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to unsubscribe from organizer notifications"
+        )
+
+@router.post("/notifications/send", response_model=NotificationResponse)
+async def send_notification_to_subscribers(
+    notification: NotificationRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Send notification to all subscribers of an organizer (admin/organizer only)"""
+    try:
+        # Verify current user is the organizer or admin
+        if current_user.id != notification.organizer_id and current_user.user_type != UserType.ORGANIZER:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only organizers can send notifications to their subscribers"
+            )
+        
+        # Get all subscribers with FCM tokens and notifications enabled
+        subscribers = db.query(User).join(
+            user_subscriptions,
+            User.id == user_subscriptions.c.subscriber_id
+        ).filter(
+            user_subscriptions.c.organizer_id == notification.organizer_id,
+            User.fcm_token.isnot(None),
+            User.notifications_enabled == True
+        ).all()
+        
+        if not subscribers:
+            return NotificationResponse(
+                success=True,
+                message="No subscribers with push notifications enabled found"
+            )
+        
+        # Extract FCM tokens
+        fcm_tokens = [user.fcm_token for user in subscribers if user.fcm_token]
+        
+        if not fcm_tokens:
+            return NotificationResponse(
+                success=True,
+                message="No valid FCM tokens found for subscribers"
+            )
+        
+        # Send notifications using Firebase
+        results = firebase_service.send_notification_to_multiple_tokens(
+            tokens=fcm_tokens,
+            title=notification.title,
+            body=notification.body,
+            data=notification.data or {}
+        )
+        
+        # Count successful sends
+        successful_sends = sum(1 for success in results.values() if success)
+        total_attempts = len(fcm_tokens)
+        
+        logger.info(f"Sent notifications: {successful_sends}/{total_attempts} successful")
+        
+        return NotificationResponse(
+            success=True,
+            message=f"Notifications sent successfully to {successful_sends} out of {total_attempts} subscribers"
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to send notification: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send notification"
+        )
+
+async def send_event_notification(
+    organizer_id: int,
+    event_title: str,
+    organizer_name: str,
+    event_id: int,
+    db: Session
+):
+    """Helper function to send notifications when a new event is created"""
+    try:
+        # Get all subscribers with FCM tokens and notifications enabled
+        subscribers = db.query(User).join(
+            user_subscriptions,
+            User.id == user_subscriptions.c.subscriber_id
+        ).filter(
+            user_subscriptions.c.organizer_id == organizer_id,
+            User.fcm_token.isnot(None),
+            User.notifications_enabled == True
+        ).all()
+        
+        if not subscribers:
+            logger.info(f"No subscribers found for organizer {organizer_id}")
+            return
+        
+        # Extract FCM tokens
+        fcm_tokens = [user.fcm_token for user in subscribers if user.fcm_token]
+        
+        if not fcm_tokens:
+            logger.info(f"No valid FCM tokens found for organizer {organizer_id} subscribers")
+            return
+        
+        # Send notifications
+        results = firebase_service.send_notification_to_multiple_tokens(
+            tokens=fcm_tokens,
+            title="New Volunteer Opportunity!",
+            body=f"{organizer_name} posted: {event_title}",
+            data={
+                "type": "new_event",
+                "eventId": str(event_id),
+                "organizerId": str(organizer_id),
+                "organizerName": organizer_name,
+                "eventTitle": event_title
+            }
+        )
+        
+        # Count successful sends
+        successful_sends = sum(1 for success in results.values() if success)
+        total_attempts = len(fcm_tokens)
+        
+        logger.info(f"Event notification sent: {successful_sends}/{total_attempts} successful for event {event_id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send event notification: {e}")
+
+async def create_event_in_app_notifications(
+    organizer_id: int,
+    event_title: str,
+    organizer_name: str,
+    event_id: int,
+    db: Session
+):
+    """Helper function to create in-app notifications when a new event is created"""
+    try:
+        # Get all subscribers for this organizer
+        subscribers = db.query(User).join(
+            user_subscriptions,
+            User.id == user_subscriptions.c.subscriber_id
+        ).filter(
+            user_subscriptions.c.organizer_id == organizer_id
+        ).all()
+        
+        if not subscribers:
+            logger.info(f"No subscribers found for organizer {organizer_id}")
+            return
+        
+        # Create in-app notifications for each subscriber
+        notifications_created = 0
+        for subscriber in subscribers:
+            try:
+                in_app_notification = InAppNotification(
+                    user_id=subscriber.id,
+                    title="New Volunteer Opportunity!",
+                    message=f"{organizer_name} posted: {event_title}",
+                    data={
+                        "type": "new_event",
+                        "eventId": str(event_id),
+                        "organizerId": str(organizer_id),
+                        "organizerName": organizer_name,
+                        "eventTitle": event_title
+                    }
+                )
+                db.add(in_app_notification)
+                notifications_created += 1
+            except Exception as e:
+                logger.error(f"Failed to create in-app notification for user {subscriber.id}: {e}")
+        
+        db.commit()
+        logger.info(f"Created {notifications_created} in-app notifications for event {event_id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to create in-app notifications for event: {e}")
+        db.rollback()
+
+# ==================== IN-APP NOTIFICATION ROUTES ====================
+
+@router.get("/in-app-notifications", response_model=InAppNotificationsResponse)
+def get_in_app_notifications(
+    limit: int = 50,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get in-app notifications for the current user"""
+    try:
+        # Get notifications for the current user, ordered by creation date (newest first)
+        notifications = db.query(InAppNotification).filter(
+            InAppNotification.user_id == current_user.id
+        ).order_by(InAppNotification.created_at.desc()).limit(limit).all()
+        
+        # Count unread notifications
+        unread_count = db.query(InAppNotification).filter(
+            InAppNotification.user_id == current_user.id,
+            InAppNotification.is_read == False
+        ).count()
+        
+        return InAppNotificationsResponse(
+            notifications=notifications,
+            unread_count=unread_count
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get in-app notifications: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve notifications"
+        )
+
+@router.post("/in-app-notifications", response_model=InAppNotificationOut)
+def create_in_app_notification(
+    notification: InAppNotificationCreate,
+    db: Session = Depends(get_db)
+):
+    """Create a new in-app notification (internal use)"""
+    try:
+        new_notification = InAppNotification(
+            user_id=notification.user_id,
+            title=notification.title,
+            message=notification.message,
+            data=notification.data
+        )
+        
+        db.add(new_notification)
+        db.commit()
+        db.refresh(new_notification)
+        
+        logger.info(f"Created in-app notification for user {notification.user_id}")
+        return new_notification
+        
+    except Exception as e:
+        logger.error(f"Failed to create in-app notification: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create notification"
+        )
+
+@router.put("/in-app-notifications/{notification_id}", response_model=InAppNotificationOut)
+def update_in_app_notification(
+    notification_id: int,
+    update_data: InAppNotificationUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update an in-app notification (mark as read/unread)"""
+    try:
+        # Get the notification and verify it belongs to the current user
+        notification = db.query(InAppNotification).filter(
+            InAppNotification.id == notification_id,
+            InAppNotification.user_id == current_user.id
+        ).first()
+        
+        if not notification:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notification not found"
+            )
+        
+        # Update the notification
+        if update_data.is_read is not None:
+            notification.is_read = update_data.is_read
+            if update_data.is_read:
+                notification.read_at = func.now()
+            else:
+                notification.read_at = None
+        
+        db.commit()
+        db.refresh(notification)
+        
+        logger.info(f"Updated notification {notification_id} for user {current_user.id}")
+        return notification
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update in-app notification: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update notification"
+        )
+
+@router.delete("/in-app-notifications/{notification_id}", response_model=dict)
+def delete_in_app_notification(
+    notification_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete an in-app notification"""
+    try:
+        # Get the notification and verify it belongs to the current user
+        notification = db.query(InAppNotification).filter(
+            InAppNotification.id == notification_id,
+            InAppNotification.user_id == current_user.id
+        ).first()
+        
+        if not notification:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notification not found"
+            )
+        
+        db.delete(notification)
+        db.commit()
+        
+        logger.info(f"Deleted notification {notification_id} for user {current_user.id}")
+        return {"success": True, "message": "Notification deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete in-app notification: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete notification"
+        )
+
+@router.put("/in-app-notifications/mark-all-read", response_model=dict)
+def mark_all_notifications_read(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Mark all notifications as read for the current user"""
+    try:
+        # Update all unread notifications for the current user
+        updated_count = db.query(InAppNotification).filter(
+            InAppNotification.user_id == current_user.id,
+            InAppNotification.is_read == False
+        ).update({
+            InAppNotification.is_read: True,
+            InAppNotification.read_at: func.now()
+        })
+        
+        db.commit()
+        
+        logger.info(f"Marked {updated_count} notifications as read for user {current_user.id}")
+        return {
+            "success": True, 
+            "message": f"Marked {updated_count} notifications as read",
+            "updated_count": updated_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to mark all notifications as read: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to mark notifications as read"
+        )
+
+@router.delete("/in-app-notifications", response_model=dict)
+def clear_all_notifications(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Clear all notifications for the current user"""
+    try:
+        # Delete all notifications for the current user
+        deleted_count = db.query(InAppNotification).filter(
+            InAppNotification.user_id == current_user.id
+        ).delete()
+        
+        db.commit()
+        
+        logger.info(f"Cleared {deleted_count} notifications for user {current_user.id}")
+        return {
+            "success": True, 
+            "message": f"Cleared {deleted_count} notifications",
+            "deleted_count": deleted_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to clear all notifications: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to clear notifications"
+        )

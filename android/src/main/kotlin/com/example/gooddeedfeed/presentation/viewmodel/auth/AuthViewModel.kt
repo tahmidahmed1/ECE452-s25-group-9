@@ -8,6 +8,7 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.repository.AuthRepository
+import com.example.gooddeedfeed.domain.repository.NotificationRepository
 import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase
 import com.example.gooddeedfeed.domain.usecase.SignOutUseCase
@@ -37,6 +38,7 @@ constructor(
     private val signOutUseCase: SignOutUseCase,
     private val getCurrentUser: GetCurrentUserUseCase,
     private val authRepository: AuthRepository,
+    private val notificationRepository: NotificationRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -255,6 +257,73 @@ constructor(
                 Log.d(TAG, "ℹ️ CheckCurrentUser exception - user not authenticated")
                 Log.d(TAG, "ℹ️ Exception: ${e.message}")
                 _uiState.value = AuthUiState.SignedOut
+            }
+        }
+    }
+
+    /**
+     * Initialize FCM token and update it with the backend
+     */
+    fun initializeFcmToken() {
+        viewModelScope.launch {
+            try {
+                notificationRepository.getFcmToken().onSuccess { token ->
+                    token?.let {
+                        Log.d(TAG, "FCM token initialized: ${it.take(20)}...")
+                    }
+                }.onFailure { e ->
+                    Log.e(TAG, "Failed to initialize FCM token", e)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error initializing FCM token", e)
+            }
+        }
+    }
+
+    /**
+     * Update FCM token (called when new token is received)
+     */
+    fun updateFcmToken(token: String) {
+        viewModelScope.launch {
+            notificationRepository.updateFcmToken(token).onFailure { e ->
+                Log.e(TAG, "Failed to update FCM token", e)
+            }
+        }
+    }
+
+    /**
+     * Enable or disable notifications
+     */
+    fun setNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            notificationRepository.setNotificationsEnabled(enabled).onFailure { e ->
+                Log.e(TAG, "Failed to update notification preferences", e)
+            }
+        }
+    }
+
+    /**
+     * Subscribe to organizer notifications
+     */
+    fun subscribeToOrganizer(organizerId: Int) {
+        viewModelScope.launch {
+            notificationRepository.subscribeToOrganizer(organizerId).onSuccess {
+                Log.d(TAG, "Successfully subscribed to organizer: $organizerId")
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to subscribe to organizer: $organizerId", e)
+            }
+        }
+    }
+
+    /**
+     * Unsubscribe from organizer notifications
+     */
+    fun unsubscribeFromOrganizer(organizerId: Int) {
+        viewModelScope.launch {
+            notificationRepository.unsubscribeFromOrganizer(organizerId).onSuccess {
+                Log.d(TAG, "Successfully unsubscribed from organizer: $organizerId")
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to unsubscribe from organizer: $organizerId", e)
             }
         }
     }
