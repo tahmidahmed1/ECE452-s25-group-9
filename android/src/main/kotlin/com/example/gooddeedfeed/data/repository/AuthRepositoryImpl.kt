@@ -68,13 +68,17 @@ class AuthRepositoryImpl @Inject constructor(
         Log.d(TAG, "📝 SignUp params - Username: $username, Email: $email")
 
         return try {
+            // Clear any existing auth data before signing up new user
+            Log.d(TAG, "🧹 Clearing any existing auth data before signUp...")
+            clearAuthData()
+
             Log.d(TAG, "📞 Calling AuthApiService.signUp...")
             val response = api.signUp(username, email, password)
 
             Log.d(TAG, "🔄 Converting response to domain model...")
             val domainUser = response.user.toDomain()
 
-            Log.d(TAG, "💾 Saving authentication data...")
+            Log.d(TAG, "💾 Saving new authentication data...")
             saveAuthData(
                 token = response.access_token,
                 userId = response.user.id.toString(),
@@ -98,13 +102,17 @@ class AuthRepositoryImpl @Inject constructor(
         Log.d(TAG, "📝 SignIn params - Username: $username")
 
         return try {
+            // Clear any existing auth data before signing in new user
+            Log.d(TAG, "🧹 Clearing any existing auth data before signIn...")
+            clearAuthData()
+
             Log.d(TAG, "📞 Calling AuthApiService.signIn...")
             val response = api.signIn(username, password)
 
             Log.d(TAG, "🔄 Converting response to domain model...")
             val domainUser = response.user.toDomain()
 
-            Log.d(TAG, "💾 Saving authentication data...")
+            Log.d(TAG, "💾 Saving new authentication data...")
             saveAuthData(
                 token = response.access_token,
                 userId = response.user.id.toString(),
@@ -126,25 +134,24 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun signOut(): Result<Unit> {
         Log.d(TAG, "🔄 Repository signOut called")
 
+        // Always clear local data first to ensure clean logout state
+        Log.d(TAG, "🧹 Clearing stored authentication data immediately...")
+        clearAuthData()
+
         return try {
             Log.d(TAG, "📞 Calling AuthApiService.signOut...")
             api.signOut()
 
-            Log.d(TAG, "🧹 Clearing stored authentication data...")
-            clearAuthData()
-
             Log.d(TAG, "✅ Repository signOut successful")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Repository signOut failed", e)
+            Log.e(TAG, "❌ Repository signOut API failed", e)
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
             Log.e(TAG, "❌ Exception message: ${e.message}")
 
-            // Even if API call fails, clear local data
-            Log.d(TAG, "🧹 Clearing local auth data despite API failure...")
-            clearAuthData()
-
-            Result.failure(e)
+            // Local data already cleared above, so this is still a successful logout
+            Log.w(TAG, "⚠️ Server signOut failed, but local auth data was already cleared")
+            Result.success(Unit) // Return success since local cleanup succeeded
         }
     }
 
@@ -196,6 +203,15 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             val response = api.uploadProfilePicture(file)
             Result.success(response.profile_picture_url)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun removeProfilePicture(): Result<Unit> {
+        return try {
+            api.removeProfilePicture()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -260,6 +276,15 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun updateProfile(updates: DomainUserUpdate): Result<DomainUser> {
         return try {
             val user = api.updateProfile(updates.toDto())
+            Result.success(user.toDomain())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun increaseKarmaPointsDevOnly(): Result<DomainUser> {
+        return try {
+            val user = api.increaseKarmaPointsDevOnly()
             Result.success(user.toDomain())
         } catch (e: Exception) {
             Result.failure(e)

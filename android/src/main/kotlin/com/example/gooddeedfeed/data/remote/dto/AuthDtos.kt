@@ -69,15 +69,12 @@ data class UserDto(
     val full_name: String? = null,
     val phone: String? = null,
     val profile_picture_url: String? = null,
-    val share_profile_picture: Boolean = true,
     val banner_url: String? = null,
     val organization_name: String? = null,
-    val organization_type: OrganizationTypeDto? = null,
     val organization_description: String? = null,
     val organization_website: String? = null,
     val organization_social_media: List<SocialMediaLinkDto>? = null,
     val organization_images: List<String>? = null,
-    val organization_custom_type: String? = null,
     val sex: Sex? = null,
     val description: String? = null,
     val skills: List<String>? = null,
@@ -88,6 +85,8 @@ data class UserDto(
     val has_drivers_license: Boolean? = null,
     val disabilities: String? = null,
     val karma_points: Int = 0,
+    val fcm_token: String? = null,
+    val notifications_enabled: Boolean = true,
     val created_at: String? = null,
     val updated_at: String? = null,
 )
@@ -97,26 +96,21 @@ data class OnboardingStepTwoOrganizerDto(
     val full_name: String,
     val phone: String,
     val organization_name: String,
-    val organization_type: OrganizationTypeDto,
     val organization_description: String? = null,
     val organization_website: String? = null,
     val organization_social_media: List<SocialMediaLinkDto>? = null,
     val organization_images: List<String>? = null,
-    val organization_custom_type: String? = null,
 )
 
 @Serializable
 data class UserUpdateDto(
     val full_name: String? = null,
     val phone: String? = null,
-    val share_profile_picture: Boolean? = null,
     val organization_name: String? = null,
-    val organization_type: OrganizationTypeDto? = null,
     val organization_description: String? = null,
     val organization_website: String? = null,
     val organization_social_media: List<SocialMediaLinkDto>? = null,
     val organization_images: List<String>? = null,
-    val organization_custom_type: String? = null,
     val sex: Sex? = null,
     val description: String? = null,
     val skills: List<String>? = null,
@@ -143,23 +137,6 @@ data class ProfilePictureUploadResponse(
 @Serializable
 data class OnboardingResponse(val message: String, val user_type: UserType? = null)
 
-@Serializable
-enum class OrganizationTypeDto {
-    @SerialName("non_profit")
-    NON_PROFIT,
-
-    @SerialName("school_group")
-    SCHOOL_GROUP,
-
-    @SerialName("club")
-    CLUB,
-
-    @SerialName("charity")
-    CHARITY,
-
-    @SerialName("custom")
-    CUSTOM,
-}
 
 @Serializable
 enum class SocialMediaPlatformDto {

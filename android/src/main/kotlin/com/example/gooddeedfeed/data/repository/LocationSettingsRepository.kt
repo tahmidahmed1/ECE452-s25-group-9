@@ -16,7 +16,7 @@ class LocationSettingsRepository @Inject constructor(
     private companion object {
         private val LOCATION_ENABLED_KEY = booleanPreferencesKey("location_enabled")
         private val NOTIFICATIONS_ENABLED_KEY = booleanPreferencesKey("notifications_enabled")
-        private val SHARE_PROFILE_PICTURE_KEY = booleanPreferencesKey("share_profile_picture")
+        private val NOTIFICATION_PROMPT_SHOWN_KEY = booleanPreferencesKey("notification_prompt_shown")
     }
 
     val isLocationEnabled: Flow<Boolean> = dataStore.data.map { preferences ->
@@ -27,8 +27,9 @@ class LocationSettingsRepository @Inject constructor(
         preferences[NOTIFICATIONS_ENABLED_KEY] ?: true // Default to true
     }
 
-    val isShareProfilePictureEnabled: Flow<Boolean> = dataStore.data.map { preferences ->
-        preferences[SHARE_PROFILE_PICTURE_KEY] ?: true // Default to true
+
+    val hasNotificationPromptBeenShown: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[NOTIFICATION_PROMPT_SHOWN_KEY] ?: false // Default to false
     }
 
     suspend fun setLocationEnabled(enabled: Boolean) {
@@ -43,21 +44,20 @@ class LocationSettingsRepository @Inject constructor(
         }
     }
 
-    suspend fun setShareProfilePictureEnabled(enabled: Boolean) {
+
+    suspend fun setNotificationPromptShown(shown: Boolean) {
         dataStore.edit { preferences ->
-            preferences[SHARE_PROFILE_PICTURE_KEY] = enabled
+            preferences[NOTIFICATION_PROMPT_SHOWN_KEY] = shown
         }
     }
 
     suspend fun updateAllSettings(
         locationEnabled: Boolean,
         notificationsEnabled: Boolean,
-        shareProfilePictureEnabled: Boolean,
     ) {
         dataStore.edit { preferences ->
             preferences[LOCATION_ENABLED_KEY] = locationEnabled
             preferences[NOTIFICATIONS_ENABLED_KEY] = notificationsEnabled
-            preferences[SHARE_PROFILE_PICTURE_KEY] = shareProfilePictureEnabled
         }
     }
 } 

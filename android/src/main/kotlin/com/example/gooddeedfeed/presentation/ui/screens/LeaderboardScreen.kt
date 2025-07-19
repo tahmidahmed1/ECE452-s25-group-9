@@ -1,6 +1,7 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
 import android.graphics.pdf.PdfDocument
+import com.example.gooddeedfeed.BuildConfig
 import android.os.Environment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,6 +70,9 @@ import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
 import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.LeaderboardViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
+import com.example.gooddeedfeed.domain.model.DomainUserType
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -76,12 +81,14 @@ import java.io.FileOutputStream
 fun StatsScreen(
     viewModel: LeaderboardViewModel = hiltViewModel(),
     badgeViewModel: BadgeViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val allBadgesState by badgeViewModel.allBadgesState.collectAsStateWithLifecycle()
     val userBadgesState by badgeViewModel.userBadgesState.collectAsStateWithLifecycle()
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     // Show error toast if there's an error
     uiState.errorMessage?.let { error ->
@@ -333,6 +340,29 @@ fun StatsScreen(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        // Development Mode Karma Increase Button (only for volunteers in dev mode)
+        if (BuildConfig.DEV_MODE) {
+            val currentAuthState = authState
+            if (currentAuthState is AuthUiState.Success && currentAuthState.user.userType?.name == "VOLUNTEER") {
+                VerticalSpacer(SpacingSize.Large)
+                
+                Button(
+                    onClick = {
+                        viewModel.increaseKarmaPointsDevOnly { updatedUser ->
+                            // Update the user state in AuthViewModel to immediately reflect new karma points
+                            authViewModel.updateUserState(updatedUser)
+                            ToastUtils.showSuccessToast(context, "Karma points increased by 100!")
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                ) {
+                    Text("(Dev Mode) Increase Karma Points by 100")
                 }
             }
         }

@@ -52,19 +52,41 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
 
     suspend fun getEvent(id: Int): EventDto = client.get(buildUrl("events/$id")).body()
 
-    suspend fun createEvent(token: String, data: CreateEventData): EventDto =
-        client.post(buildUrl("events")) {
-            header(HttpHeaders.Authorization, "Bearer $token")
-            contentType(ContentType.Application.Json)
-            setBody(data.toDto())
-        }.body()
+    suspend fun createEvent(token: String, data: CreateEventData): EventDto {
+        return try {
+            val response = client.post(buildUrl("events")) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                contentType(ContentType.Application.Json)
+                setBody(data.toDto())
+            }
+            
+            if (response.status.value in 200..299) {
+                response.body<EventDto>()
+            } else {
+                throw Exception("Server returned ${response.status.value}: ${response.status.description}")
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to create event: ${e.message}")
+        }
+    }
 
-    suspend fun updateEvent(token: String, id: Int, data: CreateEventData): EventDto =
-        client.patch(buildUrl("events/$id")) {
-            header(HttpHeaders.Authorization, "Bearer $token")
-            contentType(ContentType.Application.Json)
-            setBody(data.toDto())
-        }.body()
+    suspend fun updateEvent(token: String, id: Int, data: CreateEventData): EventDto {
+        return try {
+            val response = client.patch(buildUrl("events/$id")) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                contentType(ContentType.Application.Json)
+                setBody(data.toDto())
+            }
+            
+            if (response.status.value in 200..299) {
+                response.body<EventDto>()
+            } else {
+                throw Exception("Server returned ${response.status.value}: ${response.status.description}")
+            }
+        } catch (e: Exception) {
+            throw Exception("Failed to update event: ${e.message}")
+        }
+    }
 
     suspend fun deleteEvent(token: String, id: Int) {
         client.delete(buildUrl("events/$id")) {

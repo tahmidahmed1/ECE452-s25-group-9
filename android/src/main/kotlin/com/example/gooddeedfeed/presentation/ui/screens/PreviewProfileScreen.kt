@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.toDisplayString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,7 +172,10 @@ private fun ContactInfoCard(user: DomainUser) {
             SectionHeader("Contact Information")
             user.phone?.let { InfoRow("Phone", it) }
             user.organizationName?.let { InfoRow("Organization", it) }
-            user.locationArea?.let { InfoRow("Location", it) }
+            // Only show location for organizers in contact info
+            if (user.userType?.name == "ORGANIZER") {
+                user.locationArea?.let { InfoRow("Location", it) }
+            }
         }
     }
 }
@@ -186,11 +190,17 @@ private fun VolunteerInfoCard(user: DomainUser) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Volunteer Information")
             user.description?.let { InfoRow("Description", it) }
-            user.skills?.let { InfoRow("Skills", it.joinToString(", ")) }
+            user.skills?.let { skills ->
+                if (skills.isNotEmpty()) {
+                    InfoRow("Skills", skills.joinToString(", "))
+                }
+            }
             user.age?.let { InfoRow("Age", it.toString()) }
-            user.sex?.let { InfoRow("Sex", it.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }) }
-            if (user.hasDriversLicense == true) InfoRow("Driver's License", "Yes")
-            user.disabilities?.let { if (it.isNotBlank()) InfoRow("Disabilities", it) }
+            user.sex?.let { InfoRow("Sex", it.toDisplayString()) }
+            user.locationArea?.let { InfoRow("Preferred Location", it) }
+            user.hasDriversLicense?.let { InfoRow("Driver's License", if (it) "Yes" else "No") }
+            user.disabilities?.let { if (it.isNotBlank()) InfoRow("Accessibility Needs", it) }
+            InfoRow("Karma Points", user.karmaPoints.toString())
         }
     }
 }
@@ -229,7 +239,7 @@ private fun InfoRow(label: String, value: String) {
 
 @Composable
 private fun EmergencyContactCard(user: DomainUser) {
-    if (user.emergencyContactName != null || user.emergencyContactPhone != null) {
+    if (user.emergencyContactName?.isNotBlank() == true || user.emergencyContactPhone?.isNotBlank() == true) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -237,8 +247,12 @@ private fun EmergencyContactCard(user: DomainUser) {
         ) {
             Column(Modifier.padding(16.dp)) {
                 SectionHeader("Emergency Contact")
-                user.emergencyContactName?.let { InfoRow("Name", it) }
-                user.emergencyContactPhone?.let { InfoRow("Phone", it) }
+                user.emergencyContactName?.let { name ->
+                    if (name.isNotBlank()) InfoRow("Name", name)
+                }
+                user.emergencyContactPhone?.let { phone ->
+                    if (phone.isNotBlank()) InfoRow("Phone", phone)
+                }
             }
         }
     }
@@ -254,10 +268,6 @@ private fun OrganizationInfoCard(user: DomainUser) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Organization Information")
             user.organizationName?.let { InfoRow("Organization", it) }
-            user.organizationType?.let { InfoRow("Type", it.displayName) }
-            user.organizationCustomType?.let {
-                if (it.isNotBlank()) InfoRow("Custom Type", it)
-            }
             user.organizationDescription?.let {
                 if (it.isNotBlank()) InfoRow("Description", it)
             }

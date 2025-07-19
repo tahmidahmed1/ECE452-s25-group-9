@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +43,8 @@ import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundSc
 import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 
 @Composable
 fun FloatingNavBarItem(
@@ -129,18 +132,35 @@ fun FloatingNavigationBar(
 fun TabNavigationScreen(
     user: DomainUser,
     onLogout: () -> Unit,
+    onEditProfile: () -> Unit = {},
 ) {
     // Observe home navigation events to switch bottom bar tabs
     val homeViewModel: HomeViewModel = hiltViewModel()
     val badgeViewModel: BadgeViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var showEditProfile by remember { mutableStateOf(false) }
     var showPreviewProfile by remember { mutableStateOf(false) }
     var showPrivacySettings by remember { mutableStateOf(false) }
     var showLostAndFound by remember { mutableStateOf(false) }
 
-    // Generate tabs based on user type early
-    val tabs = getTabsForUserType(user.userType ?: DomainUserType.VOLUNTEER)
+    // Observe latest authenticated user state – keeps UI (karma points, etc.) always in sync
+    val authViewModel: AuthViewModel = hiltViewModel()
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Fallback to the originally-passed user until we get an updated state
+    val currentUser = (authState as? AuthUiState.Success)?.user ?: user
+
+    // Always refresh user data when TabNavigationScreen is first shown
+    LaunchedEffect(Unit) {
+        authViewModel.refreshUser()
+    }
+
+    // Refresh user each time the user switches tabs to ensure latest data
+    LaunchedEffect(selectedTabIndex) {
+        authViewModel.refreshUser()
+    }
+
+    // Generate tabs based on the *current* user type – should always have userType here but adding safety check
+    val tabs = getTabsForUserType(currentUser.userType ?: DomainUserType.VOLUNTEER)
 
     // Handle navigation events from HomeScreen using precomputed tabs
     LaunchedEffect(homeViewModel) {
@@ -174,26 +194,29 @@ fun TabNavigationScreen(
         Scaffold(
             topBar = {
                 AppTopBar(
-                    user = user,
-                    onEditProfile = { showEditProfile = true },
+                    user = currentUser,
+                    onEditProfile = onEditProfile,
                     onPreviewProfile = { showPreviewProfile = true },
                     onEditPrivacy = { showPrivacySettings = true },
                     onLogout = onLogout,
                 )
             },
             bottomBar = {
-                FloatingNavigationBar(
-                    tabs = tabs,
-                    selectedTabIndex = selectedTabIndex,
-                    onTabSelected = { selectedTabIndex = it },
-                    modifier = Modifier.padding(bottom = Spacing.md),
-                )
+                // Hide bottom navigation bar when Lost and Found is visible
+                if (!showLostAndFound) {
+                    FloatingNavigationBar(
+                        tabs = tabs,
+                        selectedTabIndex = selectedTabIndex,
+                        onTabSelected = { selectedTabIndex = it },
+                        modifier = Modifier.padding(bottom = Spacing.md),
+                    )
+                }
             },
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             modifier = Modifier.fillMaxSize(),
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
-                tabs[selectedTabIndex].screen(user, onLogout)
+                tabs[selectedTabIndex].screen(currentUser, onLogout)
 
                 // Lost & Found Overlay - positioned within scaffold content area
                 androidx.compose.animation.AnimatedVisibility(
@@ -201,30 +224,24 @@ fun TabNavigationScreen(
                     enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
                     exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
                 ) {
-                    LostAndFoundScreen(
-                        user = user,
-                        onBack = { showLostAndFound = false },
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    // Use a Box to block interaction with content behind
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                    ) {
+                        LostAndFoundScreen(
+                            user = currentUser,
+                            onBack = { showLostAndFound = false },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
             }
         }
 
         // Toast overlay is handled at the app level in AppNavHost
 
-        // Edit Profile Overlay - appears over everything including bottom bar
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showEditProfile,
-            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
-            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
-        ) {
-            com.example.gooddeedfeed.presentation.ui.screens.EditProfileScreen(
-                user = user,
-                onCancel = { showEditProfile = false },
-                onSave = { showEditProfile = false },
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
 
         // Preview Profile Overlay - appears over everything including bottom bar
         androidx.compose.animation.AnimatedVisibility(
@@ -233,7 +250,7 @@ fun TabNavigationScreen(
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
         ) {
             com.example.gooddeedfeed.presentation.ui.screens.PreviewProfileScreen(
-                user = user,
+                user = currentUser,
                 onBack = { showPreviewProfile = false },
                 modifier = Modifier.fillMaxSize(),
             )
@@ -246,7 +263,7 @@ fun TabNavigationScreen(
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
         ) {
             com.example.gooddeedfeed.presentation.ui.screens.PrivacySettingsScreen(
-                user = user,
+                user = currentUser,
                 onClose = { showPrivacySettings = false },
                 modifier = Modifier.fillMaxSize(),
             )
@@ -255,7 +272,7 @@ fun TabNavigationScreen(
         // Badge achievement manager for showing badge popups
         BadgeManager(
             badgeViewModel = badgeViewModel,
-            userKarmaPoints = user.karmaPoints,
+            userKarmaPoints = currentUser.karmaPoints,
         )
     }
 }

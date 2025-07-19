@@ -14,6 +14,7 @@ interface AuthRepository {
     suspend fun getCurrentUser(): Result<DomainUser>
     suspend fun setUserType(userType: DomainUserType): Result<Unit>
     suspend fun uploadProfilePicture(file: File): Result<String>
+    suspend fun removeProfilePicture(): Result<Unit>
     suspend fun uploadBannerImage(file: File): Result<String>
     suspend fun uploadOrganizationImages(files: List<File>): Result<List<String>>
     suspend fun completeOrganizerOnboarding(
@@ -25,4 +26,5 @@ interface AuthRepository {
         profilePictureFile: File?,
     ): Result<Unit>
     suspend fun updateProfile(updates: DomainUserUpdate): Result<DomainUser>
+    suspend fun increaseKarmaPointsDevOnly(): Result<DomainUser>
 }

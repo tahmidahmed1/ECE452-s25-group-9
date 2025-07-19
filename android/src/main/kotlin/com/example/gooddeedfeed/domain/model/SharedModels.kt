@@ -73,20 +73,6 @@ enum class ApprovalStatus(val displayName: String) {
     }
 }
 
-enum class OrganizationType(val displayName: String) {
-    NON_PROFIT("Non-Profit"),
-    SCHOOL_GROUP("School Group"),
-    CLUB("Club"),
-    CHARITY("Charity"),
-    CUSTOM("Custom"),
-    ;
-
-    companion object {
-        fun fromString(value: String): OrganizationType? {
-            return values().find { it.name.equals(value, ignoreCase = true) }
-        }
-    }
-}
 
 enum class SocialMediaPlatform(val displayName: String, val iconName: String) {
     INSTAGRAM("Instagram", "instagram"),
@@ -109,10 +95,8 @@ data class SocialMediaLink(
 
 data class OrganizationProfile(
     val name: String,
-    val type: OrganizationType,
     val description: String? = null,
     val website: String? = null,
     val socialMediaLinks: List<SocialMediaLink> = emptyList(),
     val images: List<String> = emptyList(),
-    val customType: String? = null,
 ) 

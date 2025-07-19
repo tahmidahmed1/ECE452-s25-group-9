@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -38,10 +41,12 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,6 +59,7 @@ import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.ProfileSectionHeader
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.SkillChip
 import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
+import kotlinx.coroutines.launch
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,14 +83,15 @@ fun OnboardingStepThreeVolunteerScreen(
     var disabilities by remember { mutableStateOf("") }
     var sexDropdownExpanded by remember { mutableStateOf(false) }
 
+    val skillsScrollState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     val predefinedSkills = AppConstants.PREDEFINED_SKILLS
 
     val displayedSkills by remember(selectedSkills) {
         derivedStateOf {
-            buildList {
-                addAll(selectedSkills)
-                addAll(predefinedSkills.filter { it !in selectedSkills })
-            }
+            val customSkills = selectedSkills.filter { it !in predefinedSkills }
+            customSkills + predefinedSkills
         }
     }
 
@@ -104,6 +111,18 @@ fun OnboardingStepThreeVolunteerScreen(
 
     val isFormValid by remember(validationErrors) {
         derivedStateOf { validationErrors.values.all { it == null } }
+    }
+
+    fun addCustomSkill(skill: String) {
+        val trimmedSkill = skill.trim()
+        if (trimmedSkill.isNotBlank() && trimmedSkill !in selectedSkills && trimmedSkill !in predefinedSkills) {
+            selectedSkills = selectedSkills + trimmedSkill
+            customSkill = ""
+            // Scroll to the beginning to show the newly added custom skill
+            coroutineScope.launch {
+                skillsScrollState.animateScrollToItem(0)
+            }
+        }
     }
 
     Surface(
@@ -174,11 +193,14 @@ fun OnboardingStepThreeVolunteerScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            errorBorderColor = MaterialTheme.colorScheme.error,
                         ),
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
+                        isError = validationErrors["sex"] != null,
+                        supportingText = validationErrors["sex"]?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                     )
 
                     ExposedDropdownMenu(
@@ -243,6 +265,7 @@ fun OnboardingStepThreeVolunteerScreen(
                 VerticalSpacer(SpacingSize.Medium)
 
                 LazyRow(
+                    state = skillsScrollState,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -273,12 +296,17 @@ fun OnboardingStepThreeVolunteerScreen(
                     placeholder = { Text("Enter a skill not listed above") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            addCustomSkill(customSkill)
+                        }
+                    ),
                     trailingIcon = {
                         if (customSkill.isNotBlank()) {
                             IconButton(
                                 onClick = {
-                                    selectedSkills = selectedSkills + customSkill.trim()
-                                    customSkill = ""
+                                    addCustomSkill(customSkill)
                                 },
                             ) {
                                 Icon(

@@ -3,6 +3,8 @@ package com.example.gooddeedfeed.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
+import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.repository.LeaderboardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +26,7 @@ data class LeaderboardUiState(
 @HiltViewModel
 class LeaderboardViewModel @Inject constructor(
     private val leaderboardRepository: LeaderboardRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LeaderboardUiState())
@@ -97,5 +100,28 @@ class LeaderboardViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+
+    fun increaseKarmaPointsDevOnly(onSuccess: (DomainUser) -> Unit) {
+        viewModelScope.launch {
+            try {
+                authRepository.increaseKarmaPointsDevOnly().fold(
+                    onSuccess = { updatedUser ->
+                        // Reload the leaderboard to show updated karma points
+                        loadLeaderboard()
+                        onSuccess(updatedUser)
+                    },
+                    onFailure = { error ->
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = error.message ?: "Failed to increase karma points"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = e.message ?: "Failed to increase karma points"
+                )
+            }
+        }
     }
 } 

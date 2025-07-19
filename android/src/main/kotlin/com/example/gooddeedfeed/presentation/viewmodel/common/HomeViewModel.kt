@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
+import com.example.gooddeedfeed.domain.repository.NotificationRepository
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +47,10 @@ sealed class HomeAction {
 }
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() : ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val locationSettingsRepository: LocationSettingsRepository,
+    private val notificationRepository: NotificationRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Loading)
     val uiState: StateFlow<UiState<HomeData>> = _uiState.asStateFlow()
@@ -75,11 +81,28 @@ class HomeViewModel @Inject constructor() : ViewModel() {
         _navigationEvent.tryEmit(action)
     }
 
+    suspend fun hasNotificationPromptBeenShown(): Boolean {
+        return locationSettingsRepository.hasNotificationPromptBeenShown.first()
+    }
+    
+    fun markNotificationPromptAsShown() {
+        viewModelScope.launch {
+            locationSettingsRepository.setNotificationPromptShown(true)
+        }
+    }
+    
+    fun enableNotifications() {
+        viewModelScope.launch {
+            notificationRepository.setNotificationsEnabled(true)
+            locationSettingsRepository.setNotificationsEnabled(true)
+        }
+    }
+    
     private fun createUserTypeDisplay(user: DomainUser): UserTypeDisplay {
         return when (user.userType) {
             DomainUserType.VOLUNTEER -> UserTypeDisplay(
                 title = "Welcome, Volunteer!",
-                subtitle = "Find meaningful ways to give back to your community",
+                subtitle = "Find meaningful ways to give back to your community!",
                 actionItems = listOf(
                     HomeActionItem(
                         iconName = "search",

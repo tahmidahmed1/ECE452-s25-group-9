@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
+import com.example.gooddeedfeed.presentation.ui.screens.organizer.CreateEventScreen
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 
@@ -61,9 +62,18 @@ fun EventManagementScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
     var creatingEvent by remember { mutableStateOf(false) }
+    var editingEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
 
     if (creatingEvent) {
         CreateEventScreen(onBack = { creatingEvent = false })
+        return
+    }
+    
+    if (editingEvent != null) {
+        CreateEventScreen(
+            onBack = { editingEvent = null },
+            eventToEdit = editingEvent
+        )
         return
     }
 
@@ -164,7 +174,7 @@ fun EventManagementScreen(
                         items(eventData.events) { event ->
                             EventCard(
                                 event = event,
-                                onEditClick = { viewModel.selectEvent(event) },
+                                onEditClick = { editingEvent = event },
                                 onDeleteClick = { viewModel.deleteEvent(event.id) },
                                 onViewClick = { selectedEvent = event },
                             )

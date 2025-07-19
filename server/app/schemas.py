@@ -18,12 +18,6 @@ class OpportunityCategory(str, Enum):
     DISASTER_RELIEF = "disaster_relief"
     OTHER = "other"
 
-class OrganizationType(str, Enum):
-    NON_PROFIT = "non_profit"
-    SCHOOL_GROUP = "school_group"
-    CLUB = "club"
-    CHARITY = "charity"
-    CUSTOM = "custom"
 
 class Sex(str, Enum):
     MALE = "male"
@@ -57,17 +51,14 @@ class User(UserBase):
     full_name: Optional[str] = None
     phone: Optional[str] = None
     profile_picture_url: Optional[str] = None
-    share_profile_picture: bool = True
     banner_url: Optional[str] = None
     
     # Organization fields (for organizers)
     organization_name: Optional[str] = None
-    organization_type: Optional[OrganizationType] = None
     organization_description: Optional[str] = None
     organization_website: Optional[HttpUrl] = None
     organization_social_media: Optional[List[SocialMediaLink]] = None
     organization_images: Optional[List[str]] = None
-    organization_custom_type: Optional[str] = None
     
     # Enhanced volunteer profile fields
     sex: Optional[Sex] = None
@@ -111,23 +102,19 @@ class OnboardingStepTwoOrganizer(BaseModel):
     full_name: str
     phone: str
     organization_name: str
-    organization_type: OrganizationType
     organization_description: Optional[str] = None
     organization_website: Optional[HttpUrl] = None
     organization_social_media: Optional[List[SocialMediaLink]] = None
     organization_images: Optional[List[str]] = None
-    organization_custom_type: Optional[str] = None
 
 class OnboardingComplete(BaseModel):
     full_name: Optional[str] = None
     phone: str
     organization_name: Optional[str] = None
-    organization_type: Optional[OrganizationType] = None
     organization_description: Optional[str] = None
     organization_website: Optional[HttpUrl] = None
     organization_social_media: Optional[List[SocialMediaLink]] = None
     organization_images: Optional[List[str]] = None
-    organization_custom_type: Optional[str] = None
     # Volunteer-specific fields
     sex: Optional[Sex] = None
     description: Optional[str] = None
@@ -162,16 +149,13 @@ class ProfileBannerUploadResponse(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
-    share_profile_picture: Optional[bool] = None
 
     # Organizer specific
     organization_name: Optional[str] = None
-    organization_type: Optional[OrganizationType] = None
     organization_description: Optional[str] = None
     organization_website: Optional[HttpUrl] = None
     organization_social_media: Optional[List[SocialMediaLink]] = None
     organization_images: Optional[List[str]] = None
-    organization_custom_type: Optional[str] = None
 
     # Volunteer-specific optional fields
     sex: Optional[Sex] = None

@@ -1,7 +1,6 @@
 package com.example.gooddeedfeed.data.mapper
 
 import com.example.gooddeedfeed.data.remote.dto.BadgeDto
-import com.example.gooddeedfeed.data.remote.dto.OrganizationTypeDto
 import com.example.gooddeedfeed.data.remote.dto.Sex
 import com.example.gooddeedfeed.data.remote.dto.SocialMediaLinkDto
 import com.example.gooddeedfeed.data.remote.dto.SocialMediaPlatformDto
@@ -15,7 +14,6 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserBadge
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
-import com.example.gooddeedfeed.domain.model.OrganizationType
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 
@@ -30,16 +28,13 @@ fun UserDto.toDomain(): DomainUser {
         onboardingCompleted = onboarding_completed,
         fullName = full_name,
         phone = phone,
-        profilePictureUrl = profile_picture_url,
-        shareProfilePicture = share_profile_picture,
-        bannerUrl = banner_url,
+        profilePictureUrl = profile_picture_url?.toEmulatorAccessibleUrl(),
+        bannerUrl = banner_url?.toEmulatorAccessibleUrl(),
         organizationName = organization_name,
-        organizationType = organization_type?.toDomain(),
         organizationDescription = organization_description,
         organizationWebsite = organization_website,
         organizationSocialMedia = organization_social_media?.map { it.toDomain() },
-        organizationImages = organization_images,
-        organizationCustomType = organization_custom_type,
+        organizationImages = organization_images?.map { it.toEmulatorAccessibleUrl() },
         sex = sex?.toDomain(),
         description = description,
         skills = skills,
@@ -59,14 +54,11 @@ fun DomainUserUpdate.toDto(): UserUpdateDto {
     return UserUpdateDto(
         full_name = fullName,
         phone = phone,
-        share_profile_picture = shareProfilePicture,
         organization_name = organizationName,
-        organization_type = organizationType?.toDto(),
         organization_description = organizationDescription,
         organization_website = organizationWebsite,
         organization_social_media = organizationSocialMedia?.map { it.toDto() },
         organization_images = organizationImages,
-        organization_custom_type = organizationCustomType,
         sex = sex?.toDto(),
         description = description,
         skills = skills,
@@ -93,22 +85,6 @@ fun Sex.toDomain(): DomainSex = when (this) {
     Sex.PREFER_NOT_TO_SAY -> DomainSex.PREFER_NOT_TO_SAY
 }
 
-// OrganizationType mappers
-fun OrganizationTypeDto.toDomain(): OrganizationType = when (this) {
-    OrganizationTypeDto.NON_PROFIT -> OrganizationType.NON_PROFIT
-    OrganizationTypeDto.SCHOOL_GROUP -> OrganizationType.SCHOOL_GROUP
-    OrganizationTypeDto.CLUB -> OrganizationType.CLUB
-    OrganizationTypeDto.CHARITY -> OrganizationType.CHARITY
-    OrganizationTypeDto.CUSTOM -> OrganizationType.CUSTOM
-}
-
-fun OrganizationType.toDto(): OrganizationTypeDto = when (this) {
-    OrganizationType.NON_PROFIT -> OrganizationTypeDto.NON_PROFIT
-    OrganizationType.SCHOOL_GROUP -> OrganizationTypeDto.SCHOOL_GROUP
-    OrganizationType.CLUB -> OrganizationTypeDto.CLUB
-    OrganizationType.CHARITY -> OrganizationTypeDto.CHARITY
-    OrganizationType.CUSTOM -> OrganizationTypeDto.CUSTOM
-}
 
 // SocialMediaPlatform mappers
 fun SocialMediaPlatformDto.toDomain(): SocialMediaPlatform = when (this) {

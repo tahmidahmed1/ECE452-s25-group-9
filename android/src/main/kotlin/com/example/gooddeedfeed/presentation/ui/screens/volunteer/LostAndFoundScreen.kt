@@ -118,7 +118,6 @@ fun LostAndFoundScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
         // Header
@@ -324,7 +323,6 @@ private fun LostFoundDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -453,7 +451,6 @@ private fun CreateLostFoundScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

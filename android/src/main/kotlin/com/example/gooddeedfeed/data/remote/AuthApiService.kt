@@ -28,10 +28,13 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.first
 import java.io.File
 import javax.inject.Inject
@@ -87,6 +90,20 @@ class AuthApiService @Inject constructor(
             Log.d(TAG, "📥 SignUp response status: ${response.status}")
             Log.d(TAG, "📥 SignUp response headers: ${response.headers}")
 
+            // Check for success status before trying to parse token response
+            if (!response.status.isSuccess()) {
+                val errorBody = response.bodyAsText()
+                Log.e(TAG, "❌ SignUp failed with status ${response.status}")
+                Log.e(TAG, "❌ Error response body: $errorBody")
+                
+                // Handle specific error cases
+                when (response.status.value) {
+                    409 -> throw Exception("Username or email already exists")
+                    400 -> throw Exception("Invalid signup data provided")
+                    else -> throw Exception("Signup failed: ${response.status.description}")
+                }
+            }
+
             val tokenResponse: TokenResponseDto = response.body()
             Log.d(TAG, "✅ SignUp successful - Token type: ${tokenResponse.token_type}")
 
@@ -97,6 +114,16 @@ class AuthApiService @Inject constructor(
                 client.get("$baseUrl/users/me") {
                     header("Authorization", "Bearer ${tokenResponse.access_token}")
                 }
+            }
+
+            Log.d(TAG, "📥 User info response status: ${userResponse.status}")
+            
+            // Check for success status before trying to parse user response
+            if (!userResponse.status.isSuccess()) {
+                val errorBody = userResponse.bodyAsText()
+                Log.e(TAG, "❌ Get user info failed with status ${userResponse.status}")
+                Log.e(TAG, "❌ Error response body: $errorBody")
+                throw Exception("Failed to get user info: ${userResponse.status.description}")
             }
 
             val userDto: UserDto = userResponse.body()
@@ -134,6 +161,20 @@ class AuthApiService @Inject constructor(
             Log.d(TAG, "📥 SignIn response status: ${response.status}")
             Log.d(TAG, "📥 SignIn response headers: ${response.headers}")
 
+            // Check for success status before trying to parse token response
+            if (!response.status.isSuccess()) {
+                val errorBody = response.bodyAsText()
+                Log.e(TAG, "❌ SignIn failed with status ${response.status}")
+                Log.e(TAG, "❌ Error response body: $errorBody")
+                
+                // Handle specific error cases
+                when (response.status.value) {
+                    401 -> throw Exception("Invalid username or password")
+                    400 -> throw Exception("Invalid signin data provided")
+                    else -> throw Exception("Signin failed: ${response.status.description}")
+                }
+            }
+
             val tokenResponse: TokenResponseDto = response.body()
             Log.d(TAG, "✅ SignIn successful - Token type: ${tokenResponse.token_type}")
 
@@ -144,6 +185,16 @@ class AuthApiService @Inject constructor(
                 client.get("$baseUrl/users/me") {
                     header("Authorization", "Bearer ${tokenResponse.access_token}")
                 }
+            }
+
+            Log.d(TAG, "📥 User info response status: ${userResponse.status}")
+            
+            // Check for success status before trying to parse user response
+            if (!userResponse.status.isSuccess()) {
+                val errorBody = userResponse.bodyAsText()
+                Log.e(TAG, "❌ Get user info failed with status ${userResponse.status}")
+                Log.e(TAG, "❌ Error response body: $errorBody")
+                throw Exception("Failed to get user info: ${userResponse.status.description}")
             }
 
             val userDto: UserDto = userResponse.body()
@@ -268,6 +319,34 @@ class AuthApiService @Inject constructor(
         }.body()
     }
 
+    suspend fun removeProfilePicture(): Boolean {
+        Log.d(TAG, "🚀 Starting removeProfilePicture request")
+
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for removeProfilePicture")
+            throw Exception("No authentication token found")
+        }
+
+        return try {
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying removeProfilePicture URL: $baseUrl/remove-profile-picture")
+                client.post("$baseUrl/remove-profile-picture") {
+                    header("Authorization", "Bearer $token")
+                    contentType(ContentType.Application.Json)
+                }
+            }
+            Log.d(TAG, "✅ removeProfilePicture successful")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ removeProfilePicture failed with exception", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Exception message: ${e.message}")
+            throw e
+        }
+    }
+
     suspend fun uploadBannerImage(file: File): BannerUploadResponse {
         Log.d(TAG, "🚀 Starting uploadBannerImage request")
 
@@ -369,12 +448,10 @@ class AuthApiService @Inject constructor(
                             full_name = profile.fullName,
                             phone = profile.phone,
                             organization_name = profile.organizationName,
-                            organization_type = profile.organizationType.toDto(),
                             organization_description = profile.organizationDescription,
                             organization_website = profile.organizationWebsite,
                             organization_social_media = profile.organizationSocialMedia?.map { it.toDto() },
                             organization_images = profile.organizationImages,
-                            organization_custom_type = profile.organizationCustomType,
                         ),
                     )
                 }
@@ -415,8 +492,10 @@ class AuthApiService @Inject constructor(
             // Then complete onboarding
             Log.d(TAG, "📤 Sending volunteer onboarding request...")
             withFallbackUrls { baseUrl ->
-                Log.d(TAG, "🌐 Trying URL: $baseUrl/complete-volunteer-onboarding")
-                client.post("$baseUrl/complete-volunteer-onboarding") {
+                // Use the correct backend endpoint for volunteer onboarding completion
+                val endpoint = "$baseUrl/onboarding/volunteer-complete"
+                Log.d(TAG, "🌐 Trying URL: $endpoint")
+                client.post(endpoint) {
                     contentType(ContentType.Application.Json)
                     header("Authorization", "Bearer $token")
                     setBody(
@@ -456,28 +535,103 @@ class AuthApiService @Inject constructor(
             throw Exception("No authentication token found")
         }
 
-        return withFallbackUrls { baseUrl ->
-            Log.d(TAG, "🌐 Trying updateProfile URL: $baseUrl/profile")
-            client.put("$baseUrl/profile") {
+        val response = withFallbackUrls { baseUrl ->
+            val endpoint = "$baseUrl/users/me"
+            Log.d(TAG, "🌐 Trying updateProfile URL: $endpoint")
+            client.put(endpoint) {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
                 setBody(updates)
             }
-        }.body()
+        }
+
+        Log.d(TAG, "📥 updateProfile response status: ${response.status}")
+
+        if (!response.status.isSuccess()) {
+            val errorBody = response.bodyAsText()
+            Log.e(TAG, "❌ updateProfile failed with status ${response.status}")
+            Log.e(TAG, "❌ Error response body: $errorBody")
+            throw Exception("Profile update failed: ${response.status.description}")
+        }
+
+        val updatedUser: UserDto = response.body()
+
+        Log.d(TAG, "✅ updateProfile successful. Returned userId=${updatedUser.id}, fullName=${updatedUser.full_name}")
+        return updatedUser
     }
 
     suspend fun signOut(): Boolean {
         Log.d(TAG, "🚀 Starting signOut request")
-        Log.d(TAG, "ℹ️ No server logout endpoint - performing client-side logout")
+
+        // Get token for authenticated logout call
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.w(TAG, "⚠️ No token found for logout - proceeding with client-side logout only")
+            return true
+        }
 
         return try {
-            Log.d(TAG, "✅ SignOut successful (client-side)")
-            true
+            Log.d(TAG, "📤 Calling server logout endpoint...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying logout URL: $baseUrl/logout")
+                client.post("$baseUrl/logout") {
+                    header("Authorization", "Bearer $token")
+                    contentType(ContentType.Application.Json)
+                }
+            }
+
+            Log.d(TAG, "📥 Logout response status: ${response.status}")
+            
+            if (response.status.isSuccess()) {
+                Log.d(TAG, "✅ Server logout successful")
+                true
+            } else {
+                Log.w(TAG, "⚠️ Server logout failed with status ${response.status} - continuing with client logout")
+                true // Still return true to allow client-side cleanup
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ SignOut failed with exception", e)
+            Log.e(TAG, "❌ Server logout failed with exception - continuing with client logout", e)
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
             Log.e(TAG, "❌ Exception message: ${e.message}")
-            false
+            true // Still return true to allow client-side cleanup
+        }
+    }
+
+    suspend fun increaseKarmaPointsDevOnly(): UserDto {
+        Log.d(TAG, "🚀 Starting increaseKarmaPointsDevOnly request")
+
+        // Manually get token from DataStore since Auth interceptor is not working
+        val token = getTokenFromDataStore()
+        if (token == null) {
+            Log.e(TAG, "❌ No JWT token found in DataStore for increaseKarmaPointsDevOnly")
+            throw Exception("No authentication token found")
+        }
+
+        return try {
+            Log.d(TAG, "📤 Calling dev karma increase endpoint...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying karma increase URL: $baseUrl/dev/increase-karma")
+                client.post("$baseUrl/dev/increase-karma") {
+                    header("Authorization", "Bearer $token")
+                    contentType(ContentType.Application.Json)
+                }
+            }
+
+            Log.d(TAG, "📥 Karma increase response status: ${response.status}")
+            
+            if (!response.status.isSuccess()) {
+                val errorBody = response.bodyAsText()
+                Log.e(TAG, "❌ Karma increase failed with status ${response.status}")
+                Log.e(TAG, "❌ Error response body: $errorBody")
+                throw Exception("Failed to increase karma points: ${response.status.description}")
+            }
+
+            val userDto: UserDto = response.body()
+            Log.d(TAG, "✅ Karma increased successfully. New karma: ${userDto.karma_points}")
+            userDto
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to increase karma points", e)
+            throw e
         }
     }
 }

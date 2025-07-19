@@ -36,6 +36,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
+import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.theme.CornerRadius
@@ -72,6 +74,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,31 +83,127 @@ fun CreateEventScreen(
     onBack: () -> Unit,
     viewModel: EventManagementViewModel = hiltViewModel<EventManagementViewModel>(),
     currentLocation: Location? = null,
+    eventToEdit: VolunteerEvent? = null,
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var locationText by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
-    var startTime by remember { mutableStateOf("") }
-    var endTime by remember { mutableStateOf("") }
+    val isEditing = eventToEdit != null
+    var title by remember { mutableStateOf(eventToEdit?.title ?: "") }
+    var description by remember { mutableStateOf(eventToEdit?.description ?: "") }
+    var locationText by remember { mutableStateOf(eventToEdit?.location ?: "") }
+    var date by remember { mutableStateOf(eventToEdit?.date ?: "") }
+    var startTime by remember { mutableStateOf(eventToEdit?.startTime ?: "") }
+    var endTime by remember { mutableStateOf(eventToEdit?.endTime ?: "") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
-    var maxVolunteersText by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(OpportunityCategory.OTHER) }
-    var karmaPoints by remember { mutableStateOf(10) }
+    var maxVolunteersText by remember { mutableStateOf(eventToEdit?.maxVolunteers?.toString() ?: "") }
+    var category by remember { mutableStateOf(eventToEdit?.category ?: OpportunityCategory.OTHER) }
+    var karmaPoints by remember { mutableStateOf(eventToEdit?.karmaPoints ?: 10) }
     var latitudeText by remember { mutableStateOf("") }
     var longitudeText by remember { mutableStateOf("") }
     var showMapPicker by remember { mutableStateOf(false) }
     var selectedImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var mainImageIndex by remember { mutableStateOf(0) }
+    var hasAttemptedSubmit by remember { mutableStateOf(false) }
+    var isSubmitting by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
 
+    // Date/time validation functions
+    fun parseEventDateTime(dateStr: String, timeStr: String): Date? {
+        return try {
+            val dateFormat = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
+            val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+            val parsedDate = dateFormat.parse(dateStr)
+            val parsedTime = timeFormat.parse(timeStr)
+            
+            if (parsedDate != null && parsedTime != null) {
+                val calendar = Calendar.getInstance()
+                calendar.time = parsedDate
+                
+                val timeCalendar = Calendar.getInstance()
+                timeCalendar.time = parsedTime
+                
+                calendar.set(Calendar.HOUR_OF_DAY, timeCalendar.get(Calendar.HOUR_OF_DAY))
+                calendar.set(Calendar.MINUTE, timeCalendar.get(Calendar.MINUTE))
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                
+                calendar.time
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    fun isEventDateTimeValid(dateStr: String, timeStr: String): Boolean {
+        if (dateStr.isBlank() || timeStr.isBlank()) return false
+        
+        val eventDateTime = parseEventDateTime(dateStr, timeStr) ?: return false
+        val now = Date()
+        val oneHourFromNow = Date(now.time + 60 * 60 * 1000) // Add 1 hour in milliseconds
+        
+        // For editing existing events, allow if the new time is at least 1 hour from now
+        // or if we're editing an existing event and the time hasn't changed (moved earlier)
+        if (isEditing && eventToEdit != null) {
+            val originalDateTime = parseEventDateTime(eventToEdit.date, eventToEdit.startTime)
+            // Allow if new time is valid OR if we're not making it worse than the original
+            return eventDateTime.after(oneHourFromNow) || 
+                   (originalDateTime != null && !eventDateTime.before(originalDateTime))
+        }
+        
+        return eventDateTime.after(oneHourFromNow)
+    }
+    
+    fun isEndTimeAfterStartTime(dateStr: String, startTimeStr: String, endTimeStr: String): Boolean {
+        if (dateStr.isBlank() || startTimeStr.isBlank() || endTimeStr.isBlank()) return false
+        
+        val startDateTime = parseEventDateTime(dateStr, startTimeStr) ?: return false
+        val endDateTime = parseEventDateTime(dateStr, endTimeStr) ?: return false
+        
+        return endDateTime.after(startDateTime)
+    }
+    
+    // Validation helper functions
+    val isStartDateTimeValid = isEventDateTimeValid(date, startTime)
+    val isEndTimeValid = isEndTimeAfterStartTime(date, startTime, endTime)
+    
+    val isFormValid = title.isNotBlank() && 
+                     description.isNotBlank() && 
+                     locationText.isNotBlank() && 
+                     date.isNotBlank() && 
+                     startTime.isNotBlank() && 
+                     endTime.isNotBlank() && 
+                     maxVolunteersText.isNotBlank() && 
+                     (maxVolunteersText.toIntOrNull() ?: 0) > 0 &&
+                     isStartDateTimeValid &&
+                     isEndTimeValid
+
+    val titleError = hasAttemptedSubmit && title.isBlank()
+    val descriptionError = hasAttemptedSubmit && description.isBlank()
+    val locationError = hasAttemptedSubmit && locationText.isBlank()
+    val dateError = hasAttemptedSubmit && date.isBlank()
+    val startTimeError = hasAttemptedSubmit && (startTime.isBlank() || (date.isNotBlank() && startTime.isNotBlank() && !isStartDateTimeValid))
+    val endTimeError = hasAttemptedSubmit && (endTime.isBlank() || (date.isNotBlank() && startTime.isNotBlank() && endTime.isNotBlank() && !isEndTimeValid))
+    val maxVolunteersError = hasAttemptedSubmit && (maxVolunteersText.isBlank() || (maxVolunteersText.toIntOrNull() ?: 0) <= 0)
+
     // Date and time picker states
-    val datePickerState = rememberDatePickerState()
+    val today = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+    
+    val datePickerState = rememberDatePickerState(
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis >= today
+            }
+        }
+    )
     val startTimePickerState = rememberTimePickerState()
     val endTimePickerState = rememberTimePickerState()
 
@@ -198,17 +297,21 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Title") },
+                label = { Text("Title *") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
+                isError = titleError,
+                supportingText = if (titleError) { { Text("Title is required", color = MaterialTheme.colorScheme.error) } } else null,
             )
 
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Description") },
+                label = { Text("Description *") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
+                isError = descriptionError,
+                supportingText = if (descriptionError) { { Text("Description is required", color = MaterialTheme.colorScheme.error) } } else null,
             )
 
             // Location input with autocomplete and map button
@@ -229,11 +332,13 @@ fun CreateEventScreen(
                     OutlinedTextField(
                         value = locationText,
                         onValueChange = { locationText = it },
-                        label = { Text("Location") },
+                        label = { Text("Location *") },
                         colors = ExposedDropdownMenuDefaults.textFieldColors(),
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        isError = locationError,
+                        supportingText = if (locationError) { { Text("Location is required", color = MaterialTheme.colorScheme.error) } } else null,
                     )
 
                     ExposedDropdownMenu(
@@ -310,7 +415,7 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = date,
                 onValueChange = { },
-                label = { Text("Date") },
+                label = { Text("Date *") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showDatePicker = true }
@@ -326,13 +431,15 @@ fun CreateEventScreen(
                         Icon(Icons.Default.DateRange, contentDescription = "Select Date")
                     }
                 },
+                isError = dateError,
+                supportingText = if (dateError) { { Text("Date is required", color = MaterialTheme.colorScheme.error) } } else null,
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = startTime,
                     onValueChange = { },
-                    label = { Text("Start Time") },
+                    label = { Text("Start Time *") },
                     modifier = Modifier
                         .weight(1f)
                         .clickable { showStartTimePicker = true }
@@ -348,11 +455,24 @@ fun CreateEventScreen(
                             Icon(Icons.Default.Schedule, contentDescription = "Select Start Time")
                         }
                     },
+                    isError = startTimeError,
+                    supportingText = if (startTimeError) { 
+                        { 
+                            Text(
+                                text = when {
+                                    startTime.isBlank() -> "Start time is required"
+                                    !isStartDateTimeValid -> "Event must be scheduled at least 1 hour from now"
+                                    else -> "Invalid start time"
+                                },
+                                color = MaterialTheme.colorScheme.error
+                            ) 
+                        } 
+                    } else null,
                 )
                 OutlinedTextField(
                     value = endTime,
                     onValueChange = { },
-                    label = { Text("End Time") },
+                    label = { Text("End Time *") },
                     modifier = Modifier
                         .weight(1f)
                         .clickable { showEndTimePicker = true }
@@ -368,6 +488,19 @@ fun CreateEventScreen(
                             Icon(Icons.Default.Schedule, contentDescription = "Select End Time")
                         }
                     },
+                    isError = endTimeError,
+                    supportingText = if (endTimeError) { 
+                        { 
+                            Text(
+                                text = when {
+                                    endTime.isBlank() -> "End time is required"
+                                    !isEndTimeValid -> "End time must be after start time"
+                                    else -> "Invalid end time"
+                                },
+                                color = MaterialTheme.colorScheme.error
+                            ) 
+                        } 
+                    } else null,
                 )
             }
 
@@ -384,9 +517,11 @@ fun CreateEventScreen(
                         else -> digits
                     }
                 },
-                label = { Text("Max Volunteers (1-100)") },
+                label = { Text("Max Volunteers (1-100) *") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
+                isError = maxVolunteersError,
+                supportingText = if (maxVolunteersError) { { Text("Max volunteers is required (1-100)", color = MaterialTheme.colorScheme.error) } } else null,
             )
 
             // Category dropdown
@@ -478,36 +613,98 @@ fun CreateEventScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            PrimaryButton(
-                text = "Create Event",
-                onClick = {
-                    scope.launch {
-                        val data = CreateEventData(
-                            title = title,
-                            description = description,
-                            location = locationText,
-                            date = date,
-                            startTime = startTime,
-                            endTime = endTime,
-                            maxVolunteers = maxVolunteersText.toIntOrNull() ?: 0,
-                            category = category,
-                            requirements = emptyList(),
-                            latitude = latitudeText.toDoubleOrNull(),
-                            longitude = longitudeText.toDoubleOrNull(),
-                            karmaPoints = karmaPoints,
+            // Error message display
+            errorMessage?.let { message ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.weight(1f)
                         )
-                        val created = viewModel.createEvent(data)
-
-                        // Upload images if selected
-                        selectedImageFiles.forEachIndexed { index, file ->
-                            val isMain = index == mainImageIndex
-                            viewModel.uploadEventImageToCarousel(created.id, file, isMain)
+                        IconButton(onClick = { errorMessage = null }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Dismiss error",
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-                        onBack()
+            PrimaryButton(
+                text = if (isSubmitting) {
+                    if (isEditing) "Updating..." else "Creating..."
+                } else {
+                    if (isEditing) "Update Event" else "Create Event"
+                },
+                onClick = {
+                    if (isFormValid) {
+                        scope.launch {
+                            try {
+                                isSubmitting = true
+                                errorMessage = null
+                                
+                                val data = CreateEventData(
+                                    title = title,
+                                    description = description,
+                                    location = locationText,
+                                    date = date,
+                                    startTime = startTime,
+                                    endTime = endTime,
+                                    maxVolunteers = maxVolunteersText.toIntOrNull() ?: 0,
+                                    category = category,
+                                    requirements = emptyList(),
+                                    latitude = latitudeText.toDoubleOrNull(),
+                                    longitude = longitudeText.toDoubleOrNull(),
+                                    karmaPoints = karmaPoints,
+                                )
+                                if (isEditing && eventToEdit != null) {
+                                    viewModel.updateEvent(eventToEdit.id, data)
+                                    
+                                    // Upload images if selected
+                                    selectedImageFiles.forEachIndexed { index, file ->
+                                        val isMain = index == mainImageIndex
+                                        viewModel.uploadEventImageToCarousel(eventToEdit.id, file, isMain)
+                                    }
+                                } else {
+                                    val created = viewModel.createEvent(data)
+                                    
+                                    // Upload images if selected
+                                    selectedImageFiles.forEachIndexed { index, file ->
+                                        val isMain = index == mainImageIndex
+                                        viewModel.uploadEventImageToCarousel(created.id, file, isMain)
+                                    }
+                                }
+
+                                onBack()
+                            } catch (e: Exception) {
+                                errorMessage = e.message ?: if (isEditing) "Failed to update event. Please try again." else "Failed to create event. Please try again."
+                            } finally {
+                                isSubmitting = false
+                            }
+                        }
+                    } else {
+                        // Show validation errors
+                        hasAttemptedSubmit = true
                     }
                 },
-                enabled = title.isNotBlank() && date.isNotBlank(),
+                enabled = isFormValid && !isSubmitting,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

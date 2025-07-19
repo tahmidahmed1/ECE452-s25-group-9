@@ -14,7 +14,7 @@ from .schemas import TokenData
 # Load JWT secret from environment variables
 SECRET_KEY = os.getenv("JWT_SECRET", "fallback_secret_key_for_development_only")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 10080  # 7 days (7 * 24 * 60 minutes)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

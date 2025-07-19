@@ -12,7 +12,7 @@ from sqlalchemy import func
 from .database import get_db
 from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, InAppNotification
 from .schemas import (
-    UserCreate, User as UserSchema, Token, OnboardingStepOne, 
+    UserCreate, User as UserSchema, Token, OnboardingStepOne, OnboardingStepTwoOrganizer,
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
     UserUpdate, EventCreate, EventImageOut,
     MessageCreate, MessageOut,
@@ -183,6 +183,15 @@ def read_users_me(current_user: User = Depends(get_current_active_user)):
     logger.info(f"User info request for: {current_user.username}")
     return current_user
 
+@router.post("/logout")
+def logout(current_user: User = Depends(get_current_active_user)):
+    """Logout endpoint - for JWT tokens this just logs the action since tokens are stateless"""
+    logger.info(f"Logout request for user: {current_user.username}")
+    # With JWT tokens, we can't invalidate them server-side without a blacklist
+    # So we just log the logout action and return success
+    # The client should delete the token from local storage
+    return {"message": "Successfully logged out"}
+
 # Profile picture upload endpoint
 @router.post("/upload-profile-picture", response_model=ProfilePictureUploadResponse)
 async def upload_profile_picture(
@@ -206,6 +215,26 @@ async def upload_profile_picture(
         "profile_picture_url": profile_picture_url,
         "message": "Profile picture uploaded successfully"
     }
+
+@router.post("/remove-profile-picture")
+async def remove_profile_picture(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    logger.info(f"Profile picture removal request from user: {current_user.username}")
+    
+    # Delete existing profile picture if exists
+    if current_user.profile_picture_url:
+        storage_service.delete_profile_picture(current_user.profile_picture_url)
+        
+        # Remove profile picture URL from database
+        current_user.profile_picture_url = None
+        db.commit()
+        db.refresh(current_user)
+        
+        return {"message": "Profile picture removed successfully"}
+    else:
+        return {"message": "No profile picture to remove"}
 
 # Onboarding endpoints
 @router.post("/onboarding/step-one")
@@ -293,6 +322,44 @@ def complete_volunteer_onboarding(
     
     logger.info(f"Volunteer onboarding completed for user {current_user.username}")
     return {"message": "Volunteer onboarding completed successfully"}
+
+@router.post("/complete-organizer-onboarding")
+def complete_organizer_onboarding(
+    onboarding_data: OnboardingStepTwoOrganizer,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    logger.info(f"Completing organizer onboarding for user {current_user.username}")
+    
+    # Update user profile with all organizer fields
+    current_user.full_name = onboarding_data.full_name
+    current_user.phone = onboarding_data.phone
+    current_user.onboarding_completed = True
+    
+    # Organizer-specific fields
+    current_user.organization_name = onboarding_data.organization_name
+    current_user.organization_description = onboarding_data.organization_description
+    current_user.organization_website = str(onboarding_data.organization_website) if onboarding_data.organization_website else None
+    
+    # Handle social media links
+    if onboarding_data.organization_social_media:
+        social_media_data = []
+        for link in onboarding_data.organization_social_media:
+            social_media_data.append({
+                "platform": link.platform.value,
+                "url": str(link.url)
+            })
+        current_user.organization_social_media = social_media_data
+    
+    # Handle organization images
+    if onboarding_data.organization_images:
+        current_user.organization_images = onboarding_data.organization_images
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    logger.info(f"Organizer onboarding completed for user {current_user.username}")
+    return {"message": "Organizer onboarding completed successfully"}
 
 # ------------------ Event Endpoints ------------------
 
@@ -1562,4 +1629,38 @@ def clear_all_notifications(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to clear notifications"
+        )
+
+@router.post("/dev/increase-karma", response_model=UserSchema)
+def increase_karma_dev_only(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Development-only endpoint to increase karma points by 100 for testing purposes"""
+    try:
+        # Only allow for volunteer users
+        if current_user.user_type != UserType.VOLUNTEER:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This endpoint is only available for volunteer users"
+            )
+        
+        # Increase karma points by 100
+        current_user.karma_points += 100
+        db.commit()
+        db.refresh(current_user)
+        
+        logger.info(f"[DEV] Increased karma points by 100 for user {current_user.username}. New total: {current_user.karma_points}")
+        
+        return current_user
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        logger.error(f"Failed to increase karma points: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to increase karma points"
         )

@@ -61,7 +61,7 @@ object AuthModule {
             install(Auth) {
                 bearer {
                     loadTokens {
-                        Log.d(TAG, "🔐 Auth interceptor: Loading tokens for authentication...")
+                        Log.d(TAG, "🔐 Auth interceptor: Loading token for authentication...")
                         val token = runBlocking {
                             try {
                                 val tokenValue = dataStore.data.first()[JWT_TOKEN_KEY]
@@ -75,17 +75,15 @@ object AuthModule {
 
                         if (token != null) {
                             Log.d(TAG, "✅ Auth interceptor: Token loaded successfully, will add to request")
-                            BearerTokens(token, token) // Use access token as refresh token for now
+                            BearerTokens(token, "") // Empty string for refresh token since server doesn't support it
                         } else {
                             Log.d(TAG, "ℹ️ Auth interceptor: No token found - requests will not be authenticated")
                             null
                         }
                     }
 
-                    refreshTokens {
-                        Log.d(TAG, "🔄 Auth interceptor: Token refresh requested - not implemented")
-                        null
-                    }
+                    // No refreshTokens block since server doesn't support token refresh
+                    // If token expires, user will need to sign in again
                 }
             }
 

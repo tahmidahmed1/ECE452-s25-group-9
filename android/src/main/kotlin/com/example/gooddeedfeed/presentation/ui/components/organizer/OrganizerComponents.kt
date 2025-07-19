@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,8 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.gooddeedfeed.R
 import com.example.gooddeedfeed.domain.model.EventStatus
-import com.example.gooddeedfeed.domain.model.OrganizationType
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
@@ -197,85 +198,6 @@ fun EventsList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun OrganizationTypeDropdown(
-    selectedType: OrganizationType?,
-    onTypeSelected: (OrganizationType) -> Unit,
-    customType: String = "",
-    onCustomTypeChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    isError: Boolean = false,
-    errorMessage: String? = null,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Column(modifier = modifier) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-        ) {
-            OutlinedTextField(
-                value = when (selectedType) {
-                    OrganizationType.CUSTOM -> customType.ifEmpty { "Custom" }
-                    else -> selectedType?.displayName ?: ""
-                },
-                onValueChange = { },
-                label = { Text("Organization Type") },
-                readOnly = selectedType != OrganizationType.CUSTOM,
-                isError = isError,
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ExposedDropdownMenuDefaults.textFieldColors(),
-            )
-
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                OrganizationType.values().forEach { type ->
-                    DropdownMenuItem(
-                        text = { Text(type.displayName) },
-                        onClick = {
-                            onTypeSelected(type)
-                            expanded = false
-                        },
-                    )
-                }
-            }
-        }
-
-        // Custom type input field
-        if (selectedType == OrganizationType.CUSTOM) {
-            VerticalSpacer(SpacingSize.Small)
-            OutlinedTextField(
-                value = customType,
-                onValueChange = onCustomTypeChange,
-                label = { Text("Custom Organization Type") },
-                placeholder = { Text("Enter your organization type") },
-                isError = isError && customType.isBlank(),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-            )
-        }
-
-        // Error message
-        if (isError && errorMessage != null) {
-            VerticalSpacer(SpacingSize.ExtraSmall)
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-    }
-}
 
 @Composable
 fun SocialMediaInputSection(
@@ -622,12 +544,13 @@ private fun OrganizationImageItem(
 }
 
 // Helper functions
+@Composable
 private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {
     return when (platform) {
-        SocialMediaPlatform.INSTAGRAM -> Icons.Default.CameraAlt
-        SocialMediaPlatform.FACEBOOK -> Icons.Default.Group
-        SocialMediaPlatform.TWITTER -> Icons.Default.Share
-        SocialMediaPlatform.LINKEDIN -> Icons.Default.Business
+        SocialMediaPlatform.INSTAGRAM -> ImageVector.vectorResource(R.drawable.ic_instagram)
+        SocialMediaPlatform.FACEBOOK -> ImageVector.vectorResource(R.drawable.ic_facebook)
+        SocialMediaPlatform.TWITTER -> ImageVector.vectorResource(R.drawable.ic_twitter)
+        SocialMediaPlatform.LINKEDIN -> ImageVector.vectorResource(R.drawable.ic_linkedin)
     }
 }
 

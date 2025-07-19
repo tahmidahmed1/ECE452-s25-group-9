@@ -111,11 +111,6 @@ fun PrivacySettingsScreen(
                     checked = uiState.locationEnabled,
                     onCheckedChange = viewModel::updateLocationEnabled,
                 )
-                SettingToggleRow(
-                    title = "Share Profile Picture",
-                    checked = uiState.shareProfilePictureEnabled,
-                    onCheckedChange = viewModel::updateShareProfilePictureEnabled,
-                )
             }
 
             Spacer(modifier = Modifier.weight(1f))

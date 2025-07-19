@@ -54,6 +54,9 @@ import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.base.ActionCard
 import com.example.gooddeedfeed.presentation.ui.components.base.InfoCard
+import com.example.gooddeedfeed.presentation.ui.components.NotificationPromptDialog
+import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
+import androidx.compose.runtime.collectAsState
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
@@ -77,9 +80,24 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    // Check if notification prompt has been shown
+    var hasNotificationPromptBeenShown by remember { mutableStateOf(true) }
+    var showNotificationPrompt by remember { mutableStateOf(false) }
 
     LaunchedEffect(user) {
         viewModel.loadUserHome(user)
+    }
+    
+    // Show notification prompt on first sign-in
+    LaunchedEffect(user) {
+        if (user.onboardingCompleted == true) {
+            // Check if we need to show notification prompt
+            hasNotificationPromptBeenShown = viewModel.hasNotificationPromptBeenShown()
+            if (!hasNotificationPromptBeenShown) {
+                showNotificationPrompt = true
+            }
+        }
     }
 
     when (val currentState = uiState) {
@@ -125,6 +143,25 @@ fun HomeScreen(
             }
         }
     }
+    
+    // Show notification prompt dialog if needed
+    if (showNotificationPrompt && user.userType != null) {
+        NotificationPromptDialog(
+            userType = user.userType!!,
+            onEnableNotifications = {
+                viewModel.enableNotifications()
+                viewModel.markNotificationPromptAsShown()
+                showNotificationPrompt = false
+            },
+            onSkip = {
+                viewModel.markNotificationPromptAsShown()
+                showNotificationPrompt = false
+            },
+            onDismiss = {
+                showNotificationPrompt = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -157,7 +194,11 @@ private fun HomeContent(
 
                 Column {
                     Text(
-                        text = "Welcome, ${user.fullName ?: user.username}",
+                        text = when (user.userType) {
+                            DomainUserType.ORGANIZER -> "Welcome, ${user.organizationName ?: user.username}"
+                            DomainUserType.VOLUNTEER -> "Welcome, ${user.fullName ?: user.username}"
+                            null -> "Welcome, ${user.username}"
+                        },
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,

@@ -99,6 +99,49 @@ constructor(
         }
     }
 
+    /**
+     * Development mode: Create account without setting user type (requires onboarding)
+     */
+    fun devModeCreateOnboardingAccount() {
+        Log.d(TAG, "🎯 DevMode onboarding account creation initiated")
+
+        if (!BuildConfig.DEV_MODE) {
+            Log.w(TAG, "⚠️ DevMode not available in release builds")
+            _uiState.value = AuthUiState.Error("Dev mode is not available in release builds")
+            return
+        }
+
+        Log.d(TAG, "🔄 Setting loading state...")
+        _uiState.value = AuthUiState.Loading
+
+        viewModelScope.launch {
+            try {
+                val timestamp = System.currentTimeMillis().toString().takeLast(6)
+                val devUsername = "test_user_$timestamp"
+                val devEmail = "$devUsername@example.com"
+                val devPassword = "test_password_123"
+
+                Log.d(TAG, "🔄 Generated dev credentials: $devUsername")
+                Log.d(TAG, "📞 Calling signUpUseCase for regular account...")
+
+                val result = signUpUseCase.invoke(devUsername, devEmail, devPassword)
+
+                result.onSuccess { response ->
+                    Log.d(TAG, "✅ DevMode test account created successfully")
+                    Log.d(TAG, "🔄 Fetching user details (should require onboarding)...")
+                    fetchUser()
+                }.onFailure { error ->
+                    Log.e(TAG, "❌ DevMode test account creation failed", error)
+                    val detailedMessage = "Dev mode test account creation failed: ${error.message ?: "Unknown error"}"
+                    _uiState.value = AuthUiState.Error(detailedMessage)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ DevMode test account creation exception", e)
+                _uiState.value = AuthUiState.Error("Dev mode error: ${e.message ?: "Unknown exception"}")
+            }
+        }
+    }
+
     fun signUp(username: String, email: String, password: String) {
         Log.d(TAG, "🎯 SignUp initiated")
         Log.d(TAG, "📝 SignUp params - Username: $username, Email: $email")
@@ -158,19 +201,28 @@ constructor(
 
         viewModelScope.launch {
             try {
+                // Force immediate state clearing to prevent any stale state
+                Log.d(TAG, "🧹 Clearing UI state immediately...")
+                _uiState.value = AuthUiState.SignedOut
+                
                 Log.d(TAG, "📞 Calling signOutUseCase...")
                 val result = signOutUseCase.invoke()
 
                 result.onSuccess {
                     Log.d(TAG, "✅ SignOut successful")
+                    // Ensure state remains SignedOut
                     _uiState.value = AuthUiState.SignedOut
                 }.onFailure { error ->
                     Log.e(TAG, "❌ SignOut failed", error)
-                    _uiState.value = AuthUiState.Error("Sign out failed: ${error.message}")
+                    // Even if server logout fails, keep local state as signed out
+                    _uiState.value = AuthUiState.SignedOut
+                    Log.w(TAG, "⚠️ Keeping local state as signed out despite server error")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "❌ SignOut exception", e)
-                _uiState.value = AuthUiState.Error("Sign out failed: ${e.message}")
+                // Even if there's an exception, keep local state as signed out
+                _uiState.value = AuthUiState.SignedOut
+                Log.w(TAG, "⚠️ Keeping local state as signed out despite exception")
             }
         }
     }
@@ -200,6 +252,13 @@ constructor(
     }
 
     fun refreshUser() = fetchUser()
+    
+    /**
+     * Update the current user state with the provided user data
+     */
+    fun updateUserState(user: DomainUser) {
+        _uiState.value = AuthUiState.Success(user)
+    }
 
     // ------------------ Profile Update ------------------
 
@@ -211,6 +270,9 @@ constructor(
             result.onSuccess { user: DomainUser ->
                 // Update with the returned user
                 _uiState.value = AuthUiState.Success(user)
+
+                // Refresh user from server to ensure we have the most up-to-date data
+                fetchUser()
             }.onFailure { error: Throwable ->
                 _uiState.value = AuthUiState.Error(error.message ?: "Failed to update profile")
             }
@@ -232,6 +294,71 @@ constructor(
                 }
             } catch (e: Exception) {
                 _uiState.value = AuthUiState.Error(e.message ?: "Failed to upload picture")
+            }
+        }
+    }
+
+    fun removeProfilePicture() {
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                val result = authRepository.removeProfilePicture()
+                result.onSuccess {
+                    // Refresh user after successful removal
+                    fetchUser()
+                }.onFailure { err: Throwable ->
+                    _uiState.value = AuthUiState.Error(err.message ?: "Failed to remove picture")
+                }
+            } catch (e: Exception) {
+                _uiState.value = AuthUiState.Error(e.message ?: "Failed to remove picture")
+            }
+        }
+    }
+
+    /**
+     * Update profile and optionally upload new profile picture
+     */
+    fun updateProfile(userUpdate: DomainUserUpdate, profilePictureFile: File? = null) {
+        Log.d(TAG, "📝 updateProfile called with: $userUpdate, hasFile=${profilePictureFile != null}")
+        _uiState.value = AuthUiState.Loading
+        viewModelScope.launch {
+            try {
+                // First upload profile picture if provided
+                profilePictureFile?.let { file ->
+                    Log.d(TAG, "📤 Uploading new profile picture: ${file.absolutePath}")
+                    val uploadResult = authRepository.uploadProfilePicture(file)
+                    uploadResult.onSuccess {
+                        Log.d(TAG, "✅ Profile picture uploaded successfully")
+                    }.onFailure { error ->
+                        Log.e(TAG, "❌ Failed to upload profile picture", error)
+                        com.example.gooddeedfeed.presentation.ui.components.ToastManager.showError(error.message ?: "Failed to upload profile picture")
+                        _uiState.value = AuthUiState.Error(error.message ?: "Failed to upload profile picture")
+                        return@launch
+                    }
+                }
+
+                // Then update the profile
+                Log.d(TAG, "📤 Sending profile update payload to repository")
+                val updateResult = authRepository.updateProfile(userUpdate)
+                updateResult.onSuccess { user: DomainUser ->
+                    Log.d(TAG, "✅ Profile updated on server. New karma: ${user.karmaPoints}")
+                    // Notify success toast
+                    com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Profile updated successfully")
+
+                    _uiState.value = AuthUiState.Success(user)
+
+                    // Immediately fetch from server to guarantee freshest data and trigger recomposition
+                    fetchUser()
+                }.onFailure { error: Throwable ->
+                    Log.e(TAG, "❌ Profile update failed", error)
+                    // Show error toast
+                    com.example.gooddeedfeed.presentation.ui.components.ToastManager.showError(error.message ?: "Failed to update profile")
+
+                    _uiState.value = AuthUiState.Error(error.message ?: "Failed to update profile")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Exception during updateProfile", e)
+                _uiState.value = AuthUiState.Error(e.message ?: "Failed to update profile")
             }
         }
     }

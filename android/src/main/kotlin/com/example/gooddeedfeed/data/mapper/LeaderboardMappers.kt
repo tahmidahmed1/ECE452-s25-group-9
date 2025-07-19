@@ -36,7 +36,7 @@ fun LeaderboardResponseDto.toDomain(): DomainLeaderboardResponse {
     )
 }
 
-private fun String.toEmulatorAccessibleUrl(): String {
+fun String.toEmulatorAccessibleUrl(): String {
     // More comprehensive emulator detection
     val isEmulator = android.os.Build.FINGERPRINT.contains("generic") ||
         android.os.Build.FINGERPRINT.contains("unknown") ||

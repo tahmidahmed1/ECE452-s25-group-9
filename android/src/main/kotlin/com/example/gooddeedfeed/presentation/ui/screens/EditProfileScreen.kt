@@ -58,7 +58,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
-import com.example.gooddeedfeed.domain.model.OrganizationType
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.toDisplayString
@@ -99,11 +98,8 @@ fun EditProfileScreen(
 
     // Organizer-specific fields
     var organizationName by remember { mutableStateOf(TextFieldValue(user.organizationName ?: "")) }
-    var organizationType by remember { mutableStateOf(user.organizationType) }
     var organizationDescription by remember { mutableStateOf(TextFieldValue(user.organizationDescription ?: "")) }
     var organizationWebsite by remember { mutableStateOf(TextFieldValue(user.organizationWebsite ?: "")) }
-    var organizationCustomType by remember { mutableStateOf(TextFieldValue(user.organizationCustomType ?: "")) }
-    var isOrgTypeDropdownExpanded by remember { mutableStateOf(false) }
 
     // Social media fields
     var instagramHandle by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "INSTAGRAM" }?.url ?: "") }
@@ -186,6 +182,7 @@ fun EditProfileScreen(
                         ProfileImagePicker(
                             currentImageUrl = user.profilePictureUrl,
                             onImageSelected = { file -> viewModel.uploadProfilePicture(file) },
+                            onImageRemoved = { viewModel.removeProfilePicture() },
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -223,57 +220,6 @@ fun EditProfileScreen(
                                 shape = RoundedCornerShape(12.dp),
                             )
 
-                            VerticalSpacer(SpacingSize.Small)
-
-                            // Organization type dropdown
-                            ExposedDropdownMenuBox(
-                                expanded = isOrgTypeDropdownExpanded,
-                                onExpandedChange = { isOrgTypeDropdownExpanded = !isOrgTypeDropdownExpanded },
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                OutlinedTextField(
-                                    value = organizationType?.displayName ?: "Select organization type",
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = { Text("Organization Type") },
-                                    trailingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.ArrowDropDown,
-                                            contentDescription = "Dropdown",
-                                        )
-                                    },
-                                    modifier = Modifier
-                                        .menuAnchor()
-                                        .fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                )
-
-                                DropdownMenu(
-                                    expanded = isOrgTypeDropdownExpanded,
-                                    onDismissRequest = { isOrgTypeDropdownExpanded = false },
-                                ) {
-                                    OrganizationType.values().forEach { type ->
-                                        DropdownMenuItem(
-                                            text = { Text(type.displayName) },
-                                            onClick = {
-                                                organizationType = type
-                                                isOrgTypeDropdownExpanded = false
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-
-                            if (organizationType == OrganizationType.CUSTOM) {
-                                VerticalSpacer(SpacingSize.Small)
-                                OutlinedTextField(
-                                    value = organizationCustomType,
-                                    onValueChange = { organizationCustomType = it },
-                                    label = { Text("Custom Organization Type") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                )
-                            }
 
                             VerticalSpacer(SpacingSize.Small)
 
@@ -580,10 +526,8 @@ fun EditProfileScreen(
                                 locationArea = locationArea,
                                 hasDriversLicense = hasDriversLicense,
                                 disabilities = disabilities,
-                                organizationType = if (user.userType?.name == "ORGANIZER") organizationType else null,
                                 organizationDescription = if (user.userType?.name == "ORGANIZER") organizationDescription else null,
                                 organizationWebsite = if (user.userType?.name == "ORGANIZER") organizationWebsite else null,
-                                organizationCustomType = if (user.userType?.name == "ORGANIZER" && organizationType == OrganizationType.CUSTOM) organizationCustomType else null,
                                 organizationSocialMedia = socialMedia,
                                 organizationImages = orgImages,
                             )

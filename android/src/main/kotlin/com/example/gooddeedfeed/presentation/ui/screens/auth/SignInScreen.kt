@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -57,6 +58,7 @@ fun SignInScreen(
     uiState: AuthUiState,
     onSignIn: (String, String) -> Unit,
     onDevModeSignIn: (com.example.gooddeedfeed.domain.model.DomainUserType) -> Unit,
+    onDevModeCreateOnboardingAccount: () -> Unit,
     onNavigateToSignUp: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onNavigateToHome: () -> Unit,
@@ -240,29 +242,40 @@ fun SignInScreen(
                         ) {
                             FloatingActionButton(
                                 onClick = { if (!isLoading) onDevModeSignIn(DomainUserType.VOLUNTEER) },
-                                modifier = Modifier.size(64.dp),
+                                modifier = Modifier.size(56.dp),
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = "Sign In as Volunteer",
-                                    modifier = Modifier.size(32.dp),
+                                    modifier = Modifier.size(28.dp),
                                 )
                             }
 
-                            Spacer(modifier = Modifier.width(16.dp))
-
                             FloatingActionButton(
                                 onClick = { if (!isLoading) onDevModeSignIn(DomainUserType.ORGANIZER) },
-                                modifier = Modifier.size(64.dp),
+                                modifier = Modifier.size(56.dp),
                                 containerColor = MaterialTheme.colorScheme.secondary,
                                 contentColor = MaterialTheme.colorScheme.onSecondary,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = "Sign In as Organizer",
-                                    modifier = Modifier.size(32.dp),
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+
+                            FloatingActionButton(
+                                onClick = { if (!isLoading) onDevModeCreateOnboardingAccount() },
+                                modifier = Modifier.size(56.dp),
+                                containerColor = MaterialTheme.colorScheme.tertiary,
+                                contentColor = MaterialTheme.colorScheme.onTertiary,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "Create Account for Onboarding",
+                                    modifier = Modifier.size(28.dp),
                                 )
                             }
                         }
@@ -275,14 +288,24 @@ fun SignInScreen(
                                 text = "Volunteer",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.weight(1f),
                             )
-
-                            Spacer(modifier = Modifier.width(32.dp))
 
                             Text(
                                 text = "Organizer",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.weight(1f),
+                            )
+
+                            Text(
+                                text = "Onboarding",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.weight(1f),
                             )
                         }
                     }

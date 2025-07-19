@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -46,7 +48,6 @@ import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
-import com.example.gooddeedfeed.domain.model.OrganizationType
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import java.io.File
 import java.io.FileOutputStream
@@ -111,10 +112,8 @@ object ImageUtils {
         locationArea: TextFieldValue? = null,
         hasDriversLicense: Boolean? = null,
         disabilities: TextFieldValue? = null,
-        organizationType: OrganizationType? = null,
         organizationDescription: TextFieldValue? = null,
         organizationWebsite: TextFieldValue? = null,
-        organizationCustomType: TextFieldValue? = null,
         organizationSocialMedia: List<SocialMediaLink>? = null,
         organizationImages: List<String>? = null,
     ): DomainUserUpdate {
@@ -131,10 +130,8 @@ object ImageUtils {
             locationArea = locationArea?.text?.takeIf { it.isNotBlank() },
             hasDriversLicense = hasDriversLicense,
             disabilities = disabilities?.text?.takeIf { it.isNotBlank() },
-            organizationType = organizationType,
             organizationDescription = organizationDescription?.text?.takeIf { it.isNotBlank() },
             organizationWebsite = organizationWebsite?.text?.takeIf { it.isNotBlank() },
-            organizationCustomType = organizationCustomType?.text?.takeIf { it.isNotBlank() },
             organizationSocialMedia = organizationSocialMedia,
             organizationImages = organizationImages,
         )
@@ -160,13 +157,6 @@ object ImageUtils {
             }
         }
 
-        fun validateOrganizationType(organizationType: OrganizationType?, userType: DomainUserType?): String? {
-            return if (userType == DomainUserType.ORGANIZER && organizationType == null) {
-                "Organization type is required"
-            } else {
-                null
-            }
-        }
 
         fun validateAge(age: String): String? {
             return if (age.isBlank()) {
@@ -202,6 +192,7 @@ object ImageUtils {
 fun ProfileImagePicker(
     currentImageUrl: String? = null,
     onImageSelected: (File) -> Unit,
+    onImageRemoved: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -253,20 +244,67 @@ fun ProfileImagePicker(
         ) {
             when {
                 selectedImageUri != null -> {
-                    AsyncImage(
-                        model = selectedImageUri,
-                        contentDescription = "Selected profile picture",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
+                    Box {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Selected profile picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                        
+                        // Remove button for selected image
+                        IconButton(
+                            onClick = { selectedImageUri = null },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(24.dp)
+                                .background(
+                                    Color.Black.copy(alpha = 0.6f),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove photo",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 }
                 !currentImageUrl.isNullOrEmpty() -> {
-                    AsyncImage(
-                        model = currentImageUrl,
-                        contentDescription = "Current profile picture",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
+                    Box {
+                        AsyncImage(
+                            model = currentImageUrl,
+                            contentDescription = "Current profile picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                        
+                        // Remove button for current image
+                        if (onImageRemoved != null) {
+                            IconButton(
+                                onClick = {
+                                    selectedImageUri = null
+                                    onImageRemoved()
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(24.dp)
+                                    .background(
+                                        Color.Black.copy(alpha = 0.6f),
+                                        CircleShape
+                                    )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove photo",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
                 }
                 else -> {
                     Icon(

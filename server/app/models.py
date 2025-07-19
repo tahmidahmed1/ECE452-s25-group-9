@@ -9,12 +9,6 @@ class UserType(enum.Enum):
     VOLUNTEER = "volunteer"
     ORGANIZER = "organizer"
 
-class OrganizationType(enum.Enum):
-    NON_PROFIT = "non_profit"
-    SCHOOL_GROUP = "school_group"
-    CLUB = "club"
-    CHARITY = "charity"
-    CUSTOM = "custom"
 
 class Sex(enum.Enum):
     MALE = "male"
@@ -42,20 +36,16 @@ class User(Base):
     # Profile picture URL
     profile_picture_url = Column(String, nullable=True)
     
-    # Privacy setting for profile picture sharing
-    share_profile_picture = Column(Boolean, default=True, nullable=False)
 
     # Banner image URL (for organizers)
     banner_url = Column(String, nullable=True)
     
     # Organization fields (for organizers)
     organization_name = Column(String, nullable=True)
-    organization_type = Column(Enum(OrganizationType), nullable=True)
     organization_description = Column(Text, nullable=True)
     organization_website = Column(String, nullable=True)
     organization_social_media = Column(JSON, nullable=True)  # Store social media links as JSON
     organization_images = Column(JSON, nullable=True)  # Store array of image URLs
-    organization_custom_type = Column(String, nullable=True)  # For custom organization type
     
     # Enhanced volunteer profile fields
     sex = Column(Enum(Sex), nullable=True)

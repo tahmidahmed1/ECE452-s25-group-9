@@ -1,4 +1,4 @@
-package com.example.gooddeedfeed.presentation.ui.screens.onboarding
+package com.example.gooddeedfeed.presentation.ui.screens
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -24,16 +26,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Button
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,7 +39,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -55,17 +49,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.R
-import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
-import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.presentation.ui.components.ImageUtils
@@ -73,39 +67,45 @@ import com.example.gooddeedfeed.presentation.ui.components.ProfileImagePicker
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
+import com.example.gooddeedfeed.presentation.ui.components.onboarding.ProfileSectionHeader
+import android.util.Log
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OnboardingStepTwoScreen(
-    userType: DomainUserType?,
-    onComplete: (fullName: String, phone: String, organizationName: String?, profilePictureFile: File?, organizerProfile: DomainOrganizerProfile?) -> Unit,
-    onBack: () -> Unit = {},
+fun EditOrganizerProfileScreen(
+    user: DomainUser,
+    onSave: (DomainUserUpdate, File?) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
-    // Common form fields
-    var fullName by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
+    // Initialize form fields with current user data
+    var fullName by remember(user) { mutableStateOf(user.fullName ?: "") }
+    var phone by remember(user) { mutableStateOf(user.phone ?: "") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var profilePictureFile by remember { mutableStateOf<File?>(null) }
-    var showImageSourceDialog by remember { mutableStateOf(false) }
+    var organizationName by remember(user) { mutableStateOf(user.organizationName ?: "") }
+    var organizationDescription by remember(user) { mutableStateOf(user.organizationDescription ?: "") }
+    var organizationWebsite by remember(user) { mutableStateOf(user.organizationWebsite ?: "") }
 
-    // Organizer-specific fields
-    var organizationName by remember { mutableStateOf("") }
-    var organizationDescription by remember { mutableStateOf("") }
-    var organizationWebsite by remember { mutableStateOf("") }
+    // Initialize social media fields from existing data
+    val existingSocialMedia = user.organizationSocialMedia ?: emptyList()
+    var instagramHandle by remember(user) { 
+        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.INSTAGRAM }?.url ?: "") 
+    }
+    var twitterHandle by remember(user) { 
+        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.TWITTER }?.url ?: "") 
+    }
+    var facebookPage by remember(user) { 
+        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.FACEBOOK }?.url ?: "") 
+    }
 
-    // Social media fields
-    var instagramHandle by remember { mutableStateOf("") }
-    var twitterHandle by remember { mutableStateOf("") }
-    var facebookPage by remember { mutableStateOf("") }
-
-    // Organization images
+    // Organization images - initialize with existing URLs converted to display state
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+    var organizationImageUrls by remember(user) { mutableStateOf(user.organizationImages ?: emptyList()) }
     var mainOrgImageIndex by remember { mutableStateOf(0) }
-
 
     // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -155,8 +155,10 @@ fun OnboardingStepTwoScreen(
         derivedStateOf { ImageUtils.FormValidation.validatePhone(phone) }
     }
 
-    val organizationError: String? by remember(organizationName, userType) {
-        derivedStateOf { ImageUtils.FormValidation.validateOrganizationName(organizationName, userType) }
+    val organizationError: String? by remember(organizationName) {
+        derivedStateOf { 
+            if (organizationName.isBlank()) "Organization name is required" else null
+        }
     }
 
     val isFormValid = fullNameError == null && phoneError == null && organizationError == null
@@ -169,48 +171,38 @@ fun OnboardingStepTwoScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Back button
+            // Header with back button and title (matching Profile Preview style)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Go back",
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Edit Profile",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
             }
-
-            VerticalSpacer(SpacingSize.Large)
-
-            Text(
-                text = "Complete Your Profile",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            VerticalSpacer(SpacingSize.Small)
-
-            Text(
-                text = when (userType) {
-                    DomainUserType.VOLUNTEER -> "Tell us about yourself to get started with volunteering"
-                    DomainUserType.ORGANIZER -> "Set up your organization profile to start creating events"
-                    else -> "Complete your profile to continue"
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
 
             VerticalSpacer(SpacingSize.Large)
 
             // Profile Picture Section
             ProfileImagePicker(
-                currentImageUrl = selectedImageUri?.toString(),
+                currentImageUrl = selectedImageUri?.toString() ?: user.profilePictureUrl,
                 onImageSelected = { file ->
                     profilePictureFile = file
                     selectedImageUri = Uri.fromFile(file)
@@ -222,6 +214,14 @@ fun OnboardingStepTwoScreen(
             )
 
             VerticalSpacer(SpacingSize.Large)
+
+            // Basic Information Section
+            ProfileSectionHeader(
+                title = "Basic Information",
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            VerticalSpacer(SpacingSize.Medium)
 
             // Full Name Field
             OutlinedTextField(
@@ -239,9 +239,9 @@ fun OnboardingStepTwoScreen(
                 ),
             )
 
-            if (fullNameError != null) {
+            fullNameError?.let { error ->
                 Text(
-                    text = fullNameError!!,
+                    text = error,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.align(Alignment.Start),
@@ -270,9 +270,9 @@ fun OnboardingStepTwoScreen(
                 ),
             )
 
-            if (phoneError != null) {
+            phoneError?.let { error ->
                 Text(
-                    text = phoneError!!,
+                    text = error,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.align(Alignment.Start),
@@ -287,237 +287,224 @@ fun OnboardingStepTwoScreen(
                 textAlign = TextAlign.Start,
             )
 
-            // User type specific fields
-            when (userType) {
-                DomainUserType.ORGANIZER -> {
-                    VerticalSpacer(SpacingSize.Medium)
+            VerticalSpacer(SpacingSize.Large)
 
-                    OutlinedTextField(
-                        value = organizationName,
-                        onValueChange = { organizationName = it },
-                        label = { Text("Organization Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        isError = organizationError != null,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                            errorBorderColor = MaterialTheme.colorScheme.error,
-                        ),
-                    )
+            // Organization Information Section
+            ProfileSectionHeader(
+                title = "Organization Information",
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-                    if (organizationError != null) {
-                        Text(
-                            text = organizationError!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.align(Alignment.Start),
-                        )
-                    }
+            VerticalSpacer(SpacingSize.Medium)
 
+            // Organization Name
+            OutlinedTextField(
+                value = organizationName,
+                onValueChange = { organizationName = it },
+                label = { Text("Organization Name") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                isError = organizationError != null,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
+                ),
+            )
 
-                    VerticalSpacer(SpacingSize.Small)
-
-                    OutlinedTextField(
-                        value = organizationDescription,
-                        onValueChange = { organizationDescription = it },
-                        label = { Text("Description (Optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        minLines = 3,
-                        maxLines = 5,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-
-                    VerticalSpacer(SpacingSize.Small)
-
-                    OutlinedTextField(
-                        value = organizationWebsite,
-                        onValueChange = { organizationWebsite = it },
-                        label = { Text("Website (Optional)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-
-                    VerticalSpacer(SpacingSize.Medium)
-
-                    OutlinedTextField(
-                        value = instagramHandle,
-                        onValueChange = { instagramHandle = it },
-                        label = { Text("Instagram Handle") },
-                        placeholder = { Text("@username") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = getSocialMediaIcon(SocialMediaPlatform.INSTAGRAM),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-
-                    VerticalSpacer(SpacingSize.Small)
-
-                    OutlinedTextField(
-                        value = twitterHandle,
-                        onValueChange = { twitterHandle = it },
-                        label = { Text("Twitter Handle") },
-                        placeholder = { Text("@username") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = getSocialMediaIcon(SocialMediaPlatform.TWITTER),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-
-                    VerticalSpacer(SpacingSize.Small)
-
-                    OutlinedTextField(
-                        value = facebookPage,
-                        onValueChange = { facebookPage = it },
-                        label = { Text("Facebook Page") },
-                        placeholder = { Text("Page name or URL") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = getSocialMediaIcon(SocialMediaPlatform.FACEBOOK),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-
-                    VerticalSpacer(SpacingSize.Medium)
-
-                    OrganizerImageCarousel(
-                        selectedImages = organizationImageFiles,
-                        mainImageIndex = mainOrgImageIndex,
-                        onAddImage = {
-                            if (organizationImageFiles.size < 10) {
-                                orgImageLauncher.launch("image/*")
-                            }
-                        },
-                        onRemoveImage = { index ->
-                            organizationImageFiles = organizationImageFiles.filterIndexed { i, _ -> i != index }
-                            if (mainOrgImageIndex >= organizationImageFiles.size && organizationImageFiles.isNotEmpty()) {
-                                mainOrgImageIndex = organizationImageFiles.size - 1
-                            } else if (organizationImageFiles.isEmpty()) {
-                                mainOrgImageIndex = 0
-                            }
-                        },
-                        onSetMainImage = { index ->
-                            mainOrgImageIndex = index
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                else -> {
-                    // For volunteers, we'll handle detailed profile in a separate step
-                }
+            organizationError?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start),
+                )
             }
+
+            VerticalSpacer(SpacingSize.Medium)
+
+            // Organization Description
+            OutlinedTextField(
+                value = organizationDescription,
+                onValueChange = { organizationDescription = it },
+                label = { Text("Description (Optional)") },
+                placeholder = { Text("Tell us about your organization's mission and goals...") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                minLines = 3,
+                maxLines = 5,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+
+            VerticalSpacer(SpacingSize.Medium)
+
+            // Organization Website
+            OutlinedTextField(
+                value = organizationWebsite,
+                onValueChange = { organizationWebsite = it },
+                label = { Text("Website (Optional)") },
+                placeholder = { Text("https://yourorganization.com") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+
+            VerticalSpacer(SpacingSize.Large)
+
+            // Social Media Section
+            ProfileSectionHeader(
+                title = "Social Media",
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            VerticalSpacer(SpacingSize.Medium)
+
+            // Instagram Handle
+            OutlinedTextField(
+                value = instagramHandle,
+                onValueChange = { instagramHandle = it },
+                label = { Text("Instagram Handle") },
+                placeholder = { Text("@username") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                leadingIcon = {
+                    Icon(
+                        imageVector = getSocialMediaIcon(SocialMediaPlatform.INSTAGRAM),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+
+            VerticalSpacer(SpacingSize.Medium)
+
+            // Twitter Handle
+            OutlinedTextField(
+                value = twitterHandle,
+                onValueChange = { twitterHandle = it },
+                label = { Text("Twitter Handle") },
+                placeholder = { Text("@username") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                leadingIcon = {
+                    Icon(
+                        imageVector = getSocialMediaIcon(SocialMediaPlatform.TWITTER),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+
+            VerticalSpacer(SpacingSize.Medium)
+
+            // Facebook Page
+            OutlinedTextField(
+                value = facebookPage,
+                onValueChange = { facebookPage = it },
+                label = { Text("Facebook Page") },
+                placeholder = { Text("Page name or URL") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                leadingIcon = {
+                    Icon(
+                        imageVector = getSocialMediaIcon(SocialMediaPlatform.FACEBOOK),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+
+            VerticalSpacer(SpacingSize.Large)
+
+            // Organization Images Section
+            ProfileSectionHeader(
+                title = "Organization Images",
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            VerticalSpacer(SpacingSize.Medium)
+
+            OrganizerImageCarousel(
+                selectedImages = organizationImageFiles,
+                mainImageIndex = mainOrgImageIndex,
+                onAddImage = {
+                    if (organizationImageFiles.size < 10) {
+                        orgImageLauncher.launch("image/*")
+                    }
+                },
+                onRemoveImage = { index ->
+                    organizationImageFiles = organizationImageFiles.filterIndexed { i, _ -> i != index }
+                    if (mainOrgImageIndex >= organizationImageFiles.size && organizationImageFiles.isNotEmpty()) {
+                        mainOrgImageIndex = organizationImageFiles.size - 1
+                    } else if (organizationImageFiles.isEmpty()) {
+                        mainOrgImageIndex = 0
+                    }
+                },
+                onSetMainImage = { index ->
+                    mainOrgImageIndex = index
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             VerticalSpacer(SpacingSize.ExtraLarge)
 
+            // Save Button
             PrimaryButton(
-                text = "Complete Profile",
+                text = "Save Changes",
                 onClick = {
-                    val organizerProfile = if (userType == DomainUserType.ORGANIZER) {
-                        val socialMedia = mutableListOf<SocialMediaLink>().apply {
-                            if (instagramHandle.isNotBlank()) {
-                                add(SocialMediaLink(SocialMediaPlatform.INSTAGRAM, instagramHandle))
-                            }
-                            if (twitterHandle.isNotBlank()) {
-                                add(SocialMediaLink(SocialMediaPlatform.TWITTER, twitterHandle))
-                            }
-                            if (facebookPage.isNotBlank()) {
-                                add(SocialMediaLink(SocialMediaPlatform.FACEBOOK, facebookPage))
-                            }
-                        }.takeIf { it.isNotEmpty() }
+                    val socialMedia = mutableListOf<SocialMediaLink>().apply {
+                        if (instagramHandle.isNotBlank()) {
+                            add(SocialMediaLink(SocialMediaPlatform.INSTAGRAM, instagramHandle))
+                        }
+                        if (twitterHandle.isNotBlank()) {
+                            add(SocialMediaLink(SocialMediaPlatform.TWITTER, twitterHandle))
+                        }
+                        if (facebookPage.isNotBlank()) {
+                            add(SocialMediaLink(SocialMediaPlatform.FACEBOOK, facebookPage))
+                        }
+                    }.takeIf { it.isNotEmpty() }
 
-                        DomainOrganizerProfile(
-                            fullName = fullName,
-                            phone = phone,
-                            organizationName = organizationName,
-                            organizationDescription = organizationDescription.takeIf { it.isNotBlank() },
-                            organizationWebsite = organizationWebsite.takeIf { it.isNotBlank() },
-                            organizationSocialMedia = socialMedia,
-                            organizationImages = organizationImageFiles.takeIf { it.isNotEmpty() }?.map { it.absolutePath },
-                        )
-                    } else {
-                        null
-                    }
-
-                    onComplete(
-                        fullName,
-                        phone,
-                        if (userType == DomainUserType.ORGANIZER) organizationName else null,
-                        profilePictureFile,
-                        organizerProfile,
+                    val userUpdate = DomainUserUpdate(
+                        fullName = if (fullName != user.fullName) fullName.takeIf { it.isNotBlank() } else null,
+                        phone = if (phone != user.phone) phone.takeIf { it.isNotBlank() } else null,
+                        organizationName = if (organizationName != user.organizationName) organizationName.takeIf { it.isNotBlank() } else null,
+                        organizationDescription = if (organizationDescription != user.organizationDescription) organizationDescription.takeIf { it.isNotBlank() } else null,
+                        organizationWebsite = if (organizationWebsite != user.organizationWebsite) organizationWebsite.takeIf { it.isNotBlank() } else null,
+                        organizationSocialMedia = if (socialMedia != user.organizationSocialMedia) socialMedia else null,
+                        organizationImages = if (organizationImageFiles.isNotEmpty()) organizationImageFiles.map { it.absolutePath } else null,
                     )
+                    Log.d("EditOrganizerProfileScreen", "Save clicked: update=$userUpdate, file=$profilePictureFile")
+                    
+                    onSave(userUpdate, profilePictureFile)
                 },
                 enabled = isFormValid,
                 modifier = Modifier.fillMaxWidth(),
             )
-        }
-    }
 
-    // Image source selection dialog
-    if (showImageSourceDialog) {
-        AlertDialog(
-            onDismissRequest = { showImageSourceDialog = false },
-            title = { Text("Select Image Source") },
-            text = { Text("Choose how you'd like to add your profile picture") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showImageSourceDialog = false
-                        cameraLauncher.launch(null)
-                    },
-                ) {
-                    Text("Camera")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showImageSourceDialog = false
-                        galleryLauncher.launch("image/*")
-                    },
-                ) {
-                    Text("Gallery")
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-        )
+            VerticalSpacer(SpacingSize.Large)
+        }
     }
 }
 
@@ -607,7 +594,7 @@ private fun OrganizerImageCarousel(
                     }
 
                     // Remove button
-                    androidx.compose.material3.IconButton(
+                    IconButton(
                         onClick = { onRemoveImage(mainImageIndex) },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -699,4 +686,4 @@ private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {
         SocialMediaPlatform.TWITTER -> ImageVector.vectorResource(R.drawable.ic_twitter)
         SocialMediaPlatform.LINKEDIN -> ImageVector.vectorResource(R.drawable.ic_linkedin)
     }
-} 
+}
