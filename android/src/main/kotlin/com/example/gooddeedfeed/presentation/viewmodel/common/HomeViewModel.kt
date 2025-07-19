@@ -2,12 +2,11 @@ package com.example.gooddeedfeed.presentation.viewmodel.common
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.presentation.common.UiState
-import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
 import com.example.gooddeedfeed.domain.repository.NotificationRepository
-import kotlinx.coroutines.flow.first
+import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +14,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -84,20 +84,20 @@ class HomeViewModel @Inject constructor(
     suspend fun hasNotificationPromptBeenShown(): Boolean {
         return locationSettingsRepository.hasNotificationPromptBeenShown.first()
     }
-    
+
     fun markNotificationPromptAsShown() {
         viewModelScope.launch {
             locationSettingsRepository.setNotificationPromptShown(true)
         }
     }
-    
+
     fun enableNotifications() {
         viewModelScope.launch {
             notificationRepository.setNotificationsEnabled(true)
             locationSettingsRepository.setNotificationsEnabled(true)
         }
     }
-    
+
     private fun createUserTypeDisplay(user: DomainUser): UserTypeDisplay {
         return when (user.userType) {
             DomainUserType.VOLUNTEER -> UserTypeDisplay(

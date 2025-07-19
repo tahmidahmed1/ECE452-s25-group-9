@@ -137,7 +137,6 @@ data class ProfilePictureUploadResponse(
 @Serializable
 data class OnboardingResponse(val message: String, val user_type: UserType? = null)
 
-
 @Serializable
 enum class SocialMediaPlatformDto {
     @SerialName("instagram")

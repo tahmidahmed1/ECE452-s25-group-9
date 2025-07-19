@@ -48,7 +48,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
-import com.example.gooddeedfeed.presentation.ui.screens.organizer.CreateEventScreen
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 
@@ -68,11 +67,11 @@ fun EventManagementScreen(
         CreateEventScreen(onBack = { creatingEvent = false })
         return
     }
-    
+
     if (editingEvent != null) {
         CreateEventScreen(
             onBack = { editingEvent = null },
-            eventToEdit = editingEvent
+            eventToEdit = editingEvent,
         )
         return
     }

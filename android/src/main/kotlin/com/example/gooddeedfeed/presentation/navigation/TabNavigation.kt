@@ -19,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +32,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.theme.BorderRadius
@@ -41,10 +41,10 @@ import com.example.gooddeedfeed.presentation.theme.Spacing
 import com.example.gooddeedfeed.presentation.ui.components.BadgeManager
 import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundScreen
 import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 
 @Composable
 fun FloatingNavBarItem(
@@ -228,7 +228,7 @@ fun TabNavigationScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background)
+                            .background(MaterialTheme.colorScheme.background),
                     ) {
                         LostAndFoundScreen(
                             user = currentUser,
@@ -241,7 +241,6 @@ fun TabNavigationScreen(
         }
 
         // Toast overlay is handled at the app level in AppNavHost
-
 
         // Preview Profile Overlay - appears over everything including bottom bar
         androidx.compose.animation.AnimatedVisibility(

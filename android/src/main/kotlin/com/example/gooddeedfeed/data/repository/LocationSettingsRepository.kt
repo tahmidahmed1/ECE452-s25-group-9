@@ -27,7 +27,6 @@ class LocationSettingsRepository @Inject constructor(
         preferences[NOTIFICATIONS_ENABLED_KEY] ?: true // Default to true
     }
 
-
     val hasNotificationPromptBeenShown: Flow<Boolean> = dataStore.data.map { preferences ->
         preferences[NOTIFICATION_PROMPT_SHOWN_KEY] ?: false // Default to false
     }
@@ -43,7 +42,6 @@ class LocationSettingsRepository @Inject constructor(
             preferences[NOTIFICATIONS_ENABLED_KEY] = enabled
         }
     }
-
 
     suspend fun setNotificationPromptShown(shown: Boolean) {
         dataStore.edit { preferences ->

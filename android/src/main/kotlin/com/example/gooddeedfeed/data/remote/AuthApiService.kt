@@ -32,7 +32,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.first
@@ -95,7 +94,7 @@ class AuthApiService @Inject constructor(
                 val errorBody = response.bodyAsText()
                 Log.e(TAG, "❌ SignUp failed with status ${response.status}")
                 Log.e(TAG, "❌ Error response body: $errorBody")
-                
+
                 // Handle specific error cases
                 when (response.status.value) {
                     409 -> throw Exception("Username or email already exists")
@@ -117,7 +116,7 @@ class AuthApiService @Inject constructor(
             }
 
             Log.d(TAG, "📥 User info response status: ${userResponse.status}")
-            
+
             // Check for success status before trying to parse user response
             if (!userResponse.status.isSuccess()) {
                 val errorBody = userResponse.bodyAsText()
@@ -166,7 +165,7 @@ class AuthApiService @Inject constructor(
                 val errorBody = response.bodyAsText()
                 Log.e(TAG, "❌ SignIn failed with status ${response.status}")
                 Log.e(TAG, "❌ Error response body: $errorBody")
-                
+
                 // Handle specific error cases
                 when (response.status.value) {
                     401 -> throw Exception("Invalid username or password")
@@ -188,7 +187,7 @@ class AuthApiService @Inject constructor(
             }
 
             Log.d(TAG, "📥 User info response status: ${userResponse.status}")
-            
+
             // Check for success status before trying to parse user response
             if (!userResponse.status.isSuccess()) {
                 val errorBody = userResponse.bodyAsText()
@@ -581,7 +580,7 @@ class AuthApiService @Inject constructor(
             }
 
             Log.d(TAG, "📥 Logout response status: ${response.status}")
-            
+
             if (response.status.isSuccess()) {
                 Log.d(TAG, "✅ Server logout successful")
                 true
@@ -618,7 +617,7 @@ class AuthApiService @Inject constructor(
             }
 
             Log.d(TAG, "📥 Karma increase response status: ${response.status}")
-            
+
             if (!response.status.isSuccess()) {
                 val errorBody = response.bodyAsText()
                 Log.e(TAG, "❌ Karma increase failed with status ${response.status}")

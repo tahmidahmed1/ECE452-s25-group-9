@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.repository.AuthRepositoryImpl
 import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
-import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -97,7 +96,7 @@ class PrivacySettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, successMessage = null)
-                
+
                 // Update both local and backend settings
                 locationSettingsRepository.setNotificationsEnabled(enabled)
                 notificationRepository.setNotificationsEnabled(enabled).onSuccess {
@@ -123,7 +122,6 @@ class PrivacySettingsViewModel @Inject constructor(
             }
         }
     }
-
 
     fun saveAllSettings(
         locationEnabled: Boolean,

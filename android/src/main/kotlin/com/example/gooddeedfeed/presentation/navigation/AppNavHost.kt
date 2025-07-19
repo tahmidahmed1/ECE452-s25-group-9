@@ -179,13 +179,13 @@ fun appNavHost(
                             showLoadingOverlay = false
                         }
                     }
-                    
+
                     // Handle welcome toast for onboarding completion
                     LaunchedEffect(isNavigatingFromOnboarding) {
                         if (isNavigatingFromOnboarding && user.userType != null) {
                             // Wait for loading overlay to clear, then show welcome message
                             kotlinx.coroutines.delay(600)
-                            
+
                             when (user.userType) {
                                 DomainUserType.VOLUNTEER -> {
                                     ToastManager.showSuccess("Welcome to Good Deed Feed! Start exploring volunteer opportunities nearby.")
@@ -194,15 +194,15 @@ fun appNavHost(
                                     ToastManager.showSuccess("Welcome to Good Deed Feed! Ready to create your first volunteer event?")
                                 }
                             }
-                            
+
                             // Reset the flag
                             isNavigatingFromOnboarding = false
                         }
                     }
-                    
+
                     // Always show main app content
                     TabNavigationScreen(
-                        user = user, 
+                        user = user,
                         onLogout = { viewModel.signOut() },
                         onEditProfile = {
                             when (user.userType) {
@@ -217,7 +217,7 @@ fun appNavHost(
                                     navController.navigate(Screen.EditVolunteerProfile.route)
                                 }
                             }
-                        }
+                        },
                     )
                 }
             }
@@ -233,7 +233,7 @@ fun appNavHost(
                         },
                         onBack = {
                             navController.popBackStack()
-                        }
+                        },
                     )
                 }
             }
@@ -249,7 +249,7 @@ fun appNavHost(
                         },
                         onBack = {
                             navController.popBackStack()
-                        }
+                        },
                     )
                 }
             }
@@ -267,19 +267,19 @@ fun appNavHost(
                 onDismiss = { ToastManager.dismiss() },
             )
         }
-        
+
         // Loading overlay with dark translucent background
         if (showLoadingOverlay) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(48.dp),
                     color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp
+                    strokeWidth = 4.dp,
                 )
             }
         }

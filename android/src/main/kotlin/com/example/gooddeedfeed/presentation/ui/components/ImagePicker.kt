@@ -12,7 +12,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.material3.IconButton
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +24,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -157,7 +157,6 @@ object ImageUtils {
             }
         }
 
-
         fun validateAge(age: String): String? {
             return if (age.isBlank()) {
                 "Age is required"
@@ -251,7 +250,7 @@ fun ProfileImagePicker(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
-                        
+
                         // Remove button for selected image
                         IconButton(
                             onClick = { selectedImageUri = null },
@@ -260,14 +259,14 @@ fun ProfileImagePicker(
                                 .size(24.dp)
                                 .background(
                                     Color.Black.copy(alpha = 0.6f),
-                                    CircleShape
-                                )
+                                    CircleShape,
+                                ),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Remove photo",
                                 tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }
@@ -280,7 +279,7 @@ fun ProfileImagePicker(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
-                        
+
                         // Remove button for current image
                         if (onImageRemoved != null) {
                             IconButton(
@@ -293,14 +292,14 @@ fun ProfileImagePicker(
                                     .size(24.dp)
                                     .background(
                                         Color.Black.copy(alpha = 0.6f),
-                                        CircleShape
-                                    )
+                                        CircleShape,
+                                    ),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Remove photo",
                                     tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
                             }
                         }

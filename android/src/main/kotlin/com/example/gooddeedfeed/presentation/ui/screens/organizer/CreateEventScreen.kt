@@ -34,9 +34,9 @@ import androidx.compose.material3.*
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -118,68 +118,70 @@ fun CreateEventScreen(
             val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
             val parsedDate = dateFormat.parse(dateStr)
             val parsedTime = timeFormat.parse(timeStr)
-            
+
             if (parsedDate != null && parsedTime != null) {
                 val calendar = Calendar.getInstance()
                 calendar.time = parsedDate
-                
+
                 val timeCalendar = Calendar.getInstance()
                 timeCalendar.time = parsedTime
-                
+
                 calendar.set(Calendar.HOUR_OF_DAY, timeCalendar.get(Calendar.HOUR_OF_DAY))
                 calendar.set(Calendar.MINUTE, timeCalendar.get(Calendar.MINUTE))
                 calendar.set(Calendar.SECOND, 0)
                 calendar.set(Calendar.MILLISECOND, 0)
-                
+
                 calendar.time
-            } else null
+            } else {
+                null
+            }
         } catch (e: Exception) {
             null
         }
     }
-    
+
     fun isEventDateTimeValid(dateStr: String, timeStr: String): Boolean {
         if (dateStr.isBlank() || timeStr.isBlank()) return false
-        
+
         val eventDateTime = parseEventDateTime(dateStr, timeStr) ?: return false
         val now = Date()
         val oneHourFromNow = Date(now.time + 60 * 60 * 1000) // Add 1 hour in milliseconds
-        
+
         // For editing existing events, allow if the new time is at least 1 hour from now
         // or if we're editing an existing event and the time hasn't changed (moved earlier)
         if (isEditing && eventToEdit != null) {
             val originalDateTime = parseEventDateTime(eventToEdit.date, eventToEdit.startTime)
             // Allow if new time is valid OR if we're not making it worse than the original
-            return eventDateTime.after(oneHourFromNow) || 
-                   (originalDateTime != null && !eventDateTime.before(originalDateTime))
+            return eventDateTime.after(oneHourFromNow) ||
+                (originalDateTime != null && !eventDateTime.before(originalDateTime))
         }
-        
+
         return eventDateTime.after(oneHourFromNow)
     }
-    
+
     fun isEndTimeAfterStartTime(dateStr: String, startTimeStr: String, endTimeStr: String): Boolean {
         if (dateStr.isBlank() || startTimeStr.isBlank() || endTimeStr.isBlank()) return false
-        
+
         val startDateTime = parseEventDateTime(dateStr, startTimeStr) ?: return false
         val endDateTime = parseEventDateTime(dateStr, endTimeStr) ?: return false
-        
+
         return endDateTime.after(startDateTime)
     }
-    
+
     // Validation helper functions
     val isStartDateTimeValid = isEventDateTimeValid(date, startTime)
     val isEndTimeValid = isEndTimeAfterStartTime(date, startTime, endTime)
-    
-    val isFormValid = title.isNotBlank() && 
-                     description.isNotBlank() && 
-                     locationText.isNotBlank() && 
-                     date.isNotBlank() && 
-                     startTime.isNotBlank() && 
-                     endTime.isNotBlank() && 
-                     maxVolunteersText.isNotBlank() && 
-                     (maxVolunteersText.toIntOrNull() ?: 0) > 0 &&
-                     isStartDateTimeValid &&
-                     isEndTimeValid
+
+    val isFormValid = title.isNotBlank() &&
+        description.isNotBlank() &&
+        locationText.isNotBlank() &&
+        date.isNotBlank() &&
+        startTime.isNotBlank() &&
+        endTime.isNotBlank() &&
+        maxVolunteersText.isNotBlank() &&
+        (maxVolunteersText.toIntOrNull() ?: 0) > 0 &&
+        isStartDateTimeValid &&
+        isEndTimeValid
 
     val titleError = hasAttemptedSubmit && title.isBlank()
     val descriptionError = hasAttemptedSubmit && description.isBlank()
@@ -196,13 +198,13 @@ fun CreateEventScreen(
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
     }.timeInMillis
-    
+
     val datePickerState = rememberDatePickerState(
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
                 return utcTimeMillis >= today
             }
-        }
+        },
     )
     val startTimePickerState = rememberTimePickerState()
     val endTimePickerState = rememberTimePickerState()
@@ -456,18 +458,20 @@ fun CreateEventScreen(
                         }
                     },
                     isError = startTimeError,
-                    supportingText = if (startTimeError) { 
-                        { 
+                    supportingText = if (startTimeError) {
+                        {
                             Text(
                                 text = when {
                                     startTime.isBlank() -> "Start time is required"
                                     !isStartDateTimeValid -> "Event must be scheduled at least 1 hour from now"
                                     else -> "Invalid start time"
                                 },
-                                color = MaterialTheme.colorScheme.error
-                            ) 
-                        } 
-                    } else null,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    } else {
+                        null
+                    },
                 )
                 OutlinedTextField(
                     value = endTime,
@@ -489,18 +493,20 @@ fun CreateEventScreen(
                         }
                     },
                     isError = endTimeError,
-                    supportingText = if (endTimeError) { 
-                        { 
+                    supportingText = if (endTimeError) {
+                        {
                             Text(
                                 text = when {
                                     endTime.isBlank() -> "End time is required"
                                     !isEndTimeValid -> "End time must be after start time"
                                     else -> "Invalid end time"
                                 },
-                                color = MaterialTheme.colorScheme.error
-                            ) 
-                        } 
-                    } else null,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    } else {
+                        null
+                    },
                 )
             }
 
@@ -618,28 +624,28 @@ fun CreateEventScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = message,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                         IconButton(onClick = { errorMessage = null }) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Dismiss error",
-                                tint = MaterialTheme.colorScheme.onErrorContainer
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
                             )
                         }
                     }
@@ -659,7 +665,7 @@ fun CreateEventScreen(
                             try {
                                 isSubmitting = true
                                 errorMessage = null
-                                
+
                                 val data = CreateEventData(
                                     title = title,
                                     description = description,
@@ -676,7 +682,7 @@ fun CreateEventScreen(
                                 )
                                 if (isEditing && eventToEdit != null) {
                                     viewModel.updateEvent(eventToEdit.id, data)
-                                    
+
                                     // Upload images if selected
                                     selectedImageFiles.forEachIndexed { index, file ->
                                         val isMain = index == mainImageIndex
@@ -684,7 +690,7 @@ fun CreateEventScreen(
                                     }
                                 } else {
                                     val created = viewModel.createEvent(data)
-                                    
+
                                     // Upload images if selected
                                     selectedImageFiles.forEachIndexed { index, file ->
                                         val isMain = index == mainImageIndex

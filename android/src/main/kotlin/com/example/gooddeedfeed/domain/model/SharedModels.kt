@@ -73,7 +73,6 @@ enum class ApprovalStatus(val displayName: String) {
     }
 }
 
-
 enum class SocialMediaPlatform(val displayName: String, val iconName: String) {
     INSTAGRAM("Instagram", "instagram"),
     FACEBOOK("Facebook", "facebook"),

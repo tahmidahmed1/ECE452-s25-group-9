@@ -1,7 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
 import android.graphics.pdf.PdfDocument
-import com.example.gooddeedfeed.BuildConfig
 import android.os.Environment
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.example.gooddeedfeed.BuildConfig
 import com.example.gooddeedfeed.domain.model.DomainBadge
 import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
 import com.example.gooddeedfeed.domain.model.DomainUser
@@ -70,9 +70,8 @@ import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
 import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.LeaderboardViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
-import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -349,7 +348,7 @@ fun StatsScreen(
             val currentAuthState = authState
             if (currentAuthState is AuthUiState.Success && currentAuthState.user.userType?.name == "VOLUNTEER") {
                 VerticalSpacer(SpacingSize.Large)
-                
+
                 Button(
                     onClick = {
                         viewModel.increaseKarmaPointsDevOnly { updatedUser ->

@@ -33,7 +33,7 @@ fun NotificationPromptDialog(
                 if (granted) {
                     onEnableNotifications()
                 }
-            }
+            },
         )
     } else {
         null
@@ -60,21 +60,21 @@ fun NotificationPromptDialog(
         text = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
                     text = when (userType) {
-                        DomainUserType.VOLUNTEER -> 
+                        DomainUserType.VOLUNTEER ->
                             "Get notified when new volunteer opportunities are posted by organizations you follow."
-                        DomainUserType.ORGANIZER -> 
+                        DomainUserType.ORGANIZER ->
                             "Get notified about volunteer applications, event updates, and important announcements."
-                        else -> 
+                        else ->
                             "Get notified about important updates and new opportunities."
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                 )
-                
+
                 Text(
                     text = "You can change this setting later in Privacy & Notifications.",
                     style = MaterialTheme.typography.bodySmall,
@@ -91,7 +91,7 @@ fun NotificationPromptDialog(
                     } else {
                         onEnableNotifications()
                     }
-                }
+                },
             ) {
                 Text("Enable Notifications")
             }
@@ -101,6 +101,6 @@ fun NotificationPromptDialog(
                 Text("Skip for Now")
             }
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }

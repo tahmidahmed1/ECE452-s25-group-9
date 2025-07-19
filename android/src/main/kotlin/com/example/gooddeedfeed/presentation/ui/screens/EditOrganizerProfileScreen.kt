@@ -2,6 +2,7 @@ package com.example.gooddeedfeed.presentation.ui.screens
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -17,8 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -68,7 +69,6 @@ import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.onboarding.ProfileSectionHeader
-import android.util.Log
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,14 +92,14 @@ fun EditOrganizerProfileScreen(
 
     // Initialize social media fields from existing data
     val existingSocialMedia = user.organizationSocialMedia ?: emptyList()
-    var instagramHandle by remember(user) { 
-        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.INSTAGRAM }?.url ?: "") 
+    var instagramHandle by remember(user) {
+        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.INSTAGRAM }?.url ?: "")
     }
-    var twitterHandle by remember(user) { 
-        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.TWITTER }?.url ?: "") 
+    var twitterHandle by remember(user) {
+        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.TWITTER }?.url ?: "")
     }
-    var facebookPage by remember(user) { 
-        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.FACEBOOK }?.url ?: "") 
+    var facebookPage by remember(user) {
+        mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.FACEBOOK }?.url ?: "")
     }
 
     // Organization images - initialize with existing URLs converted to display state
@@ -156,7 +156,7 @@ fun EditOrganizerProfileScreen(
     }
 
     val organizationError: String? by remember(organizationName) {
-        derivedStateOf { 
+        derivedStateOf {
             if (organizationName.isBlank()) "Organization name is required" else null
         }
     }
@@ -210,7 +210,7 @@ fun EditOrganizerProfileScreen(
                 onImageRemoved = {
                     profilePictureFile = null
                     selectedImageUri = null
-                }
+                },
             )
 
             VerticalSpacer(SpacingSize.Large)
@@ -496,7 +496,7 @@ fun EditOrganizerProfileScreen(
                         organizationImages = if (organizationImageFiles.isNotEmpty()) organizationImageFiles.map { it.absolutePath } else null,
                     )
                     Log.d("EditOrganizerProfileScreen", "Save clicked: update=$userUpdate, file=$profilePictureFile")
-                    
+
                     onSave(userUpdate, profilePictureFile)
                 },
                 enabled = isFormValid,

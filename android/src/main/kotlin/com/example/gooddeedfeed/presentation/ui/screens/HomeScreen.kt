@@ -52,11 +52,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.ui.components.NotificationPromptDialog
 import com.example.gooddeedfeed.presentation.ui.components.base.ActionCard
 import com.example.gooddeedfeed.presentation.ui.components.base.InfoCard
-import com.example.gooddeedfeed.presentation.ui.components.NotificationPromptDialog
-import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
-import androidx.compose.runtime.collectAsState
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.ScreenContainer
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
@@ -80,7 +78,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel<HomeViewModel>(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
+
     // Check if notification prompt has been shown
     var hasNotificationPromptBeenShown by remember { mutableStateOf(true) }
     var showNotificationPrompt by remember { mutableStateOf(false) }
@@ -88,7 +86,7 @@ fun HomeScreen(
     LaunchedEffect(user) {
         viewModel.loadUserHome(user)
     }
-    
+
     // Show notification prompt on first sign-in
     LaunchedEffect(user) {
         if (user.onboardingCompleted == true) {
@@ -143,7 +141,7 @@ fun HomeScreen(
             }
         }
     }
-    
+
     // Show notification prompt dialog if needed
     if (showNotificationPrompt && user.userType != null) {
         NotificationPromptDialog(
@@ -159,7 +157,7 @@ fun HomeScreen(
             },
             onDismiss = {
                 showNotificationPrompt = false
-            }
+            },
         )
     }
 }

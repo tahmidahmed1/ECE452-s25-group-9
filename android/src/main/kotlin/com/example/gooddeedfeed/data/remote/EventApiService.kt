@@ -59,7 +59,7 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
                 contentType(ContentType.Application.Json)
                 setBody(data.toDto())
             }
-            
+
             if (response.status.value in 200..299) {
                 response.body<EventDto>()
             } else {
@@ -77,7 +77,7 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
                 contentType(ContentType.Application.Json)
                 setBody(data.toDto())
             }
-            
+
             if (response.status.value in 200..299) {
                 response.body<EventDto>()
             } else {

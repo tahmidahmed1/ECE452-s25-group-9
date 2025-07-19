@@ -113,13 +113,13 @@ class LeaderboardViewModel @Inject constructor(
                     },
                     onFailure = { error ->
                         _uiState.value = _uiState.value.copy(
-                            errorMessage = error.message ?: "Failed to increase karma points"
+                            errorMessage = error.message ?: "Failed to increase karma points",
                         )
-                    }
+                    },
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = e.message ?: "Failed to increase karma points"
+                    errorMessage = e.message ?: "Failed to increase karma points",
                 )
             }
         }

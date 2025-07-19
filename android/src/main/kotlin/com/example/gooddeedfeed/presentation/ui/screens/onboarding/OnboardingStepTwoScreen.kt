@@ -26,13 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,9 +49,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -105,7 +99,6 @@ fun OnboardingStepTwoScreen(
     // Organization images
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var mainOrgImageIndex by remember { mutableStateOf(0) }
-
 
     // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -218,7 +211,7 @@ fun OnboardingStepTwoScreen(
                 onImageRemoved = {
                     profilePictureFile = null
                     selectedImageUri = null
-                }
+                },
             )
 
             VerticalSpacer(SpacingSize.Large)
@@ -314,7 +307,6 @@ fun OnboardingStepTwoScreen(
                             modifier = Modifier.align(Alignment.Start),
                         )
                     }
-
 
                     VerticalSpacer(SpacingSize.Small)
 

@@ -204,7 +204,7 @@ constructor(
                 // Force immediate state clearing to prevent any stale state
                 Log.d(TAG, "🧹 Clearing UI state immediately...")
                 _uiState.value = AuthUiState.SignedOut
-                
+
                 Log.d(TAG, "📞 Calling signOutUseCase...")
                 val result = signOutUseCase.invoke()
 
@@ -252,7 +252,7 @@ constructor(
     }
 
     fun refreshUser() = fetchUser()
-    
+
     /**
      * Update the current user state with the provided user data
      */

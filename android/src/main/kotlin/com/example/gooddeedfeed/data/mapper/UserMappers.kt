@@ -85,7 +85,6 @@ fun Sex.toDomain(): DomainSex = when (this) {
     Sex.PREFER_NOT_TO_SAY -> DomainSex.PREFER_NOT_TO_SAY
 }
 
-
 // SocialMediaPlatform mappers
 fun SocialMediaPlatformDto.toDomain(): SocialMediaPlatform = when (this) {
     SocialMediaPlatformDto.INSTAGRAM -> SocialMediaPlatform.INSTAGRAM

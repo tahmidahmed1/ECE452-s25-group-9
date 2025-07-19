@@ -45,8 +45,8 @@ data class InAppNotificationDto(
 
 @Serializable
 data class InAppNotificationsResponseDto(
-    val notifications: List<InAppNotificationDto> = emptyList(),  // Default to empty list if missing
-    val unreadCount: Int = 0,  // Default to 0 if missing from server response
+    val notifications: List<InAppNotificationDto> = emptyList(), // Default to empty list if missing
+    val unreadCount: Int = 0, // Default to 0 if missing from server response
 )
 
 @Serializable
