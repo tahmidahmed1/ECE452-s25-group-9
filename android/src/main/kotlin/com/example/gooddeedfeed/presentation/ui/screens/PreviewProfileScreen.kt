@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
@@ -30,12 +32,31 @@ fun PreviewProfileScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    when (user.userType?.name) {
+        "VOLUNTEER" -> VolunteerPreviewProfileScreen(user, onBack, modifier)
+        "ORGANIZER" -> OrganizerPreviewProfileScreen(user, onBack, modifier)
+        else -> {
+            // Fallback for users without userType
+            VolunteerPreviewProfileScreen(user, onBack, modifier)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VolunteerPreviewProfileScreen(
+    user: DomainUser,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
                 Row(
                     modifier = Modifier
                         .statusBarsPadding()
@@ -58,23 +79,63 @@ fun PreviewProfileScreen(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
+            BasicInfoCard(user)
+            ContactInfoCard(user)
+            VolunteerInfoCard(user)
+            EmergencyContactCard(user)
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrganizerPreviewProfileScreen(
+    user: DomainUser,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Profile Preview",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
             }
-            item { BasicInfoCard(user) }
-            item { ContactInfoCard(user) }
-            if (user.userType?.name == "VOLUNTEER") {
-                item { VolunteerInfoCard(user) }
-                item { EmergencyContactCard(user) }
-            }
-            if (user.userType?.name == "ORGANIZER") {
-                item { OrganizationInfoCard(user) }
+            BasicInfoCard(user)
+            AccountInfoCard(user)
+            ContactInfoCard(user)
+            OrganizerInfoCard(user)
                 if (!user.organizationSocialMedia.isNullOrEmpty()) {
-                    item { SocialMediaCard(user) }
+                SocialMediaCard(user)
                 }
                 if (!user.organizationImages.isNullOrEmpty()) {
-                    item { OrganizationImagesCard(user) }
-                }
+                OrganizationImagesCard(user)
             }
-            item { Spacer(modifier = Modifier.height(24.dp)) }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -136,6 +197,7 @@ private fun BasicInfoCard(user: DomainUser) {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
             Text(
@@ -143,6 +205,7 @@ private fun BasicInfoCard(user: DomainUser) {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -150,13 +213,23 @@ private fun BasicInfoCard(user: DomainUser) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
-            Text(
-                text = "Role: ${user.userType?.name ?: "Not set"}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
-            )
+        }
+    }
+}
+
+@Composable
+private fun AccountInfoCard(user: DomainUser) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            SectionHeader("Account Information")
+            user.createdAt?.let { InfoRow("Member Since", it) }
+            user.updatedAt?.let { InfoRow("Last Updated", it) }
         }
     }
 }
@@ -170,6 +243,7 @@ private fun ContactInfoCard(user: DomainUser) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Contact Information")
+            InfoRow("Email", user.email)
             user.phone?.let { InfoRow("Phone", it) }
             user.organizationName?.let { InfoRow("Organization", it) }
             // Only show location for organizers in contact info
@@ -189,17 +263,67 @@ private fun VolunteerInfoCard(user: DomainUser) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Volunteer Information")
-            user.description?.let { InfoRow("Description", it) }
-            user.skills?.let { skills ->
-                if (skills.isNotEmpty()) {
-                    InfoRow("Skills", skills.joinToString(", "))
+            
+            // Personal Details
+            user.age?.let { InfoRow("Age", it.toString()) }
+            user.sex?.let { InfoRow("Gender", it.toDisplayString()) }
+            
+            // About/Description
+            user.description?.let { description ->
+                if (description.isNotBlank()) {
+                    Text(
+                        text = "About",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp)
+                    )
                 }
             }
-            user.age?.let { InfoRow("Age", it.toString()) }
-            user.sex?.let { InfoRow("Sex", it.toDisplayString()) }
-            user.locationArea?.let { InfoRow("Preferred Location", it) }
+
+            // Skills
+            user.skills?.let { skills ->
+                if (skills.isNotEmpty()) {
+                    Text(
+                        text = "Skills & Interests",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                    Text(
+                        text = skills.joinToString(", "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp)
+                    )
+                }
+            }
+            
+            // Location & Transportation
+            user.locationArea?.let { InfoRow("Preferred Area", it) }
             user.hasDriversLicense?.let { InfoRow("Driver's License", if (it) "Yes" else "No") }
-            user.disabilities?.let { if (it.isNotBlank()) InfoRow("Accessibility Needs", it) }
+            
+            // Accessibility
+            user.disabilities?.let { disabilities ->
+                if (disabilities.isNotBlank()) {
+                    InfoRow("Accessibility Needs", disabilities)
+                }
+            }
+            
+            // Stats
             InfoRow("Karma Points", user.karmaPoints.toString())
         }
     }
@@ -267,14 +391,89 @@ private fun OrganizationInfoCard(user: DomainUser) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Organization Information")
-            user.organizationName?.let { InfoRow("Organization", it) }
-            user.organizationDescription?.let {
-                if (it.isNotBlank()) InfoRow("Description", it)
+            
+            // Organization Basic Info
+            user.organizationName?.let { InfoRow("Organization Name", it) }
+            
+            // Organization Description
+            user.organizationDescription?.let { description ->
+                if (description.isNotBlank()) {
+                    Text(
+                        text = "About Organization",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp)
+                    )
+                }
             }
-            user.organizationWebsite?.let {
-                if (it.isNotBlank()) InfoRow("Website", it)
+            
+            // Website
+            user.organizationWebsite?.let { website ->
+                if (website.isNotBlank()) {
+                    InfoRow("Website", website)
+                }
             }
-            user.karmaPoints.let { InfoRow("Karma Points", it.toString()) }
+            
+            // Location
+            user.locationArea?.let { InfoRow("Location", it) }
+        }
+    }
+}
+
+@Composable
+private fun OrganizerInfoCard(user: DomainUser) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            SectionHeader("Organization Information")
+            
+            // Organization Basic Info
+            user.organizationName?.let { InfoRow("Organization Name", it) }
+            
+            // Organization Description
+            user.organizationDescription?.let { description ->
+                if (description.isNotBlank()) {
+                    Text(
+                        text = "About Organization",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp)
+                    )
+                }
+            }
+            
+            // Website
+            user.organizationWebsite?.let { website ->
+                if (website.isNotBlank()) {
+                    InfoRow("Website", website)
+                }
+            }
+            
+            // Location
+            user.locationArea?.let { InfoRow("Location", it) }
         }
     }
 }

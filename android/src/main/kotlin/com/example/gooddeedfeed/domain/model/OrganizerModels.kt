@@ -24,6 +24,7 @@ data class VolunteerEvent(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val karmaPoints: Int = 10,
+    val imageUrl: String? = null,
 )
 
 enum class EventStatus {

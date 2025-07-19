@@ -23,7 +23,9 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +33,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,6 +53,7 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +66,7 @@ fun EventManagementScreen(
     var selectedEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
     var creatingEvent by remember { mutableStateOf(false) }
     var editingEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
+    var eventToDelete by remember { mutableStateOf<VolunteerEvent?>(null) }
 
     if (creatingEvent) {
         CreateEventScreen(onBack = { creatingEvent = false })
@@ -174,7 +179,7 @@ fun EventManagementScreen(
                             EventCard(
                                 event = event,
                                 onEditClick = { editingEvent = event },
-                                onDeleteClick = { viewModel.deleteEvent(event.id) },
+                                onDeleteClick = { eventToDelete = event },
                                 onViewClick = { selectedEvent = event },
                             )
                         }
@@ -202,202 +207,141 @@ fun EventManagementScreen(
             }
         }
     }
+
+    // Delete confirmation dialog
+    if (eventToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { eventToDelete = null },
+            title = { Text("Delete Event?") },
+            text = { Text("Are you sure you want to delete '${eventToDelete!!.title}'?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteEvent(eventToDelete!!.id)
+                        eventToDelete = null
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { eventToDelete = null }, shape = RoundedCornerShape(12.dp)) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
 }
 
 @Composable
 private fun EventCard(
     event: VolunteerEvent,
     onEditClick: (VolunteerEvent) -> Unit,
-    onDeleteClick: (Int) -> Unit,
+    onDeleteClick: (VolunteerEvent) -> Unit,
     onViewClick: (VolunteerEvent) -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onViewClick(event) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onViewClick(event) },
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
+        Column {
+            // Banner image if available
+            event.imageUrl?.let { url ->
+                AsyncImage(
+                    model = url,
+                    contentDescription = "Event Banner",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f),
+                    contentScale = ContentScale.Crop,
                 )
-
-                Row {
-                    IconButton(
-                        onClick = { onEditClick(event) },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Event",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { onDeleteClick(event.id) },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Event",
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = event.description,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Column {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Text(
-                        text = "Date",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = event.date,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = "Time",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "${event.startTime} - ${event.endTime}",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = "Volunteers",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "${event.currentVolunteers}/${event.maxVolunteers}",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = "Karma Points",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "${event.karmaPoints}",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = event.title,
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
                     )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    Row {
+                        IconButton(
+                            onClick = { onEditClick(event) },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Event",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Column {
-                    Text(
-                        text = "Location",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = event.location,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                        IconButton(
+                            onClick = { onDeleteClick(event) },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete Event",
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
                 }
 
-                Column {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "${event.date}  •  ${event.startTime} - ${event.endTime}", style = MaterialTheme.typography.bodySmall)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Event description
+                if (event.description.isNotBlank()) {
                     Text(
-                        text = "Status",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = event.description,
+                        style = MaterialTheme.typography.bodyMedium,
                     )
-                    Text(
-                        text = event.status.name.replace("_", " "),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
+
+                // Stats row – volunteers and karma points
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column {
+                        Text(
+                            text = "Volunteers",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "${event.currentVolunteers}/${event.maxVolunteers}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "Karma Points",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "${event.karmaPoints}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                // status removed
             }
         }
     }
 }
 
-@Composable
-private fun OrganizerEventDetailScreen(event: VolunteerEvent, onBack: () -> Unit) {
-    val mockImages = listOf(
-        "https://images.unsplash.com/photo-1506784365847-bbad939e9335?auto=format&fit=crop&w=600&q=60",
-        "https://images.unsplash.com/photo-1455849318743-b2233052fcff?auto=format&fit=crop&w=600&q=60",
-        "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=600&q=60",
-    )
-    val mockVolunteers = listOf(
-        "Alice" to "https://randomuser.me/api/portraits/women/1.jpg",
-        "Bob" to "https://randomuser.me/api/portraits/men/2.jpg",
-        "Charlie" to "https://randomuser.me/api/portraits/men/3.jpg",
-        "Diana" to "https://randomuser.me/api/portraits/women/4.jpg",
-    )
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
-                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = event.title, style = MaterialTheme.typography.headlineMedium)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(text = event.description ?: "No description", style = MaterialTheme.typography.bodyMedium)
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(text = "Event Images", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
-            items(mockImages) { url ->
-                Card {
-                    AsyncImage(model = url, contentDescription = null, modifier = Modifier.size(120.dp).aspectRatio(1f), contentScale = ContentScale.Crop)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(text = "Volunteers", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-
-        LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(mockVolunteers) { (name, avatar) ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AsyncImage(model = avatar, contentDescription = name, modifier = Modifier.size(48.dp).clip(CircleShape), contentScale = ContentScale.Crop)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = name, style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-        }
-    }
-}

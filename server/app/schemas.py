@@ -192,6 +192,8 @@ class EventBase(BaseModel):
     title: str
     description: Optional[str] = None
     date: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     location: Optional[str] = None
     image_url: Optional[str] = None
 

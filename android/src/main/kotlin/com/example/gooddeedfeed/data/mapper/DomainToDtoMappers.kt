@@ -3,8 +3,6 @@ package com.example.gooddeedfeed.data.mapper
 import com.example.gooddeedfeed.data.remote.dto.*
 import com.example.gooddeedfeed.domain.model.*
 
-// Domain → DTO helpers (only one definition each)
-
 fun SocialMediaPlatform.toDto(): SocialMediaPlatformDto = when (this) {
     SocialMediaPlatform.INSTAGRAM -> SocialMediaPlatformDto.INSTAGRAM
     SocialMediaPlatform.FACEBOOK -> SocialMediaPlatformDto.FACEBOOK

@@ -46,6 +46,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -76,6 +77,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import android.util.Log
+import kotlinx.coroutines.CancellationException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,16 +93,33 @@ fun CreateEventScreen(
     var description by remember { mutableStateOf(eventToEdit?.description ?: "") }
     var locationText by remember { mutableStateOf(eventToEdit?.location ?: "") }
     var date by remember { mutableStateOf(eventToEdit?.date ?: "") }
-    var startTime by remember { mutableStateOf(eventToEdit?.startTime ?: "") }
-    var endTime by remember { mutableStateOf(eventToEdit?.endTime ?: "") }
+    fun formatExistingTime(raw: String?): String {
+        if (raw.isNullOrBlank()) return ""
+        // If already in h:mm a format, return as is
+        return try {
+            SimpleDateFormat("h:mm a", Locale.getDefault()).parse(raw)
+            raw // parsed successfully, already correct format
+        } catch (_: Exception) {
+            try {
+                val parsed = SimpleDateFormat("H:mm", Locale.getDefault()).parse(raw)
+                SimpleDateFormat("h:mm a", Locale.getDefault()).format(parsed!!)
+            } catch (_: Exception) {
+                raw // fallback – leave as-is
+            }
+        }
+    }
+
+    var startTime by remember { mutableStateOf(formatExistingTime(eventToEdit?.startTime)) }
+    var endTime by remember { mutableStateOf(formatExistingTime(eventToEdit?.endTime)) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var maxVolunteersText by remember { mutableStateOf(eventToEdit?.maxVolunteers?.toString() ?: "") }
     var category by remember { mutableStateOf(eventToEdit?.category ?: OpportunityCategory.OTHER) }
     var karmaPoints by remember { mutableStateOf(eventToEdit?.karmaPoints ?: 10) }
-    var latitudeText by remember { mutableStateOf("") }
-    var longitudeText by remember { mutableStateOf("") }
+    // Pre-fill latitude/longitude when editing
+    var latitudeText by remember { mutableStateOf(eventToEdit?.latitude?.toString() ?: "") }
+    var longitudeText by remember { mutableStateOf(eventToEdit?.longitude?.toString() ?: "") }
     var showMapPicker by remember { mutableStateOf(false) }
     var selectedImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var mainImageIndex by remember { mutableStateOf(0) }
@@ -172,9 +192,12 @@ fun CreateEventScreen(
     val isStartDateTimeValid = isEventDateTimeValid(date, startTime)
     val isEndTimeValid = isEndTimeAfterStartTime(date, startTime, endTime)
 
+    // Helper flag – true only when lat & lon are populated by a chosen place
+    val isLocationSelected = latitudeText.isNotBlank() && longitudeText.isNotBlank()
+
     val isFormValid = title.isNotBlank() &&
         description.isNotBlank() &&
-        locationText.isNotBlank() &&
+        isLocationSelected &&
         date.isNotBlank() &&
         startTime.isNotBlank() &&
         endTime.isNotBlank() &&
@@ -185,19 +208,32 @@ fun CreateEventScreen(
 
     val titleError = hasAttemptedSubmit && title.isBlank()
     val descriptionError = hasAttemptedSubmit && description.isBlank()
-    val locationError = hasAttemptedSubmit && locationText.isBlank()
+    val locationError = hasAttemptedSubmit && !isLocationSelected
     val dateError = hasAttemptedSubmit && date.isBlank()
     val startTimeError = hasAttemptedSubmit && (startTime.isBlank() || (date.isNotBlank() && startTime.isNotBlank() && !isStartDateTimeValid))
     val endTimeError = hasAttemptedSubmit && (endTime.isBlank() || (date.isNotBlank() && startTime.isNotBlank() && endTime.isNotBlank() && !isEndTimeValid))
     val maxVolunteersError = hasAttemptedSubmit && (maxVolunteersText.isBlank() || (maxVolunteersText.toIntOrNull() ?: 0) <= 0)
 
+    // Human-readable reason why the form is currently invalid (checks live without submit)
+    val formErrorMessage: String? = when {
+        title.isBlank() -> "Title is required"
+        description.isBlank() -> "Description is required"
+        !isLocationSelected -> "Select a location from the dropdown or map"
+        date.isBlank() -> "Date is required"
+        startTime.isBlank() -> "Start time is required"
+        !isStartDateTimeValid -> "Start time must be at least 1 hour from now"
+        endTime.isBlank() -> "End time is required"
+        !isEndTimeValid -> "End time must be after start time"
+        maxVolunteersText.isBlank() || (maxVolunteersText.toIntOrNull() ?: 0) <= 0 -> "Enter a valid max volunteers (> 0)"
+        else -> null
+    }
+
     // Date and time picker states
-    val today = Calendar.getInstance().apply {
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
+    // Compute 'today' as start-of-day in UTC to align with DatePicker's utcTimeMillis values
+    val today = java.time.LocalDate.now(java.time.ZoneOffset.UTC)
+        .atStartOfDay(java.time.ZoneOffset.UTC)
+        .toInstant()
+        .toEpochMilli()
 
     val datePickerState = rememberDatePickerState(
         selectableDates = object : SelectableDates {
@@ -243,19 +279,22 @@ fun CreateEventScreen(
     // Debounce location query and fetch predictions
     LaunchedEffect(locationText) {
         if (locationText.length >= 2) { // Reduced from 3 to 2 characters
-            delay(300)
+            delay(500) // 500 ms debounce to limit API calls during typing
             try {
+                Log.d("CreateEventScreen", "🔍 Querying Places API for: $locationText")
                 val request = FindAutocompletePredictionsRequest.builder()
                     .setSessionToken(sessionToken)
                     .setQuery(locationText)
                     .build()
                 val response = placesClient.findAutocompletePredictions(request).await()
-                predictions = response.autocompletePredictions
+                predictions = response.autocompletePredictions.take(3)
+                Log.d("CreateEventScreen", "✅ Received ${predictions.size} predictions")
                 locationDropdownExpanded = predictions.isNotEmpty()
+            } catch (e: CancellationException) {
+                // Expected when user keeps typing – ignore
             } catch (e: Exception) {
+                Log.e("CreateEventScreen", "❌ Places API error", e)
                 predictions = emptyList()
-                locationDropdownExpanded = false
-                // For debugging: you can add Log.e("PlacesAPI", "Error: ${e.message}")
             }
         } else {
             predictions = emptyList()
@@ -290,7 +329,7 @@ fun CreateEventScreen(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Create Event",
+                        text = if (isEditing) "Edit Event" else "Create Event",
                         style = MaterialTheme.typography.headlineMedium,
                     )
                 }
@@ -314,6 +353,8 @@ fun CreateEventScreen(
                 shape = RoundedCornerShape(12.dp),
                 isError = descriptionError,
                 supportingText = if (descriptionError) { { Text("Description is required", color = MaterialTheme.colorScheme.error) } } else null,
+                minLines = 3,
+                maxLines = 5,
             )
 
             // Location input with autocomplete and map button
@@ -363,9 +404,10 @@ fun CreateEventScreen(
                                             placeResult.place.latLng?.let {
                                                 latitudeText = it.latitude.toString()
                                                 longitudeText = it.longitude.toString()
+                                                Log.d("CreateEventScreen", "📍 Selected place lat=${it.latitude}, lon=${it.longitude}")
                                             }
-                                        } catch (_: Exception) {
-                                            // Ignore errors fetching place details
+                                        } catch (e: Exception) {
+                                            Log.e("CreateEventScreen", "❌ Failed to fetch place details", e)
                                         }
                                     }
                                 },
@@ -653,6 +695,19 @@ fun CreateEventScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
+            // Show validation hint when button disabled
+            formErrorMessage?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                )
+            }
+
             PrimaryButton(
                 text = if (isSubmitting) {
                     if (isEditing) "Updating..." else "Creating..."
@@ -747,8 +802,12 @@ fun CreateEventScreen(
                 Button(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            val formatter = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
-                            date = formatter.format(millis)
+                            // Convert millis (UTC midnight) to LocalDate in UTC, then format
+                            val utcDate = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneOffset.UTC)
+                                .toLocalDate()
+                            val formatter = java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.getDefault())
+                            date = utcDate.format(formatter)
                         }
                         showDatePicker = false
                     },

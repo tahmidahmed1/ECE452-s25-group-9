@@ -455,10 +455,23 @@ def list_events_nearby(
 async def create_event(event: EventCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     if current_user.user_type != UserType.ORGANIZER:
         raise HTTPException(status_code=403, detail="Only organizers can create events")
+    from .models import OpportunityCategory
+
     event_data = event.dict()
+    # Ensure category stored as proper Enum, not raw string
+    raw_cat = event_data.pop("category", OpportunityCategory.OTHER)
+    if isinstance(raw_cat, str):
+        try:
+            category_enum = OpportunityCategory[raw_cat.upper()]
+        except KeyError:
+            category_enum = OpportunityCategory.OTHER
+    else:
+        category_enum = raw_cat  # already enum
+
     if event_data.get("current_volunteers") is None:
         event_data["current_volunteers"] = 0
-    new_event = Event(**event_data, organizer_id=current_user.id)
+
+    new_event = Event(**event_data, category=category_enum, organizer_id=current_user.id)
     db.add(new_event)
     db.commit()
     db.refresh(new_event)
@@ -636,6 +649,7 @@ async def upload_event_image_to_carousel(
             EventImage.event_id == event_id,
             EventImage.is_main == True
         ).update({"is_main": False})
+        event.image_url = url # Also update the main event image_url
 
     # Get next display order
     max_order = db.query(func.max(EventImage.display_order)).filter(

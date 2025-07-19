@@ -98,6 +98,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun disableNotifications() {
+        viewModelScope.launch {
+            notificationRepository.setNotificationsEnabled(false)
+            locationSettingsRepository.setNotificationsEnabled(false)
+        }
+    }
+
     private fun createUserTypeDisplay(user: DomainUser): UserTypeDisplay {
         return when (user.userType) {
             DomainUserType.VOLUNTEER -> UserTypeDisplay(

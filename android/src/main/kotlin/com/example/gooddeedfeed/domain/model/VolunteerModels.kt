@@ -18,6 +18,7 @@ data class VolunteerOpportunity(
     val longitude: Double = 0.0,
     val isActive: Boolean = true,
     val karmaPoints: Int = 10,
+    val imageUrl: String? = null,
 )
 
 enum class OpportunityCategory {
@@ -29,4 +30,16 @@ enum class OpportunityCategory {
     DISASTER_RELIEF,
     FOOD_SECURITY,
     OTHER,
+}
+
+// Helper to convert enum to backend-accepted string value
+fun OpportunityCategory.toApiValue(): String = when (this) {
+    OpportunityCategory.COMMUNITY_SERVICE -> "community_service"
+    OpportunityCategory.EDUCATION -> "education"
+    OpportunityCategory.ENVIRONMENTAL -> "environmental"
+    OpportunityCategory.HEALTHCARE -> "healthcare"
+    OpportunityCategory.SOCIAL_SERVICES -> "social_services"
+    OpportunityCategory.DISASTER_RELIEF -> "disaster_relief"
+    OpportunityCategory.FOOD_SECURITY -> "other" // Backend doesn't support food_security; map to other
+    OpportunityCategory.OTHER -> "other"
 } 

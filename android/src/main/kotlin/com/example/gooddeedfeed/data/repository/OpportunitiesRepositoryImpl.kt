@@ -5,6 +5,7 @@ import com.example.gooddeedfeed.data.remote.dto.EventDto
 import com.example.gooddeedfeed.domain.model.DateFilter
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.OpportunityFilters
+import com.example.gooddeedfeed.domain.model.toApiValue
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
@@ -22,9 +23,14 @@ private fun EventDto.toOpportunity(): VolunteerOpportunity = VolunteerOpportunit
     description = description ?: "",
     requiredVolunteers = max_volunteers ?: 0,
     currentVolunteers = current_volunteers ?: 0,
-    category = category,
+    category = try {
+        OpportunityCategory.valueOf(category.uppercase())
+    } catch (e: Exception) {
+        OpportunityCategory.OTHER
+    },
     latitude = latitude ?: 0.0,
     longitude = longitude ?: 0.0,
+    imageUrl = image_url,
 )
 
 @Singleton
@@ -108,7 +114,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
         val opportunities = try {
             // Convert filters to API parameters
             val categoryParam = if (filters.selectedCategories.isNotEmpty()) {
-                filters.selectedCategories.first().name.lowercase()
+                filters.selectedCategories.first().toApiValue()
             } else {
                 null
             }

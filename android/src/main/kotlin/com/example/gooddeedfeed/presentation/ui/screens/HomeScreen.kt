@@ -153,6 +153,7 @@ fun HomeScreen(
             },
             onSkip = {
                 viewModel.markNotificationPromptAsShown()
+                viewModel.disableNotifications()
                 showNotificationPrompt = false
             },
             onDismiss = {

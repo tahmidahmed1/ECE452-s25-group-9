@@ -24,8 +24,6 @@ fun NotificationPermissionCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-
-    // Only request notification permission on Android 13+ (API 33+)
     val notificationPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberPermissionState(
             permission = Manifest.permission.POST_NOTIFICATIONS,
@@ -39,7 +37,6 @@ fun NotificationPermissionCard(
         null
     }
 
-    // Show permission card only if permission is not granted and we're on Android 13+
     if (notificationPermissionState != null && !notificationPermissionState.status.isGranted) {
         Card(
             modifier = modifier.fillMaxWidth(),

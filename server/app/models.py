@@ -145,6 +145,8 @@ class Event(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     date = Column(String, nullable=True)
+    start_time = Column(String, nullable=True)
+    end_time = Column(String, nullable=True)
     location = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
 
