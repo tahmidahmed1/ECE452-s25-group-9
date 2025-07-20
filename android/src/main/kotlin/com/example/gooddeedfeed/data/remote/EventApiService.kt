@@ -1,6 +1,8 @@
 package com.example.gooddeedfeed.data.remote
 
+import android.util.Log
 import com.example.gooddeedfeed.data.remote.dto.EventDto
+import com.example.gooddeedfeed.data.remote.dto.EventImageDto
 import com.example.gooddeedfeed.data.remote.dto.toDto
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import io.ktor.client.HttpClient
@@ -47,10 +49,26 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
         }.body()
     }
 
-    suspend fun getOrganizerEvents(organizerId: Int): List<EventDto> =
-        client.get(buildUrl("organizers/$organizerId/events")).body()
+    suspend fun getOrganizerEvents(organizerId: Int): List<EventDto> {
+        val events: List<EventDto> = client.get(buildUrl("organizers/$organizerId/events")).body()
+        Log.d("EventAPI", "Fetched ${events.size} events for organizer $organizerId")
+        events.forEachIndexed { index, event ->
+            Log.d("EventAPI", "Event $index: id=${event.id}, title=${event.title}, images=${event.images.size}")
+            event.images.forEachIndexed { imgIndex, image ->
+                Log.d("EventAPI", "  Image $imgIndex: id=${image.id}, url=${image.image_url}, isMain=${image.is_main}")
+            }
+        }
+        return events
+    }
 
-    suspend fun getEvent(id: Int): EventDto = client.get(buildUrl("events/$id")).body()
+    suspend fun getEvent(id: Int): EventDto {
+        val event: EventDto = client.get(buildUrl("events/$id")).body()
+        Log.d("EventAPI", "Fetched event: id=${event.id}, title=${event.title}, images=${event.images.size}")
+        event.images.forEachIndexed { index, image ->
+            Log.d("EventAPI", "  Image $index: id=${image.id}, url=${image.image_url}, isMain=${image.is_main}")
+        }
+        return event
+    }
 
     suspend fun createEvent(token: String, data: CreateEventData): EventDto {
         return try {
@@ -130,4 +148,7 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
     }
+
+    suspend fun getEventImages(eventId: Int): List<EventImageDto> = 
+        client.get(buildUrl("events/$eventId/images")).body()
 } 

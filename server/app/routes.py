@@ -11,6 +11,7 @@ from sqlalchemy import func
 
 from .database import get_db
 from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, InAppNotification
+from sqlalchemy.orm import selectinload
 from .schemas import (
     UserCreate, User as UserSchema, Token, OnboardingStepOne, OnboardingStepTwoOrganizer,
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
@@ -389,7 +390,7 @@ def list_events_nearby(
     db: Session = Depends(get_db),
 ):
     """Return all events, filtered by various criteria."""
-    query = db.query(Event)
+    query = db.query(Event).options(selectinload(Event.images))
     
     # Category filter
     if category:
@@ -506,9 +507,15 @@ async def create_event(event: EventCreate, current_user: User = Depends(get_curr
 
 @router.get("/events/{event_id}", response_model=EventSchema)
 def get_event(event_id: int, db: Session = Depends(get_db)):
-    event = db.get(Event, event_id)
+    event = db.query(Event).options(selectinload(Event.images)).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Debug logging
+    logger.info(f"Returning event {event_id} with {len(event.images)} images")
+    for i, img in enumerate(event.images):
+        logger.info(f"Image {i}: id={img.id}, url={img.image_url}, is_main={img.is_main}")
+    
     return event
 
 @router.patch("/events/{event_id}", response_model=EventSchema)
@@ -537,7 +544,16 @@ async def delete_event(event_id: int, current_user: User = Depends(get_current_a
 
 @router.get("/organizers/{organizer_id}/events", response_model=List[EventSchema])
 def list_events_by_organizer(organizer_id: int, db: Session = Depends(get_db)):
-    return db.query(Event).filter(Event.organizer_id == organizer_id).all()
+    events = db.query(Event).options(selectinload(Event.images)).filter(Event.organizer_id == organizer_id).all()
+    
+    # Debug logging
+    logger.info(f"Returning {len(events)} events for organizer {organizer_id}")
+    for event in events:
+        logger.info(f"Event {event.id} ({event.title}) has {len(event.images)} images")
+        for i, img in enumerate(event.images):
+            logger.info(f"  Image {i}: id={img.id}, url={img.image_url}, is_main={img.is_main}")
+    
+    return events
 
 @router.websocket("/ws/chat/{room_id}")
 async def chat_endpoint(websocket: WebSocket, room_id: int, db: Session = Depends(get_db)):
@@ -643,6 +659,11 @@ async def upload_event_image_to_carousel(
     # Upload to object storage
     url = await storage_service.upload_event_image(file, event_id)
 
+    # Auto-set as main image if this is the first image for this event
+    if existing_images_count == 0:
+        is_main = True
+        logger.info(f"Setting first image as main for event {event_id}")
+
     # If this is marked as main, unset other main images
     if is_main:
         db.query(EventImage).filter(
@@ -650,6 +671,7 @@ async def upload_event_image_to_carousel(
             EventImage.is_main == True
         ).update({"is_main": False})
         event.image_url = url # Also update the main event image_url
+        logger.info(f"Set image as main for event {event_id}: {url}")
 
     # Get next display order
     max_order = db.query(func.max(EventImage.display_order)).filter(
@@ -742,8 +764,10 @@ async def set_main_event_image(
 
     # Set this image as main
     event_image.is_main = True
+    event.image_url = event_image.image_url  # Also update the main event image_url
     db.commit()
-
+    
+    logger.info(f"Manually set image {image_id} as main for event {event_id}")
     return {"message": "Main image updated successfully"}
 
 @router.patch("/events/{event_id}/images/reorder")

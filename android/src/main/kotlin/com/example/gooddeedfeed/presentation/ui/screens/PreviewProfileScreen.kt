@@ -2,6 +2,7 @@ package com.example.gooddeedfeed.presentation.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -56,28 +57,28 @@ fun VolunteerPreviewProfileScreen(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Row(
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface,
+                Row(
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Profile Preview",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Profile Preview",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
             BasicInfoCard(user)
             ContactInfoCard(user)
             VolunteerInfoCard(user)
@@ -128,10 +129,10 @@ fun OrganizerPreviewProfileScreen(
             AccountInfoCard(user)
             ContactInfoCard(user)
             OrganizerInfoCard(user)
-            if (!user.organizationSocialMedia.isNullOrEmpty()) {
+                if (!user.organizationSocialMedia.isNullOrEmpty()) {
                 SocialMediaCard(user)
-            }
-            if (!user.organizationImages.isNullOrEmpty()) {
+                }
+                if (!user.organizationImages.isNullOrEmpty()) {
                 OrganizationImagesCard(user)
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -196,7 +197,7 @@ private fun BasicInfoCard(user: DomainUser) {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
             Text(
@@ -204,7 +205,7 @@ private fun BasicInfoCard(user: DomainUser) {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -212,7 +213,7 @@ private fun BasicInfoCard(user: DomainUser) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -262,11 +263,11 @@ private fun VolunteerInfoCard(user: DomainUser) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Volunteer Information")
-
+            
             // Personal Details
             user.age?.let { InfoRow("Age", it.toString()) }
             user.sex?.let { InfoRow("Gender", it.toDisplayString()) }
-
+            
             // About/Description
             user.description?.let { description ->
                 if (description.isNotBlank()) {
@@ -274,7 +275,7 @@ private fun VolunteerInfoCard(user: DomainUser) {
                         text = "About",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
                     Text(
                         text = description,
@@ -284,7 +285,7 @@ private fun VolunteerInfoCard(user: DomainUser) {
                             .fillMaxWidth()
                             .heightIn(max = 120.dp)
                             .verticalScroll(rememberScrollState())
-                            .padding(bottom = 8.dp),
+                            .padding(bottom = 8.dp)
                     )
                 }
             }
@@ -296,7 +297,7 @@ private fun VolunteerInfoCard(user: DomainUser) {
                         text = "Skills & Interests",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
                     Text(
                         text = skills.joinToString(", "),
@@ -306,22 +307,22 @@ private fun VolunteerInfoCard(user: DomainUser) {
                             .fillMaxWidth()
                             .heightIn(max = 120.dp)
                             .verticalScroll(rememberScrollState())
-                            .padding(bottom = 8.dp),
+                            .padding(bottom = 8.dp)
                     )
                 }
             }
-
+            
             // Location & Transportation
             user.locationArea?.let { InfoRow("Preferred Area", it) }
             user.hasDriversLicense?.let { InfoRow("Driver's License", if (it) "Yes" else "No") }
-
+            
             // Accessibility
             user.disabilities?.let { disabilities ->
                 if (disabilities.isNotBlank()) {
                     InfoRow("Accessibility Needs", disabilities)
                 }
             }
-
+            
             // Stats
             InfoRow("Karma Points", user.karmaPoints.toString())
         }
@@ -390,10 +391,10 @@ private fun OrganizationInfoCard(user: DomainUser) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Organization Information")
-
+            
             // Organization Basic Info
             user.organizationName?.let { InfoRow("Organization Name", it) }
-
+            
             // Organization Description
             user.organizationDescription?.let { description ->
                 if (description.isNotBlank()) {
@@ -401,7 +402,7 @@ private fun OrganizationInfoCard(user: DomainUser) {
                         text = "About Organization",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
                     Text(
                         text = description,
@@ -411,18 +412,18 @@ private fun OrganizationInfoCard(user: DomainUser) {
                             .fillMaxWidth()
                             .heightIn(max = 120.dp)
                             .verticalScroll(rememberScrollState())
-                            .padding(bottom = 8.dp),
+                            .padding(bottom = 8.dp)
                     )
                 }
             }
-
+            
             // Website
             user.organizationWebsite?.let { website ->
                 if (website.isNotBlank()) {
                     InfoRow("Website", website)
                 }
             }
-
+            
             // Location
             user.locationArea?.let { InfoRow("Location", it) }
         }
@@ -438,10 +439,10 @@ private fun OrganizerInfoCard(user: DomainUser) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Organization Information")
-
+            
             // Organization Basic Info
             user.organizationName?.let { InfoRow("Organization Name", it) }
-
+            
             // Organization Description
             user.organizationDescription?.let { description ->
                 if (description.isNotBlank()) {
@@ -449,7 +450,7 @@ private fun OrganizerInfoCard(user: DomainUser) {
                         text = "About Organization",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
                     Text(
                         text = description,
@@ -459,18 +460,18 @@ private fun OrganizerInfoCard(user: DomainUser) {
                             .fillMaxWidth()
                             .heightIn(max = 120.dp)
                             .verticalScroll(rememberScrollState())
-                            .padding(bottom = 8.dp),
+                            .padding(bottom = 8.dp)
                     )
                 }
             }
-
+            
             // Website
             user.organizationWebsite?.let { website ->
                 if (website.isNotBlank()) {
                     InfoRow("Website", website)
                 }
             }
-
+            
             // Location
             user.locationArea?.let { InfoRow("Location", it) }
         }

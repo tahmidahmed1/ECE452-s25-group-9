@@ -6,6 +6,7 @@ import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.model.toApiValue
 import kotlinx.serialization.Serializable
+import com.example.gooddeedfeed.data.mapper.toEmulatorAccessibleUrl
 
 @Serializable
 data class EventDto(
@@ -29,6 +30,7 @@ data class EventDto(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val karma_points: Int = 10,
+    val images: List<EventImageDto> = emptyList(),
 )
 
 fun EventDto.toDomain(): VolunteerEvent = VolunteerEvent(
@@ -55,7 +57,8 @@ fun EventDto.toDomain(): VolunteerEvent = VolunteerEvent(
     latitude = latitude ?: 0.0,
     longitude = longitude ?: 0.0,
     karmaPoints = karma_points,
-    imageUrl = image_url,
+    imageUrl = image_url?.toEmulatorAccessibleUrl(),
+    images = images.map { it.copy(image_url = it.image_url.toEmulatorAccessibleUrl()) },
 )
 
 fun CreateEventData.toDto(): EventDto = EventDto(

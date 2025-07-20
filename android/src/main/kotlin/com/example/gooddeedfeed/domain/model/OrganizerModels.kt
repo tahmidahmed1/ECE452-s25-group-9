@@ -25,6 +25,7 @@ data class VolunteerEvent(
     val longitude: Double = 0.0,
     val karmaPoints: Int = 10,
     val imageUrl: String? = null,
+    val images: List<com.example.gooddeedfeed.data.remote.dto.EventImageDto> = emptyList(),
 )
 
 enum class EventStatus {
