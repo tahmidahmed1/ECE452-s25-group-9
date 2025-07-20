@@ -1,12 +1,12 @@
 package com.example.gooddeedfeed.data.remote.dto
 
+import com.example.gooddeedfeed.data.mapper.toEmulatorAccessibleUrl
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.EventStatus
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.model.toApiValue
 import kotlinx.serialization.Serializable
-import com.example.gooddeedfeed.data.mapper.toEmulatorAccessibleUrl
 
 @Serializable
 data class EventDto(

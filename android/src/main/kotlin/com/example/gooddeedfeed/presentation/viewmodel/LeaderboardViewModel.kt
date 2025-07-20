@@ -21,6 +21,7 @@ data class LeaderboardUiState(
     val currentPage: Int = 1,
     val hasNextPage: Boolean = true,
     val totalEntries: Int = 0,
+    val currentUserEntry: DomainLeaderboardEntry? = null,
 )
 
 @HiltViewModel
@@ -50,12 +51,33 @@ class LeaderboardViewModel @Inject constructor(
             leaderboardRepository.getLeaderboard(1, pageSize).collect { result ->
                 result.fold(
                     onSuccess = { response ->
+                        // Determine current user entry (may or may not be in first page)
+                        val currentUserId = authRepository.getCurrentUser().getOrNull()?.id
+                        var foundEntry: DomainLeaderboardEntry? = response.entries.firstOrNull { it.id == currentUserId }
+
+                        // If not found, try to locate by iterating further pages until found or no next
+                        if (foundEntry == null && response.hasNext) {
+                            // simple loop (could be optimized)
+                            var page = 2
+                            var hasNext = response.hasNext
+                            while (foundEntry == null && hasNext) {
+                                leaderboardRepository.getLeaderboard(page, pageSize).collect { res ->
+                                    res.fold(onSuccess = { resp ->
+                                        foundEntry = resp.entries.firstOrNull { it.id == currentUserId }
+                                        hasNext = resp.hasNext
+                                    }, onFailure = {})
+                                }
+                                page += 1
+                            }
+                        }
+
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             entries = response.entries,
                             currentPage = response.page,
                             hasNextPage = response.hasNext,
                             totalEntries = response.totalEntries,
+                            currentUserEntry = foundEntry,
                         )
                     },
                     onFailure = { error ->

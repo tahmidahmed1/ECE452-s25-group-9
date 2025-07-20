@@ -15,12 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -43,7 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -55,7 +52,6 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
-import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -232,7 +228,7 @@ fun EventManagementScreen(
             dismissButton = {
                 OutlinedButton(onClick = { eventToDelete = null }, shape = RoundedCornerShape(12.dp)) { Text("Cancel") }
             },
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         )
     }
 }
@@ -249,26 +245,28 @@ private fun EventCard(
     Log.d("EventCard", "Event ID: ${event.id}, Title: ${event.title}")
     Log.d("EventCard", "Event imageUrl: ${event.imageUrl}")
     Log.d("EventCard", "Event images count: ${event.images.size}")
-    
+
     event.images.forEachIndexed { index, image ->
         Log.d("EventCard", "Image $index - ID: ${image.id}, URL: ${image.image_url}, is_main: ${image.is_main}")
     }
-    
+
     val mainImage = event.images.firstOrNull { it.is_main }
     Log.d("EventCard", "Main image found: ${mainImage?.let { "ID: ${it.id}, URL: ${it.image_url}" } ?: "NONE"}")
-    
+
     // Fallback logic: use first image if no main image is set
     val fallbackImage = if (mainImage == null && event.images.isNotEmpty()) {
         event.images.first().also {
             Log.d("EventCard", "Using fallback image: ID: ${it.id}, URL: ${it.image_url}")
         }
-    } else null
-    
-    val bannerUrl = mainImage?.image_url?.toEmulatorAccessibleUrl() 
+    } else {
+        null
+    }
+
+    val bannerUrl = mainImage?.image_url?.toEmulatorAccessibleUrl()
         ?: fallbackImage?.image_url?.toEmulatorAccessibleUrl()
         ?: event.imageUrl?.toEmulatorAccessibleUrl()
     Log.d("EventCard", "Final banner URL: $bannerUrl")
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -290,7 +288,7 @@ private fun EventCard(
                     },
                     onError = { error ->
                         Log.e("EventCard", "Banner failed to load for event ${event.id}: $bannerUrl, error: $error")
-                    }
+                    },
                 )
             } else {
                 Log.w("EventCard", "No banner URL for event ${event.id} - banner will not be displayed")
@@ -380,4 +378,3 @@ private fun EventCard(
         }
     }
 }
-

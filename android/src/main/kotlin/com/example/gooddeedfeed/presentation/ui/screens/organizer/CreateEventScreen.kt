@@ -3,6 +3,7 @@ package com.example.gooddeedfeed.presentation.ui.screens.organizer
 import android.app.Activity
 import android.location.Geocoder
 import android.location.Location
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -67,18 +68,18 @@ import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 import com.google.android.libraries.places.widget.Autocomplete
 import com.google.maps.android.compose.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.example.gooddeedfeed.data.remote.dto.EventImageDto
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import android.util.Log
-import kotlinx.coroutines.CancellationException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,8 +122,22 @@ fun CreateEventScreen(
     var latitudeText by remember { mutableStateOf(eventToEdit?.latitude?.toString() ?: "") }
     var longitudeText by remember { mutableStateOf(eventToEdit?.longitude?.toString() ?: "") }
     var showMapPicker by remember { mutableStateOf(false) }
-    var selectedImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
-    var mainImageIndex by remember { mutableStateOf(0) }
+    // Existing remote images for edit mode
+    var existingImages by remember { mutableStateOf<List<EventImageDto>>(eventToEdit?.images ?: emptyList()) }
+    // Newly selected local files
+    var newImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+
+    // Combined list for UI (remote first, then local)
+    val allImages: List<Any> = remember(existingImages, newImageFiles) {
+        existingImages.map { it.image_url } + newImageFiles
+    }
+
+    // Determine initial main image index (remote images have priority)
+    var mainImageIndex by remember {
+        mutableStateOf(
+            existingImages.indexOfFirst { it.is_main }.takeIf { it >= 0 } ?: 0,
+        )
+    }
     var hasAttemptedSubmit by remember { mutableStateOf(false) }
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -263,8 +278,8 @@ fun CreateEventScreen(
     val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             ImageUtils.saveUriToFile(context, it)?.let { file ->
-                if (selectedImageFiles.size < 10) {
-                    selectedImageFiles = selectedImageFiles + file
+                if (existingImages.size + newImageFiles.size < 10) {
+                    newImageFiles = newImageFiles + file
                 }
             }
         }
@@ -435,18 +450,26 @@ fun CreateEventScreen(
 
             // Image carousel picker
             EventImageCarousel(
-                selectedImages = selectedImageFiles,
+                selectedImages = allImages,
                 mainImageIndex = mainImageIndex,
                 onAddImage = {
-                    if (selectedImageFiles.size < 10) {
+                    if (allImages.size < 10) {
                         imagePickerLauncher.launch("image/*")
                     }
                 },
                 onRemoveImage = { index ->
-                    selectedImageFiles = selectedImageFiles.filterIndexed { i, _ -> i != index }
-                    if (mainImageIndex >= selectedImageFiles.size && selectedImageFiles.isNotEmpty()) {
-                        mainImageIndex = selectedImageFiles.size - 1
-                    } else if (selectedImageFiles.isEmpty()) {
+                    if (index < existingImages.size) {
+                        // Remove remote image locally (backend deletion not handled here)
+                        existingImages = existingImages.filterIndexed { i, _ -> i != index }
+                    } else {
+                        val localIndex = index - existingImages.size
+                        newImageFiles = newImageFiles.filterIndexed { i, _ -> i != localIndex }
+                    }
+
+                    val newSize = existingImages.size + newImageFiles.size
+                    if (mainImageIndex >= newSize && newSize > 0) {
+                        mainImageIndex = newSize - 1
+                    } else if (newSize == 0) {
                         mainImageIndex = 0
                     }
                 },
@@ -738,17 +761,26 @@ fun CreateEventScreen(
                                 if (isEditing && eventToEdit != null) {
                                     viewModel.updateEvent(eventToEdit.id, data)
 
-                                    // Upload images if selected
-                                    selectedImageFiles.forEachIndexed { index, file ->
-                                        val isMain = index == mainImageIndex
+                                    // Upload new images only
+                                    newImageFiles.forEachIndexed { nIdx, file ->
+                                        val absoluteIndex = existingImages.size + nIdx
+                                        val isMain = absoluteIndex == mainImageIndex
                                         viewModel.uploadEventImageToCarousel(eventToEdit.id, file, isMain)
+                                    }
+
+                                    // If chosen main image is an existing remote image and different from current main
+                                    if (mainImageIndex < existingImages.size) {
+                                        val chosenRemote = existingImages[mainImageIndex]
+                                        if (!chosenRemote.is_main) {
+                                            viewModel.setMainEventImage(eventToEdit.id, chosenRemote.id)
+                                        }
                                     }
                                 } else {
                                     val created = viewModel.createEvent(data)
 
-                                    // Upload images if selected
-                                    selectedImageFiles.forEachIndexed { index, file ->
-                                        val isMain = index == mainImageIndex
+                                    // Upload images if selected (all are new)
+                                    newImageFiles.forEachIndexed { nIdx, file ->
+                                        val isMain = nIdx == mainImageIndex // existingImages empty in create mode
                                         viewModel.uploadEventImageToCarousel(created.id, file, isMain)
                                     }
                                 }
@@ -1003,7 +1035,7 @@ private fun MapPickerDialog(
 
 @Composable
 private fun EventImageCarousel(
-    selectedImages: List<File>,
+    selectedImages: List<Any>,
     mainImageIndex: Int,
     onAddImage: () -> Unit,
     onRemoveImage: (Int) -> Unit,

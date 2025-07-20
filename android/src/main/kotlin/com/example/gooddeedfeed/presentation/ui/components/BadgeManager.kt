@@ -22,6 +22,11 @@ fun BadgeManager(
 
     val badgeCheckState by badgeViewModel.badgeCheckState.collectAsStateWithLifecycle()
 
+    // Always check once on composition to handle scenario where user already exceeds thresholds
+    LaunchedEffect(Unit) {
+        badgeViewModel.checkBadgeAchievements()
+    }
+
     // Check for new badges when karma points change
     LaunchedEffect(userKarmaPoints) {
         if (userKarmaPoints != null && userKarmaPoints > 0) {

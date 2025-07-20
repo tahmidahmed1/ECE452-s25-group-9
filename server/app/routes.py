@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from datetime import timedelta, datetime
 import logging
 from typing import List, Dict
 from fastapi.responses import JSONResponse
@@ -638,7 +638,7 @@ async def upload_event_image(
 async def upload_event_image_to_carousel(
     event_id: int,
     file: UploadFile = File(...),
-    is_main: bool = False,
+    is_main: bool = Form(False),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
@@ -1111,6 +1111,45 @@ def get_user_badges(
     
     return result
 
+# ----- Badge Seed Config -----
+BADGE_CONFIG = [
+    {
+        "name": "Karma 200",
+        "description": "Earn 200 total karma points",
+        "required": 200,
+        "icon": "Star",
+        "color": "#FFD54F",
+    },
+    {
+        "name": "Karma 400",
+        "description": "Earn 400 total karma points",
+        "required": 400,
+        "icon": "WorkspacePremium",
+        "color": "#FFC107",
+    },
+    {
+        "name": "Karma 600",
+        "description": "Earn 600 total karma points",
+        "required": 600,
+        "icon": "LocalFireDepartment",
+        "color": "#FFB300",
+    },
+    {
+        "name": "Karma 800",
+        "description": "Earn 800 total karma points",
+        "required": 800,
+        "icon": "EmojiEvents",
+        "color": "#FFA000",
+    },
+    {
+        "name": "Karma 1000",
+        "description": "Earn 1000 total karma points",
+        "required": 1000,
+        "icon": "WorkspacePremium",
+        "color": "#FF8F00",
+    },
+]
+
 @router.post("/users/me/check-badges", response_model=BadgeCheckResponse)
 def check_badge_achievements(
     current_user: User = Depends(get_current_active_user),
@@ -1118,6 +1157,21 @@ def check_badge_achievements(
 ):
     """Check for newly earned badges based on current karma points"""
     
+    # Ensure badge definitions exist
+    for cfg in BADGE_CONFIG:
+        badge = db.query(Badge).filter(Badge.required_karma_points == cfg["required"]).first()
+        if not badge:
+            badge = Badge(
+                name=cfg["name"],
+                description=cfg["description"],
+                required_karma_points=cfg["required"],
+                icon_name=cfg["icon"],
+                color=cfg["color"],
+                is_active=True,
+            )
+            db.add(badge)
+    db.commit()
+
     # Get all badges the user can potentially earn
     available_badges = db.query(Badge).filter(
         Badge.is_active == True,
@@ -1145,7 +1199,7 @@ def check_badge_achievements(
                 description=badge.description or "",
                 icon_name=badge.icon_name,
                 color=badge.color,
-                earned_at=func.now()
+                earned_at=datetime.utcnow()
             ))
     
     db.commit()
@@ -1159,6 +1213,7 @@ def check_badge_achievements(
     # Count total badges earned
     total_badges_earned = len(earned_badge_ids) + len(newly_earned)
     
+    db.refresh(current_user)
     return BadgeCheckResponse(
         newly_earned_badges=newly_earned,
         total_badges_earned=total_badges_earned,
@@ -1686,6 +1741,11 @@ def increase_karma_dev_only(
         # Increase karma points by 100
         current_user.karma_points += 100
         db.commit()
+
+        # After karma updated, check for new badges automatically
+        # Reuse the function directly
+        check_badge_achievements(current_user=current_user, db=db)
+
         db.refresh(current_user)
         
         logger.info(f"[DEV] Increased karma points by 100 for user {current_user.username}. New total: {current_user.karma_points}")

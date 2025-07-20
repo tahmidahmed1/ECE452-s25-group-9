@@ -74,7 +74,6 @@ import com.example.gooddeedfeed.presentation.ui.components.base.EnhancedLocation
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.FiltersDrawer
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.OpportunitiesList
-import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
 import com.example.gooddeedfeed.presentation.ui.theme.CornerRadius
 import com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
@@ -96,7 +95,6 @@ fun ListScreen(
     val subscriptionUiState by subscriptionViewModel.uiState.collectAsStateWithLifecycle()
     var organizerSearch by remember { mutableStateOf("") }
     var selectedOrganizer by remember { mutableStateOf<DomainOrganizerWithSubscriptionStatus?>(null) }
-    var openChat by remember { mutableStateOf(false) }
     var selectedOpportunity by remember { mutableStateOf<VolunteerOpportunity?>(null) }
     var filtersExpanded by remember { mutableStateOf(false) }
     var filters by remember { mutableStateOf(OpportunityFilters()) }
@@ -125,9 +123,7 @@ fun ListScreen(
         onLocationDisabled = { viewModel.onLocationPermissionDenied() },
         content = {
             // Main content when location is properly configured
-            if (openChat) {
-                ChatScreen(user = user, modifier = Modifier.fillMaxSize())
-            } else if (selectedOrganizer != null) {
+            if (selectedOrganizer != null) {
                 OrganizerProfileScreen(
                     organizer = selectedOrganizer!!,
                     onBack = { selectedOrganizer = null },
@@ -165,7 +161,6 @@ fun ListScreen(
                         selectedOrganizer = selectedOrganizer,
                         onOrganizerSelected = { selectedOrganizer = it },
                         onFiltersClick = { filtersExpanded = true },
-                        onChatClick = { openChat = true },
                     )
 
                     // Show organizer search results if search is active
@@ -310,29 +305,26 @@ private fun HeaderSection(
     selectedOrganizer: DomainOrganizerWithSubscriptionStatus?,
     onOrganizerSelected: (DomainOrganizerWithSubscriptionStatus?) -> Unit,
     onFiltersClick: () -> Unit,
-    onChatClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(16.dp)) {
-        // Header row with title and chat button
+        // Header row with icon and title
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "Volunteer Opportunities",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
-
-            IconButton(onClick = onChatClick) {
                 Icon(
                     imageVector = Icons.Default.List,
                     contentDescription = "List",
                     tint = MaterialTheme.colorScheme.primary,
                 )
-            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Volunteer Opportunities",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

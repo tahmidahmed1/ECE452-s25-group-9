@@ -113,4 +113,12 @@ class EventManagementViewModel @Inject constructor(
             .onSuccess { loadEvents() }
             .onFailure { e -> _uiState.value = UiState.Error("Failed to upload image: ${e.message}") }
     }
+
+    fun setMainEventImage(eventId: Int, imageId: Int) {
+        viewModelScope.launch {
+            manageEventsUseCase.setMainEventImage(eventId, imageId)
+                .onSuccess { loadEvents() }
+                .onFailure { e -> _uiState.value = UiState.Error("Failed to set main image: ${e.message}") }
+        }
+    }
 } 

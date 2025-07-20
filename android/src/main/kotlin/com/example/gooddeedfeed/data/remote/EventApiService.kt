@@ -149,6 +149,12 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
         }
     }
 
-    suspend fun getEventImages(eventId: Int): List<EventImageDto> = 
+    suspend fun getEventImages(eventId: Int): List<EventImageDto> =
         client.get(buildUrl("events/$eventId/images")).body()
+
+    suspend fun setMainEventImage(token: String, eventId: Int, imageId: Int) {
+        client.patch(buildUrl("events/$eventId/images/$imageId/set-main")) {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+    }
 } 

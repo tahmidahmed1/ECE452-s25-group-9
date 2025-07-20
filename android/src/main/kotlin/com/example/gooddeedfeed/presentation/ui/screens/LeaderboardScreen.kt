@@ -82,13 +82,13 @@ fun StatsScreen(
     badgeViewModel: BadgeViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val allBadgesState by badgeViewModel.allBadgesState.collectAsStateWithLifecycle()
     val userBadgesState by badgeViewModel.userBadgesState.collectAsStateWithLifecycle()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
+    val context = LocalContext.current
     // Show error toast if there's an error
     uiState.errorMessage?.let { error ->
         LaunchedEffect(error) {
@@ -143,8 +143,21 @@ fun StatsScreen(
                     modifier = Modifier.heightIn(max = 400.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // Show current user position first if not in the current page
+                    val currentUserId = when (val auth = authState) {
+                        is AuthUiState.Success -> auth.user.id
+                        else -> null
+                    }
+                    val userInList = uiState.entries.any { it.id == currentUserId }
+                    if (!userInList && uiState.currentUserEntry != null) {
+                        item {
+                            LeaderboardEntryCard(entry = uiState.currentUserEntry, isCurrentUser = true)
+                        }
+                    }
+
                     itemsIndexed(uiState.entries) { index, entry ->
-                        LeaderboardEntryCard(entry = entry)
+                        val isCurrent = entry.id == currentUserId
+                        LeaderboardEntryCard(entry = entry, isCurrentUser = isCurrent)
                     }
 
                     // Loading indicator for pagination
@@ -504,9 +517,15 @@ private fun SectionCard(
 
 @Composable
 private fun LeaderboardEntryCard(
-    entry: DomainLeaderboardEntry,
+    entry: DomainLeaderboardEntry?,
     modifier: Modifier = Modifier,
+    isCurrentUser: Boolean = false,
 ) {
+    if (entry == null) return
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // No additional context needed
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -588,7 +607,7 @@ private fun LeaderboardEntryCard(
                 Column {
                     Text(
                         text = entry.fullName ?: entry.username,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontStyle = if (isCurrentUser) androidx.compose.ui.text.font.FontStyle.Italic else null),
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
