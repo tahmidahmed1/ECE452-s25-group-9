@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.gooddeedfeed.data.remote.dto.EventImageDto
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
@@ -75,7 +76,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
-import com.example.gooddeedfeed.data.remote.dto.EventImageDto
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date

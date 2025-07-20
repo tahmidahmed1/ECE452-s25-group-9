@@ -314,11 +314,11 @@ private fun HeaderSection(
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-                Icon(
-                    imageVector = Icons.Default.List,
-                    contentDescription = "List",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
+            Icon(
+                imageVector = Icons.Default.List,
+                contentDescription = "List",
+                tint = MaterialTheme.colorScheme.primary,
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Volunteer Opportunities",

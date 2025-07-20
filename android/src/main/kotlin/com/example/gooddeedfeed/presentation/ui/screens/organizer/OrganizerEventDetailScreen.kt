@@ -110,17 +110,17 @@ fun OrganizerEventDetailScreen(
                 Text(
                     text = "Event Photos",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = "Tap an image to set it as the main banner",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 4.dp),
                 )
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     items(event.images) { image ->
                         Box {
@@ -139,15 +139,15 @@ fun OrganizerEventDetailScreen(
                                             Modifier.border(
                                                 3.dp,
                                                 MaterialTheme.colorScheme.primary,
-                                                RoundedCornerShape(8.dp)
+                                                RoundedCornerShape(8.dp),
                                             )
                                         } else {
                                             Modifier
-                                        }
+                                        },
                                     ),
                                 contentScale = ContentScale.Crop,
                             )
-                            
+
                             // Main image indicator
                             if (image.is_main) {
                                 Box(
@@ -157,15 +157,15 @@ fun OrganizerEventDetailScreen(
                                         .size(24.dp)
                                         .background(
                                             MaterialTheme.colorScheme.primary,
-                                            CircleShape
+                                            CircleShape,
                                         ),
-                                    contentAlignment = Alignment.Center
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
                                         Icons.Filled.Star,
                                         contentDescription = "Main Image",
                                         tint = Color.White,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(16.dp),
                                     )
                                 }
                             }

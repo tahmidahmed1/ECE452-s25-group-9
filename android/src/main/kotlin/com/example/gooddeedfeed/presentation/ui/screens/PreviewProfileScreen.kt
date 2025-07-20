@@ -1,7 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -32,8 +31,8 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.model.toDisplayString
 import com.example.gooddeedfeed.presentation.common.UiState
-import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementData
+import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -561,19 +560,19 @@ private fun OrganizerEventsPreviewCard(uiState: UiState<EventManagementData>) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Organized Events")
-            
+
             when (uiState) {
                 is UiState.Idle -> {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = "Loading events...",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -582,7 +581,7 @@ private fun OrganizerEventsPreviewCard(uiState: UiState<EventManagementData>) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
                     }
@@ -594,30 +593,30 @@ private fun OrganizerEventsPreviewCard(uiState: UiState<EventManagementData>) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(120.dp),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Event,
                                     contentDescription = "No events",
                                     modifier = Modifier.size(32.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "No events organized yet",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
                                 )
                             }
                         }
                     } else {
                         LazyColumn(
                             modifier = Modifier.height(300.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             items(events) { event ->
                                 EventPreviewCard(event)
@@ -630,23 +629,23 @@ private fun OrganizerEventsPreviewCard(uiState: UiState<EventManagementData>) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Error,
                                 contentDescription = "Error",
                                 modifier = Modifier.size(32.dp),
-                                tint = MaterialTheme.colorScheme.error
+                                tint = MaterialTheme.colorScheme.error,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Unable to load events",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -660,22 +659,24 @@ private fun OrganizerEventsPreviewCard(uiState: UiState<EventManagementData>) {
 private fun EventPreviewCard(event: VolunteerEvent) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Event image with main image selection logic
             val mainImage = event.images.firstOrNull { it.is_main }
             val fallbackImage = if (mainImage == null && event.images.isNotEmpty()) {
                 event.images.first()
-            } else null
-            
+            } else {
+                null
+            }
+
             val imageUrl = mainImage?.image_url?.toEmulatorAccessibleUrl()
                 ?: fallbackImage?.image_url?.toEmulatorAccessibleUrl()
                 ?: event.imageUrl?.toEmulatorAccessibleUrl()
-            
+
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
@@ -683,7 +684,7 @@ private fun EventPreviewCard(event: VolunteerEvent) {
                     modifier = Modifier
                         .size(80.dp)
                         .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             } else {
                 Box(
@@ -691,38 +692,38 @@ private fun EventPreviewCard(event: VolunteerEvent) {
                         .size(80.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Event,
                         contentDescription = "Default Event Image",
                         modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Text(
                     text = event.title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 1
+                    maxLines = 1,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "${event.date} • ${event.startTime}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = "${event.currentVolunteers}/${event.maxVolunteers} volunteers",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
