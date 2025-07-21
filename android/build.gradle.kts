@@ -7,6 +7,7 @@ plugins {
     id("dagger.hilt.android.plugin")
     id("org.jlleitschuh.gradle.ktlint")
     id("com.diffplug.spotless")
+    id("com.google.gms.google-services")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
     id("com.google.gms.google-services")
 }
@@ -74,6 +75,7 @@ android {
 
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
+    implementation(platform("com.google.firebase:firebase-bom:32.7.3"))
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
     implementation("androidx.activity:activity-compose:1.10.1")
@@ -102,6 +104,8 @@ dependencies {
     implementation("com.google.android.libraries.places:places:3.5.0")
     implementation("androidx.compose.ui:ui-text-google-fonts")
     implementation("com.kizitonwose.calendar:compose:2.5.3")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
     implementation("io.ktor:ktor-client-websockets:2.3.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
