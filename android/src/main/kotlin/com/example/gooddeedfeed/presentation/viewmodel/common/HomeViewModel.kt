@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.repository.NotificationRepository
+import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -50,6 +52,7 @@ sealed class HomeAction {
 class HomeViewModel @Inject constructor(
     private val locationSettingsRepository: LocationSettingsRepository,
     private val notificationRepository: NotificationRepository,
+    private val opportunitiesRepository: OpportunitiesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Loading)
@@ -57,6 +60,9 @@ class HomeViewModel @Inject constructor(
 
     private val _navigationEvent = MutableSharedFlow<HomeAction>(extraBufferCapacity = 1)
     val navigationEvent: SharedFlow<HomeAction> = _navigationEvent.asSharedFlow()
+
+    private val _joinedEventsState = MutableStateFlow<UiState<List<VolunteerOpportunity>>>(UiState.Idle)
+    val joinedEventsState: StateFlow<UiState<List<VolunteerOpportunity>>> = _joinedEventsState.asStateFlow()
 
     fun loadUserHome(user: DomainUser) {
         viewModelScope.launch {
@@ -100,6 +106,19 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             notificationRepository.setNotificationsEnabled(false)
             locationSettingsRepository.setNotificationsEnabled(false)
+        }
+    }
+
+    fun loadJoinedEvents() {
+        viewModelScope.launch {
+            try {
+                _joinedEventsState.value = UiState.Loading
+                opportunitiesRepository.getJoinedEvents().collect { events ->
+                    _joinedEventsState.value = UiState.Success(events)
+                }
+            } catch (e: Exception) {
+                _joinedEventsState.value = UiState.Error("Failed to load joined events: ${e.message}")
+            }
         }
     }
 

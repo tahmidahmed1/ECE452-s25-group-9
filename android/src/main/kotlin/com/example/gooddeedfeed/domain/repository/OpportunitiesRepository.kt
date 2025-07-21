@@ -70,4 +70,19 @@ interface OpportunitiesRepository {
      * Get all available categories
      */
     suspend fun getCategories(): List<OpportunityCategory>
+
+    /**
+     * Join an event as a volunteer
+     */
+    suspend fun joinEvent(eventId: Int): Result<Unit>
+
+    /**
+     * Leave an event as a volunteer
+     */
+    suspend fun leaveEvent(eventId: Int): Result<Unit>
+
+    /**
+     * Get events that the current user has joined
+     */
+    suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>>
 } 

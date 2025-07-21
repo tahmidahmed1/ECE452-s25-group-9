@@ -105,7 +105,12 @@ class MapViewModel @Inject constructor(
             val locationEnabled = locationSettingsRepository.isLocationEnabled.first()
             if (locationEnabled) {
                 _uiState.update { it.copy(isLocationPermissionGranted = true, errorMessage = null) }
-                getCurrentLocation()
+                val location = locationService.getCurrentLocation()
+                location?.let { loc ->
+                    _uiState.update { currentState ->
+                        currentState.copy(currentLocation = loc)
+                    }
+                }
                 startLocationUpdates()
             } else {
                 _uiState.update {
@@ -117,7 +122,6 @@ class MapViewModel @Inject constructor(
             }
         }
     }
-
 
     fun onLocationPermissionDenied() {
         _uiState.update {
@@ -174,5 +178,4 @@ class MapViewModel @Inject constructor(
             )
         }
     }
-
 } 

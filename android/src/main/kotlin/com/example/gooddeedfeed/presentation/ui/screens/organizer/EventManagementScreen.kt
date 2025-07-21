@@ -365,7 +365,6 @@ private fun EventCard(
                         )
                     }
                 }
-
             }
         }
     }

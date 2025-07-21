@@ -1,6 +1,5 @@
 package com.example.gooddeedfeed.domain.model
 
-
 enum class DomainUserType {
     VOLUNTEER,
     ORGANIZER,

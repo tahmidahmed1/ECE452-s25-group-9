@@ -4,14 +4,14 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 import logging
 from typing import List, Dict, Optional
-from sqlalchemy import text
+from sqlalchemy import text, select
 from fastapi.responses import JSONResponse
 from sqlalchemy import or_
 import math
 from sqlalchemy import func
 
 from .database import get_db
-from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, InAppNotification, LostFoundItem, LostFoundImage
+from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, volunteer_events, InAppNotification, LostFoundItem, LostFoundImage
 from sqlalchemy.orm import selectinload
 from . import schemas
 from .schemas import (
@@ -579,6 +579,170 @@ async def delete_event(event_id: int, current_user: User = Depends(get_current_a
     db.delete(event)
     db.commit()
     return {"detail": "deleted"}
+
+@router.post("/events/{event_id}/join")
+async def join_event(
+    event_id: int, 
+    current_user: User = Depends(get_current_active_user), 
+    db: Session = Depends(get_db)
+):
+    """Join an event as a volunteer"""
+    logger.info(f"User {current_user.username} (ID: {current_user.id}) attempting to join event {event_id}")
+    
+    # Check if event exists
+    event = db.get(Event, event_id)
+    if not event:
+        logger.error(f"Event {event_id} not found")
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Check if user is a volunteer
+    if current_user.user_type != UserType.VOLUNTEER:
+        logger.error(f"User {current_user.username} is not a volunteer")
+        raise HTTPException(status_code=403, detail="Only volunteers can join events")
+    
+    # Check if event is full
+    if event.max_volunteers and event.current_volunteers >= event.max_volunteers:
+        logger.error(f"Event {event_id} is full ({event.current_volunteers}/{event.max_volunteers})")
+        raise HTTPException(status_code=400, detail="Event is full")
+    
+    # Check if user is already joined
+    existing_join = db.execute(
+        select(volunteer_events).where(
+            volunteer_events.c.volunteer_id == current_user.id,
+            volunteer_events.c.event_id == event_id
+        )
+    ).first()
+    
+    if existing_join:
+        logger.warning(f"User {current_user.username} already joined event {event_id}")
+        raise HTTPException(status_code=400, detail="Already joined this event")
+    
+    # Join the event
+    try:
+        db.execute(
+            volunteer_events.insert().values(
+                volunteer_id=current_user.id,
+                event_id=event_id,
+                status='joined'
+            )
+        )
+        
+        # Update volunteer count
+        event.current_volunteers += 1
+        
+        db.commit()
+        
+        logger.info(f"User {current_user.username} successfully joined event {event_id}")
+        logger.info(f"Event {event_id} now has {event.current_volunteers}/{event.max_volunteers or 'unlimited'} volunteers")
+        
+        return {"message": "Successfully joined event", "current_volunteers": event.current_volunteers}
+        
+    except Exception as e:
+        logger.error(f"Failed to join event {event_id}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to join event")
+
+@router.post("/events/{event_id}/leave")
+async def leave_event(
+    event_id: int, 
+    current_user: User = Depends(get_current_active_user), 
+    db: Session = Depends(get_db)
+):
+    """Leave an event as a volunteer"""
+    logger.info(f"User {current_user.username} (ID: {current_user.id}) attempting to leave event {event_id}")
+    
+    # Check if event exists
+    event = db.get(Event, event_id)
+    if not event:
+        logger.error(f"Event {event_id} not found")
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Check if user is joined
+    existing_join = db.execute(
+        select(volunteer_events).where(
+            volunteer_events.c.volunteer_id == current_user.id,
+            volunteer_events.c.event_id == event_id
+        )
+    ).first()
+    
+    if not existing_join:
+        logger.warning(f"User {current_user.username} not joined to event {event_id}")
+        raise HTTPException(status_code=400, detail="Not joined to this event")
+    
+    # Leave the event
+    try:
+        db.execute(
+            volunteer_events.delete().where(
+                volunteer_events.c.volunteer_id == current_user.id,
+                volunteer_events.c.event_id == event_id
+            )
+        )
+        
+        # Update volunteer count
+        if event.current_volunteers > 0:
+            event.current_volunteers -= 1
+        
+        db.commit()
+        
+        logger.info(f"User {current_user.username} successfully left event {event_id}")
+        logger.info(f"Event {event_id} now has {event.current_volunteers}/{event.max_volunteers or 'unlimited'} volunteers")
+        
+        return {"message": "Successfully left event", "current_volunteers": event.current_volunteers}
+        
+    except Exception as e:
+        logger.error(f"Failed to leave event {event_id}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to leave event")
+
+@router.get("/events/{event_id}/volunteers")
+async def get_event_volunteers(
+    event_id: int, 
+    current_user: User = Depends(get_current_active_user), 
+    db: Session = Depends(get_db)
+):
+    """Get list of volunteers who joined an event"""
+    logger.info(f"Getting volunteers for event {event_id}")
+    
+    # Check if event exists
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Get volunteers
+    volunteers = db.query(User).join(volunteer_events).filter(
+        volunteer_events.c.event_id == event_id
+    ).all()
+    
+    volunteer_list = []
+    for volunteer in volunteers:
+        volunteer_list.append({
+            "id": volunteer.id,
+            "username": volunteer.username,
+            "full_name": volunteer.full_name,
+            "profile_picture_url": volunteer.profile_picture_url
+        })
+    
+    logger.info(f"Event {event_id} has {len(volunteer_list)} volunteers")
+    return {"volunteers": volunteer_list, "total_count": len(volunteer_list)}
+
+@router.get("/users/me/joined-events", response_model=List[EventSchema])
+async def get_my_joined_events(
+    current_user: User = Depends(get_current_active_user), 
+    db: Session = Depends(get_db)
+):
+    """Get events that the current user has joined"""
+    logger.info(f"Getting joined events for user {current_user.username}")
+    
+    if current_user.user_type != UserType.VOLUNTEER:
+        raise HTTPException(status_code=403, detail="Only volunteers can have joined events")
+    
+    # Get joined events
+    events = db.query(Event).join(volunteer_events).filter(
+        volunteer_events.c.volunteer_id == current_user.id
+    ).options(selectinload(Event.images)).all()
+    
+    logger.info(f"User {current_user.username} has joined {len(events)} events")
+    return events
 
 @router.get("/organizers/{organizer_id}/events", response_model=List[EventSchema])
 def list_events_by_organizer(organizer_id: int, db: Session = Depends(get_db)):
@@ -1152,36 +1316,36 @@ def get_user_badges(
 # ----- Badge Seed Config -----
 BADGE_CONFIG = [
     {
-        "name": "Karma 200",
-        "description": "Earn 200 total karma points",
+        "name": "First Steps",
+        "description": "Earn 200 karma points to take your first steps!",
         "required": 200,
         "icon": "Star",
-        "color": "#FFD54F",
+        "color": "#FFD700",
     },
     {
-        "name": "Karma 400",
-        "description": "Earn 400 total karma points",
+        "name": "Rising Star",
+        "description": "Earn 400 karma points as a rising star!",
         "required": 400,
         "icon": "WorkspacePremium",
         "color": "#FFC107",
     },
     {
-        "name": "Karma 600",
-        "description": "Earn 600 total karma points",
+        "name": "Community Helper",
+        "description": "Earn 600 karma points helping the community!",
         "required": 600,
         "icon": "LocalFireDepartment",
         "color": "#FFB300",
     },
     {
-        "name": "Karma 800",
-        "description": "Earn 800 total karma points",
+        "name": "Karma Champion",
+        "description": "Earn 800 karma points as a champion!",
         "required": 800,
         "icon": "EmojiEvents",
         "color": "#FFA000",
     },
     {
-        "name": "Karma 1000",
-        "description": "Earn 1000 total karma points",
+        "name": "Karma Legend",
+        "description": "Earn 1000 karma points becoming a legend!",
         "required": 1000,
         "icon": "WorkspacePremium",
         "color": "#FF8F00",
@@ -1884,60 +2048,6 @@ async def get_user_badges(
         )
 
 
-@router.post("/users/me/check-badges", response_model=BadgeCheckResponse)
-async def check_badge_achievements_endpoint(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Check if user has achieved new badges"""
-    try:
-        # Get all badges the user doesn't have yet
-        existing_badge_ids = db.execute(
-            text("SELECT badge_id FROM user_badges WHERE user_id = :user_id"),
-            {"user_id": current_user.id}
-        ).fetchall()
-        existing_ids = [row[0] for row in existing_badge_ids]
-        
-        # Get badges user can earn based on karma points
-        available_badges = db.query(Badge).filter(
-            Badge.is_active == True,
-            Badge.required_karma_points <= current_user.karma_points,
-            ~Badge.id.in_(existing_ids) if existing_ids else True
-        ).all()
-        
-        newly_earned = []
-        
-        # Award new badges
-        for badge in available_badges:
-            # Add badge to user
-            db.execute(
-                text("INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (:user_id, :badge_id, NOW())"),
-                {"user_id": current_user.id, "badge_id": badge.id}
-            )
-            
-            newly_earned.append(BadgeAchievement(
-                badge_name=badge.name,
-                description=badge.description,
-                icon_name=badge.icon_name,
-                color=badge.color
-            ))
-        
-        if newly_earned:
-            db.commit()
-            logger.info(f"User {current_user.username} earned {len(newly_earned)} new badges")
-        
-        return BadgeCheckResponse(
-            newly_earned_badges=newly_earned,
-            total_user_badges=len(existing_ids) + len(newly_earned)
-        )
-        
-    except Exception as e:
-        logger.error(f"Failed to check badge achievements: {e}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check badge achievements"
-        )
 
 
 # ===== LOST & FOUND ENDPOINTS =====
@@ -1952,8 +2062,13 @@ async def create_lost_found_item(
     try:
         from datetime import datetime, timedelta
         
+        logger.info(f"Creating lost/found item - User: {current_user.username} (ID: {current_user.id})")
+        logger.info(f"Item data - Title: {item_data.title}, Type: {item_data.item_type}, Location: {item_data.location}")
+        logger.info(f"Item data - Expiry days: {item_data.expiry_days}, Tags: {item_data.tags}")
+        
         # Calculate expiry date
         expires_at = datetime.utcnow() + timedelta(days=item_data.expiry_days)
+        logger.info(f"Calculated expiry date: {expires_at}")
         
         # Create the lost/found item
         db_item = LostFoundItem(
@@ -1968,17 +2083,28 @@ async def create_lost_found_item(
             expires_at=expires_at
         )
         
-        db.add(db_item)
-        db.commit()
-        db.refresh(db_item)
+        logger.info(f"Created LostFoundItem object with item_type: {db_item.item_type}")
         
-        logger.info(f"Created lost/found item {db_item.id} by user {current_user.username}")
+        db.add(db_item)
+        logger.info("Added item to database session")
+        
+        db.commit()
+        logger.info("Committed transaction to database")
+        
+        db.refresh(db_item)
+        logger.info(f"Successfully created lost/found item with ID: {db_item.id}")
+        logger.info(f"Item details - is_active: {db_item.is_active}, created_at: {db_item.created_at}, expires_at: {db_item.expires_at}")
         
         # Convert to response format
-        return convert_lost_found_item_to_out(db_item, current_user)
+        response = convert_lost_found_item_to_out(db_item, current_user)
+        logger.info(f"Converted to response format, returning item with ID: {response.id}")
+        return response
         
     except Exception as e:
         logger.error(f"Failed to create lost/found item: {e}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1998,33 +2124,70 @@ async def get_lost_found_items(
     try:
         from datetime import datetime
         
+        current_time = datetime.utcnow()
+        logger.info(f"Getting lost/found items - User: {current_user.username} (ID: {current_user.id})")
+        logger.info(f"Query parameters - item_type: {item_type}, limit: {limit}, offset: {offset}")
+        logger.info(f"Current UTC time for expiry check: {current_time}")
+        
+        # First, let's see all items in the database
+        all_items_query = db.query(LostFoundItem)
+        all_items_count = all_items_query.count()
+        logger.info(f"Total items in LostFoundItem table: {all_items_count}")
+        
+        if all_items_count > 0:
+            # Log some details about all items
+            all_items = all_items_query.all()
+            for item in all_items:
+                logger.info(f"Item ID: {item.id}, is_active: {item.is_active}, expires_at: {item.expires_at}, created_at: {item.created_at}, item_type: {item.item_type}")
+        
         query = db.query(LostFoundItem).filter(
             LostFoundItem.is_active == True,
-            LostFoundItem.expires_at > datetime.utcnow()
+            LostFoundItem.expires_at > current_time
         )
         
+        active_unexpired_count = query.count()
+        logger.info(f"Active and unexpired items count: {active_unexpired_count}")
+        
         if item_type:
+            logger.info(f"Filtering by item_type: {item_type}")
             query = query.filter(LostFoundItem.item_type == item_type)
+            filtered_count = query.count()
+            logger.info(f"Items after type filtering: {filtered_count}")
         
         # Get total count
         total_count = query.count()
+        logger.info(f"Total count after all filters: {total_count}")
         
         # Get paginated results
         items = query.order_by(LostFoundItem.created_at.desc()).offset(offset).limit(limit).all()
+        logger.info(f"Retrieved {len(items)} items from database")
         
         # Convert to response format
         items_out = []
         for item in items:
+            logger.info(f"Processing item ID: {item.id}, title: {item.title}")
             user = db.query(User).filter(User.id == item.user_id).first()
-            items_out.append(convert_lost_found_item_to_out(item, user))
+            if user:
+                logger.info(f"Found user {user.username} for item {item.id}")
+                items_out.append(convert_lost_found_item_to_out(item, user))
+            else:
+                logger.warning(f"No user found for item {item.id} with user_id {item.user_id}")
         
-        return schemas.LostFoundItemsResponse(
+        logger.info(f"Returning {len(items_out)} items in response")
+        
+        response = schemas.LostFoundItemsResponse(
             items=items_out,
             total_count=total_count
         )
         
+        logger.info(f"Final response - items count: {len(response.items)}, total_count: {response.total_count}")
+        return response
+        
     except Exception as e:
         logger.error(f"Failed to get lost/found items: {e}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get lost/found items"

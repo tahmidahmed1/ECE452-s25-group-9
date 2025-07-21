@@ -211,47 +211,6 @@ fun LocationPermissionHandler(
     )
 }
 
-/**
- * Comprehensive location permission manager that handles all permission states
- * and checks permission status on screen load
- */
-@OptIn(ExperimentalPermissionsApi::class)
-@Composable
-fun LocationPermissionManager(
-    locationPermissionState: PermissionState,
-    onPermissionGranted: () -> Unit,
-    onPermissionDenied: () -> Unit,
-    content: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LaunchedEffect(locationPermissionState.status.isGranted) {
-        if (locationPermissionState.status.isGranted) {
-            onPermissionGranted()
-        } else {
-            onPermissionDenied()
-        }
-    }
-
-    if (locationPermissionState.status.isGranted) {
-        content()
-    } else {
-        if (locationPermissionState.status.shouldShowRationale) {
-            PermissionRationaleCard {
-                locationPermissionState.launchPermissionRequest()
-            }
-        } else {
-            LocationPermissionHandler(
-                onOpenSettings = { /* This is handled within the component */ },
-                modifier = modifier,
-            )
-        }
-    }
-}
-
-/**
- * Enhanced location permission manager that also checks privacy settings
- * and provides better integration with the app's location toggle
- */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun EnhancedLocationPermissionManager(

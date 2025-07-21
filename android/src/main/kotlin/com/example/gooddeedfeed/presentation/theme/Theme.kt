@@ -86,22 +86,6 @@ object Elevation {
 object AnimationDurations {
     const val fast = 150
     const val normal = 300
-    const val slow = 500
-}
-
-object AnimationSpecs {
-    val fastSpring = spring<Float>(
-        dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessHigh,
-    )
-    val normalSpring = spring<Float>(
-        dampingRatio = Spring.DampingRatioLowBouncy,
-        stiffness = Spring.StiffnessMedium,
-    )
-    val slowSpring = spring<Float>(
-        dampingRatio = Spring.DampingRatioMediumBouncy,
-        stiffness = Spring.StiffnessLow,
-    )
 }
 
 @Composable

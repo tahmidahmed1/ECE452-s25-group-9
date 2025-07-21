@@ -1,14 +1,9 @@
 package com.example.gooddeedfeed.presentation.ui.components.organizer
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -24,7 +19,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -32,98 +26,8 @@ import com.example.gooddeedfeed.R
 import com.example.gooddeedfeed.domain.model.EventStatus
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
-import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
-
-/**
- * Card component for displaying events in organizer view
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun EventCard(
-    event: VolunteerEvent,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                )
-
-                EventStatusChip(status = event.status)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            EventDetailRow(
-                icon = Icons.Default.LocationOn,
-                text = event.location,
-            )
-
-            EventDetailRow(
-                icon = Icons.Default.DateRange,
-                text = event.date,
-            )
-
-            EventDetailRow(
-                icon = Icons.Default.Schedule,
-                text = "${event.startTime} - ${event.endTime}",
-            )
-
-            EventDetailRow(
-                icon = Icons.Default.Group,
-                text = "${event.currentVolunteers}/${event.maxVolunteers} volunteers",
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = event.description,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 3,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                IconButton(onClick = onEditClick) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit event",
-                    )
-                }
-
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete event",
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun EventDetailRow(
@@ -171,97 +75,6 @@ fun EventStatusChip(
             labelColor = color,
         ),
     )
-}
-
-/**
- * Lazy column for displaying list of events for organizers
- */
-@Composable
-fun EventsList(
-    events: List<VolunteerEvent>,
-    onEditEvent: (VolunteerEvent) -> Unit,
-    onDeleteEvent: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(16.dp),
-    ) {
-        items(events) { event ->
-            EventCard(
-                event = event,
-                onEditClick = { onEditEvent(event) },
-                onDeleteClick = { onDeleteEvent(event.id) },
-            )
-        }
-    }
-}
-
-@Composable
-fun SocialMediaInputSection(
-    socialMediaLinks: List<SocialMediaLink>,
-    onLinksChanged: (List<SocialMediaLink>) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var showAddDialog by remember { mutableStateOf(false) }
-
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Social Media Links",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-            )
-
-            TextButton(
-                onClick = { showAddDialog = true },
-                enabled = socialMediaLinks.size < 4, // Max 4 platforms
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Add Link")
-            }
-        }
-
-        VerticalSpacer(SpacingSize.Small)
-
-        socialMediaLinks.forEach { link ->
-            SocialMediaLinkItem(
-                link = link,
-                onRemove = {
-                    onLinksChanged(socialMediaLinks - link)
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            VerticalSpacer(SpacingSize.Small)
-        }
-
-        if (socialMediaLinks.isEmpty()) {
-            Text(
-                text = "No social media links added yet",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-
-    if (showAddDialog) {
-        SocialMediaAddDialog(
-            existingPlatforms = socialMediaLinks.map { it.platform },
-            onDismiss = { showAddDialog = false },
-            onAdd = { platform, url ->
-                onLinksChanged(socialMediaLinks + SocialMediaLink(platform, url))
-                showAddDialog = false
-            },
-        )
-    }
 }
 
 @Composable
@@ -406,99 +219,6 @@ private fun SocialMediaAddDialog(
             }
         },
     )
-}
-
-@Composable
-fun OrganizationImageCarousel(
-    images: List<String>,
-    onImagesChanged: (List<String>) -> Unit,
-    onAddImages: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Organization Images",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-            )
-
-            TextButton(
-                onClick = onAddImages,
-                enabled = images.size < 10, // Max 10 images
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Add Images")
-            }
-        }
-
-        Text(
-            text = "${images.size}/10 images",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        VerticalSpacer(SpacingSize.Small)
-
-        if (images.isNotEmpty()) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp),
-            ) {
-                itemsIndexed(images) { index, imageUrl ->
-                    OrganizationImageItem(
-                        imageUrl = imageUrl,
-                        onRemove = {
-                            onImagesChanged(images - imageUrl)
-                        },
-                        modifier = Modifier.size(120.dp),
-                    )
-                }
-            }
-        } else {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clickable { onAddImages() },
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                ),
-                border = BorderStroke(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                ),
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        VerticalSpacer(SpacingSize.Small)
-                        Text(
-                            text = "Add organization images",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable

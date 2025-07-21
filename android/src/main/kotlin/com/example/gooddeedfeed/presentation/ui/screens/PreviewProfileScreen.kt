@@ -391,50 +391,6 @@ private fun EmergencyContactCard(user: DomainUser) {
 }
 
 @Composable
-private fun OrganizationInfoCard(user: DomainUser) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            SectionHeader("Organization Information")
-
-            user.organizationName?.let { InfoRow("Organization Name", it) }
-
-            user.organizationDescription?.let { description ->
-                if (description.isNotBlank()) {
-                    Text(
-                        text = "About Organization",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    )
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 120.dp)
-                            .verticalScroll(rememberScrollState())
-                            .padding(bottom = 8.dp),
-                    )
-                }
-            }
-
-            user.organizationWebsite?.let { website ->
-                if (website.isNotBlank()) {
-                    InfoRow("Website", website)
-                }
-            }
-
-            user.locationArea?.let { InfoRow("Location", it) }
-        }
-    }
-}
-
-@Composable
 private fun OrganizerInfoCard(user: DomainUser) {
     Card(
         modifier = Modifier

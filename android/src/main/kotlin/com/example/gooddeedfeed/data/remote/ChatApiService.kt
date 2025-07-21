@@ -5,5 +5,4 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ChatApiService @Inject constructor(client: HttpClient) : BaseApiService(client) {
-} 
+class ChatApiService @Inject constructor(client: HttpClient) : BaseApiService(client) 

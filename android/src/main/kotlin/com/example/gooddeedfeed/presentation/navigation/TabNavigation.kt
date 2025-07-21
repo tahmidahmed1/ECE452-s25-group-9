@@ -230,7 +230,6 @@ fun TabNavigationScreen(
             }
         }
 
-
         androidx.compose.animation.AnimatedVisibility(
             visible = showPreviewProfile,
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),

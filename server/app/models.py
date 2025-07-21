@@ -84,6 +84,9 @@ class User(Base):
     
     # Lost & Found items
     lost_found_items = relationship("LostFoundItem", back_populates="user")
+    
+    # Events this user has joined as a volunteer
+    joined_events = relationship("Event", secondary="volunteer_events", back_populates="volunteers")
 
 
 user_badges = Table(
@@ -159,6 +162,9 @@ class Event(Base):
 
     # Relationship to event images
     images = relationship("EventImage", back_populates="event", cascade="all, delete-orphan")
+    
+    # Volunteers who have joined this event
+    volunteers = relationship("User", secondary="volunteer_events", back_populates="joined_events")
 
 
 class EventImage(Base):
@@ -182,6 +188,17 @@ user_subscriptions = Table(
     Column('subscriber_id', Integer, ForeignKey('users.id'), primary_key=True),  # The volunteer who subscribes
     Column('organizer_id', Integer, ForeignKey('users.id'), primary_key=True),   # The organizer being subscribed to
     Column('subscribed_at', DateTime(timezone=True), server_default=func.now())
+)
+
+# Association table for many-to-many relationship between volunteers and events
+volunteer_events = Table(
+    'volunteer_events',
+    Base.metadata,
+    Column('volunteer_id', Integer, ForeignKey('users.id'), primary_key=True),  # The volunteer who joined
+    Column('event_id', Integer, ForeignKey('events.id'), primary_key=True),     # The event being joined
+    Column('joined_at', DateTime(timezone=True), server_default=func.now()),
+    Column('status', String, default='joined', nullable=False),  # joined, completed, cancelled
+    Column('karma_awarded', Boolean, default=False, nullable=False)  # Whether karma has been awarded
 )
 
 

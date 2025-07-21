@@ -41,6 +41,7 @@ import com.example.gooddeedfeed.presentation.ui.components.volunteer.CategoryChi
 fun VolunteerOpportunityDetailScreen(
     opportunity: VolunteerOpportunity,
     onBack: () -> Unit,
+    onJoin: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -172,7 +173,7 @@ fun VolunteerOpportunityDetailScreen(
             }
 
             Button(
-                onClick = { /* TODO: Implement join functionality */ },
+                onClick = { onJoin(opportunity.id) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = opportunity.currentVolunteers < opportunity.requiredVolunteers,
             ) {

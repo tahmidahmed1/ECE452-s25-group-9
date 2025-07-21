@@ -106,4 +106,3 @@ data class DomainOrganizationImagesResponse(
     val message: String,
     val totalImages: Int,
 )
-

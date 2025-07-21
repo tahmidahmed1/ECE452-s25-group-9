@@ -25,9 +25,6 @@ import com.example.gooddeedfeed.presentation.theme.DarkColors
 import com.example.gooddeedfeed.presentation.theme.LightColors
 import com.example.gooddeedfeed.presentation.theme.Spacing
 
-/**
- * Modern screen container with gradient background and improved spacing
- */
 @Composable
 fun ScreenContainer(
     modifier: Modifier = Modifier,
@@ -68,26 +65,6 @@ fun ScreenContainer(
     }
 }
 
-/**
- * Consistent screen title component
- */
-@Composable
-fun ScreenTitle(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.Bold,
-        modifier = modifier,
-    )
-}
-
-/**
- * Consistent subtitle component
- */
 @Composable
 fun ScreenSubtitle(
     text: String,
@@ -101,17 +78,9 @@ fun ScreenSubtitle(
     )
 }
 
-/**
- * Modern spacing components with theme integration
- */
 @Composable
 fun VerticalSpacer(size: SpacingSize = SpacingSize.Medium) {
     Spacer(modifier = Modifier.height(size.dp))
-}
-
-@Composable
-fun HorizontalSpacer(size: SpacingSize = SpacingSize.Medium) {
-    Spacer(modifier = Modifier.width(size.dp))
 }
 
 enum class SpacingSize(val dp: Dp) {
@@ -122,9 +91,6 @@ enum class SpacingSize(val dp: Dp) {
     ExtraLarge(Spacing.xl),
 }
 
-/**
- * Section header component
- */
 @Composable
 fun SectionHeader(
     title: String,

@@ -10,6 +10,8 @@ data class VolunteerOpportunity(
     val organizationName: String,
     val location: String,
     val date: String,
+    val startTime: String? = null,
+    val endTime: String? = null,
     val description: String,
     val requiredVolunteers: Int,
     val currentVolunteers: Int,

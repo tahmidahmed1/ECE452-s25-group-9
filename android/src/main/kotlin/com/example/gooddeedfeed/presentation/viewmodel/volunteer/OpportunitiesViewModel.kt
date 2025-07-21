@@ -9,6 +9,7 @@ import com.example.gooddeedfeed.domain.model.DateFilter
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
+import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
 import com.example.gooddeedfeed.domain.usecase.volunteer.ApplyForOpportunityUseCase
 import com.example.gooddeedfeed.domain.usecase.volunteer.GetOpportunitiesUseCase
 import com.example.gooddeedfeed.presentation.common.UiState
@@ -37,6 +38,7 @@ data class OpportunitiesData(
 class OpportunitiesViewModel @Inject constructor(
     private val getOpportunitiesUseCase: GetOpportunitiesUseCase,
     private val applyForOpportunityUseCase: ApplyForOpportunityUseCase,
+    private val opportunitiesRepository: OpportunitiesRepository,
     private val locationService: LocationService,
     val locationSettingsRepository: LocationSettingsRepository,
 ) : ViewModel() {
@@ -123,12 +125,24 @@ class OpportunitiesViewModel @Inject constructor(
 
     fun joinOpportunity(opportunityId: Int) {
         viewModelScope.launch {
-            applyForOpportunityUseCase(opportunityId)
+            opportunitiesRepository.joinEvent(opportunityId)
                 .onSuccess {
                     loadOpportunities() // Refresh to update status
                 }
                 .onFailure { e ->
                     _uiState.value = UiState.Error("Failed to join opportunity: ${e.message}")
+                }
+        }
+    }
+
+    fun leaveOpportunity(opportunityId: Int) {
+        viewModelScope.launch {
+            opportunitiesRepository.leaveEvent(opportunityId)
+                .onSuccess {
+                    loadOpportunities() // Refresh to update status
+                }
+                .onFailure { e ->
+                    _uiState.value = UiState.Error("Failed to leave opportunity: ${e.message}")
                 }
         }
     }

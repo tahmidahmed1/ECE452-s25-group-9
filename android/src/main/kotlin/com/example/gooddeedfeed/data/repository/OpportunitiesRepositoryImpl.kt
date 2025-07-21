@@ -21,6 +21,8 @@ private fun EventDto.toOpportunity(): VolunteerOpportunity = VolunteerOpportunit
     organizationName = organizer_name ?: "",
     location = location ?: "",
     date = date ?: "",
+    startTime = start_time,
+    endTime = end_time,
     description = description ?: "",
     requiredVolunteers = max_volunteers ?: 0,
     currentVolunteers = current_volunteers ?: 0,
@@ -94,6 +96,29 @@ class OpportunitiesRepositoryImpl @Inject constructor(
 
     override suspend fun cancelApplication(opportunityId: Int): Result<Unit> {
         return Result.success(Unit)
+    }
+
+    override suspend fun joinEvent(eventId: Int): Result<Unit> {
+        return runCatching {
+            apiService.joinEvent(eventId)
+            Unit
+        }
+    }
+
+    override suspend fun leaveEvent(eventId: Int): Result<Unit> {
+        return runCatching {
+            apiService.leaveEvent(eventId)
+            Unit
+        }
+    }
+
+    override suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>> = flow {
+        try {
+            val joinedEvents = apiService.getMyJoinedEvents().map { it.toOpportunity() }
+            emit(joinedEvents)
+        } catch (e: Exception) {
+            emit(emptyList())
+        }
     }
 
     override suspend fun getOpportunityById(opportunityId: Int): Result<VolunteerOpportunity> {

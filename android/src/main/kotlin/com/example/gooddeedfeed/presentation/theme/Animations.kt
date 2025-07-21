@@ -161,69 +161,6 @@ fun Modifier.hoverScale(
 }
 
 @Composable
-fun Modifier.shimmer(
-    enabled: Boolean = true,
-): Modifier = composed(
-    inspectorInfo = debugInspectorInfo {
-        name = "shimmer"
-        properties["enabled"] = enabled
-    },
-) {
-    if (!enabled) return@composed this
-
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = LinearEasing,
-            ),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "shimmerAlpha",
-    )
-
-    this.graphicsLayer { this.alpha = alpha }
-}
-
-@Composable
-fun Modifier.pulse(
-    enabled: Boolean = true,
-    scale: Float = 1.1f,
-    duration: Int = 1000,
-): Modifier = composed(
-    inspectorInfo = debugInspectorInfo {
-        name = "pulse"
-        properties["enabled"] = enabled
-        properties["scale"] = scale
-        properties["duration"] = duration
-    },
-) {
-    if (!enabled) return@composed this
-
-    val transition = rememberInfiniteTransition(label = "pulse")
-    val animatedScale by transition.animateFloat(
-        initialValue = 1f,
-        targetValue = scale,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = duration,
-                easing = FastOutSlowInEasing,
-            ),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "pulseScale",
-    )
-
-    this.graphicsLayer {
-        scaleX = animatedScale
-        scaleY = animatedScale
-    }
-}
-
-@Composable
 fun Modifier.shake(
     enabled: Boolean = false,
 ): Modifier = composed(
@@ -245,18 +182,3 @@ fun Modifier.shake(
         translationX = shakeOffset * 10f * sin(shakeOffset * 20f)
     }
 }
-
-@Composable
-fun animateColorAsState(
-    targetValue: androidx.compose.ui.graphics.Color,
-    animationSpec: AnimationSpec<androidx.compose.ui.graphics.Color> = spring(),
-    label: String = "ColorAnimation",
-    finishedListener: ((androidx.compose.ui.graphics.Color) -> Unit)? = null,
-): State<androidx.compose.ui.graphics.Color> {
-    return androidx.compose.animation.animateColorAsState(
-        targetValue = targetValue,
-        animationSpec = animationSpec,
-        label = label,
-        finishedListener = finishedListener,
-    )
-} 

@@ -1,9 +1,5 @@
 package com.example.gooddeedfeed.domain.model
 
-/**
- * Domain models shared across multiple user types
- */
-
 data class DomainBadge(
     val id: Int,
     val name: String,
@@ -35,17 +31,12 @@ data class DomainBadgeCheckResponse(
     val nextBadge: DomainBadge?,
 )
 
-enum class ApplicationStatus {
-    PENDING, APPROVED, REJECTED, WITHDRAWN
-}
-
 data class VolunteerApplicationForOrganizer(
     val id: Int,
     val volunteerId: Int,
     val volunteerName: String,
     val volunteerEmail: String,
     val applicationDate: String,
-    val status: ApplicationStatus,
     val message: String?,
 )
 
@@ -55,22 +46,8 @@ data class VolunteerApplicationForVolunteer(
     val opportunityTitle: String,
     val organizationName: String,
     val applicationDate: String,
-    val status: ApplicationStatus,
     val message: String?,
 )
-
-enum class ApprovalStatus(val displayName: String) {
-    PENDING("Pending Review"),
-    APPROVED("Approved"),
-    REJECTED("Rejected"),
-    ;
-
-    companion object {
-        fun fromString(value: String): ApprovalStatus? {
-            return values().find { it.name.equals(value, ignoreCase = true) }
-        }
-    }
-}
 
 enum class SocialMediaPlatform(val displayName: String, val iconName: String) {
     INSTAGRAM("Instagram", "instagram"),
@@ -91,10 +68,3 @@ data class SocialMediaLink(
     val url: String,
 )
 
-data class OrganizationProfile(
-    val name: String,
-    val description: String? = null,
-    val website: String? = null,
-    val socialMediaLinks: List<SocialMediaLink> = emptyList(),
-    val images: List<String> = emptyList(),
-) 

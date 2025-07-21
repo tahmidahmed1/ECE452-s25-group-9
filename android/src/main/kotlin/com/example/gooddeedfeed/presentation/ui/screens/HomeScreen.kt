@@ -114,6 +114,7 @@ fun HomeScreen(
                 userTypeDisplay = homeData.userTypeDisplay,
                 onActionClick = { action -> viewModel.handleAction(action) },
                 onLogout = onLogout,
+                homeViewModel = viewModel // Pass viewModel here
             )
         }
         is UiState.Error -> {
@@ -164,6 +165,7 @@ private fun HomeContent(
     userTypeDisplay: UserTypeDisplay,
     onActionClick: (HomeAction) -> Unit,
     onLogout: () -> Unit,
+    homeViewModel: HomeViewModel // Add this parameter
 ) {
     ScreenContainer {
         Column {
@@ -225,7 +227,7 @@ private fun HomeContent(
             }
 
             if (user.userType == DomainUserType.VOLUNTEER) {
-                VolunteerCalendarView()
+                VolunteerCalendarView(homeViewModel = homeViewModel)
                 VerticalSpacer(SpacingSize.Large)
             }
 
@@ -244,17 +246,38 @@ private fun getIconForAction(iconName: String) = when (iconName) {
 
 @SuppressLint("NewApi")
 @Composable
-private fun VolunteerCalendarView() {
+private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
     data class EventItem(val title: String, val time: String)
-    val tomorrow = LocalDate.now().plusDays(1)
-    val eventsMap = remember {
-        mapOf(
-            tomorrow to listOf(
-                EventItem("Beach Cleanup", "10:00 AM"),
-                EventItem("Food Drive", "1:00 PM"),
-                EventItem("Tree Planting", "4:00 PM"),
-            ),
-        )
+    
+    val joinedEventsState by homeViewModel.joinedEventsState.collectAsStateWithLifecycle()
+    
+    // Load joined events when the component is created
+    LaunchedEffect(Unit) {
+        homeViewModel.loadJoinedEvents()
+    }
+    
+    val eventsMap = remember(joinedEventsState) {
+        val data = (joinedEventsState as? UiState.Success)?.data
+        if (data != null) {
+            data.groupBy { event ->
+                try {
+                    LocalDate.parse(event.date)
+                } catch (e: Exception) {
+                    null
+                }
+            }.filterKeys { it != null }
+                .mapKeys { it.key!! }
+                .mapValues { (_, events) ->
+                    events.map { event ->
+                        EventItem(
+                            title = event.title,
+                            time = event.startTime ?: "All Day"
+                        )
+                    }
+                }
+        } else {
+            emptyMap()
+        }
     }
 
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }

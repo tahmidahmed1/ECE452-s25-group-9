@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,9 +25,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FilterList
@@ -50,9 +53,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.domain.model.DateFilter
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
@@ -60,77 +67,236 @@ import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 
 /**
- * Card component for displaying volunteer opportunities
+ * Enhanced card component for displaying volunteer opportunities with banner
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OpportunityCard(
     opportunity: VolunteerOpportunity,
     onJoinClick: () -> Unit,
+    onCardClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        onClick = { /* Navigate to details */ },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        onClick = onCardClick,
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Text(
-                text = opportunity.title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = opportunity.organizationName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OpportunityDetailRow(
-                icon = Icons.Default.LocationOn,
-                text = opportunity.location,
-            )
-
-            OpportunityDetailRow(
-                icon = Icons.Default.DateRange,
-                text = opportunity.date,
-            )
-
-            OpportunityDetailRow(
-                icon = Icons.Default.Person,
-                text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers} volunteers",
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = opportunity.description,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+        Column {
+            // Banner Section with Gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                            )
+                        )
+                    )
             ) {
-                CategoryChip(category = opportunity.category)
-
-                Button(
-                    onClick = onJoinClick,
-                    enabled = opportunity.currentVolunteers < opportunity.requiredVolunteers,
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Join")
+                    // Top Row: Status Badge and Urgency
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        // Availability Status
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = if (opportunity.currentVolunteers < opportunity.requiredVolunteers) 
+                                        Color.Green.copy(alpha = 0.9f) 
+                                    else 
+                                        Color.Red.copy(alpha = 0.9f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (opportunity.currentVolunteers < opportunity.requiredVolunteers) "OPEN" else "FULL",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                        
+                        // Karma Points Badge
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.EmojiEvents,
+                                contentDescription = "Karma",
+                                modifier = Modifier.size(16.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "${opportunity.karmaPoints}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    
+                    // Bottom: Organization and Category
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = opportunity.organizationName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        CategoryChip(
+                            category = opportunity.category,
+                            isDarkBackground = true
+                        )
+                    }
+                }
+            }
+
+            // Content Section
+            Column(
+                modifier = Modifier.padding(16.dp),
+            ) {
+                Text(
+                    text = opportunity.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Key Details Grid
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Left Column
+                    Column(modifier = Modifier.weight(1f)) {
+                        OpportunityDetailRow(
+                            icon = Icons.Default.LocationOn,
+                            text = opportunity.location,
+                        )
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        OpportunityDetailRow(
+                            icon = Icons.Default.AccessTime,
+                            text = "All Day",
+                        )
+                    }
+                    
+                    // Right Column
+                    Column(modifier = Modifier.weight(1f)) {
+                        OpportunityDetailRow(
+                            icon = Icons.Default.DateRange,
+                            text = opportunity.date,
+                        )
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        OpportunityDetailRow(
+                            icon = Icons.Default.Person,
+                            text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers}",
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = opportunity.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Action Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Progress indicator
+                    Column {
+                        Text(
+                            text = "Progress",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 2.dp)
+                        ) {
+                            Text(
+                                text = "${((opportunity.currentVolunteers.toFloat() / opportunity.requiredVolunteers) * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .width(60.dp)
+                                    .height(4.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(opportunity.currentVolunteers.toFloat() / opportunity.requiredVolunteers)
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(MaterialTheme.colorScheme.primary)
+                                )
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = onJoinClick,
+                        enabled = opportunity.currentVolunteers < opportunity.requiredVolunteers,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = if (opportunity.currentVolunteers < opportunity.requiredVolunteers) "Join Event" else "Full",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -165,17 +331,37 @@ private fun OpportunityDetailRow(
 fun CategoryChip(
     category: OpportunityCategory,
     modifier: Modifier = Modifier,
+    isDarkBackground: Boolean = false,
 ) {
-    AssistChip(
-        onClick = { },
-        label = {
+    if (isDarkBackground) {
+        Box(
+            modifier = modifier
+                .background(
+                    color = Color.White.copy(alpha = 0.9f),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
             Text(
                 text = category.name.replace("_", " ").lowercase()
-                    .replaceFirstChar { it.uppercase() },
+                    .split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } },
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
             )
-        },
-        modifier = modifier,
-    )
+        }
+    } else {
+        AssistChip(
+            onClick = { },
+            label = {
+                Text(
+                    text = category.name.replace("_", " ").lowercase()
+                        .split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } },
+                )
+            },
+            modifier = modifier,
+        )
+    }
 }
 
 /**
@@ -185,6 +371,7 @@ fun CategoryChip(
 fun OpportunitiesList(
     opportunities: List<VolunteerOpportunity>,
     onJoinOpportunity: (Int) -> Unit,
+    onOpportunityClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     if (opportunities.isEmpty()) {
@@ -228,6 +415,7 @@ fun OpportunitiesList(
                 OpportunityCard(
                     opportunity = opportunity,
                     onJoinClick = { onJoinOpportunity(opportunity.id) },
+                    onCardClick = { onOpportunityClick(opportunity.id) },
                 )
             }
         }

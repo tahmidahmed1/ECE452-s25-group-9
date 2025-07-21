@@ -177,7 +177,7 @@ private fun BadgeItem(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    text = mapBadgeNameToFunName(badge.badgeName, badge.iconName),
+                    text = badge.badgeName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -206,29 +206,3 @@ private fun getIconForBadge(iconName: String): ImageVector {
         else -> Icons.Default.Star
     }
 }
-
-private fun mapBadgeNameToFunName(badgeName: String, iconName: String): String {
-    return when (badgeName) {
-        "Karma 200" -> when (iconName) {
-            "Star" -> "Newcomer"
-            else -> "Newcomer"
-        }
-        "Karma 400" -> when (iconName) {
-            "WorkspacePremium" -> "Helper"
-            else -> "Helper"
-        }
-        "Karma 600" -> when (iconName) {
-            "LocalFireDepartment" -> "Rising Star"
-            else -> "Rising Star"
-        }
-        "Karma 800" -> when (iconName) {
-            "EmojiEvents" -> "Community Champion"
-            else -> "Community Champion"
-        }
-        "Karma 1000" -> when (iconName) {
-            "WorkspacePremium" -> "Dedicated Volunteer"
-            else -> "Dedicated Volunteer"
-        }
-        else -> badgeName // Return original name if no mapping found
-    }
-} 

@@ -81,7 +81,6 @@ object AuthModule {
                             null
                         }
                     }
-
                 }
             }
 

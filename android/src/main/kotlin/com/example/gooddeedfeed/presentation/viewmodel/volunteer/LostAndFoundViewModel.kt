@@ -1,7 +1,10 @@
 package com.example.gooddeedfeed.presentation.viewmodel.volunteer
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gooddeedfeed.data.mapper.toDomain
+import com.example.gooddeedfeed.data.mapper.toPresentationModel
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,8 +35,12 @@ enum class LostFoundType {
 
 @HiltViewModel
 class LostAndFoundViewModel @Inject constructor(
-    // TODO: Inject LostFoundRepository when created
+    private val lostFoundRepository: com.example.gooddeedfeed.domain.repository.LostFoundRepository
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "LostAndFoundViewModel"
+    }
 
     private val _uiState = MutableStateFlow<UiState<List<LostFoundItem>>>(UiState.Idle)
     val uiState: StateFlow<UiState<List<LostFoundItem>>> = _uiState.asStateFlow()
@@ -42,14 +49,22 @@ class LostAndFoundViewModel @Inject constructor(
     val createItemState: StateFlow<UiState<Unit>> = _createItemState.asStateFlow()
 
     fun loadItems(filterType: LostFoundType? = null) {
+        Log.d(TAG, "🔄 ViewModel: Loading lost and found items")
+        Log.d(TAG, "📝 ViewModel filter: $filterType")
+        
         viewModelScope.launch {
             _uiState.value = UiState.Loading
 
             try {
-                // TODO: Replace with real API call
-                // For now, return empty list to remove mock data
-                _uiState.value = UiState.Success(emptyList())
+                lostFoundRepository.getLostFoundItems(filterType?.toDomain()).collect { domainItems ->
+                    Log.d(TAG, "✅ ViewModel: Received ${domainItems.size} domain items from repository")
+                    val presentationItems = domainItems.map { it.toPresentationModel() }
+                    Log.d(TAG, "🔄 ViewModel: Converted to ${presentationItems.size} presentation items")
+                    _uiState.value = UiState.Success(presentationItems)
+                    Log.d(TAG, "✅ ViewModel: Set UI state to Success with ${presentationItems.size} items")
+                }
             } catch (e: Exception) {
+                Log.e(TAG, "❌ ViewModel: Failed to load items", e)
                 _uiState.value = UiState.Error(e.message ?: "Failed to load items")
             }
         }
@@ -65,15 +80,39 @@ class LostAndFoundViewModel @Inject constructor(
         expiryDays: Int,
         images: List<String>,
     ) {
+        Log.d(TAG, "🚀 ViewModel: Creating lost and found item")
+        Log.d(TAG, "📝 ViewModel data - title: $title, type: $itemType, location: $location")
+        Log.d(TAG, "📝 ViewModel data - description: $description, reward: $reward, expiryDays: $expiryDays")
+        Log.d(TAG, "📝 ViewModel data - tags: $tags, images: ${images.size} images")
+        
         viewModelScope.launch {
             _createItemState.value = UiState.Loading
 
             try {
-                // TODO: Replace with real API call
-                _createItemState.value = UiState.Success(Unit)
+                val result = lostFoundRepository.createLostFoundItem(
+                    title = title,
+                    description = description,
+                    location = location,
+                    itemType = itemType.toDomain(),
+                    reward = reward,
+                    tags = tags,
+                    expiryDays = expiryDays
+                )
 
-                loadItems()
+                result.fold(
+                    onSuccess = { createdItem ->
+                        Log.d(TAG, "✅ ViewModel: Successfully created item with ID: ${createdItem.id}")
+                        _createItemState.value = UiState.Success(Unit)
+                        Log.d(TAG, "🔄 ViewModel: Reloading items after creation")
+                        loadItems()
+                    },
+                    onFailure = { error ->
+                        Log.e(TAG, "❌ ViewModel: Failed to create item", error)
+                        _createItemState.value = UiState.Error(error.message ?: "Failed to create item")
+                    }
+                )
             } catch (e: Exception) {
+                Log.e(TAG, "❌ ViewModel: Exception during create item", e)
                 _createItemState.value = UiState.Error(e.message ?: "Failed to create item")
             }
         }

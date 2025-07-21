@@ -30,7 +30,6 @@ fun OnboardingStepOneScreen(
     var selectedUserType by remember { mutableStateOf<DomainUserType?>(null) }
 
     ScreenContainer(modifier = modifier) {
-
         VerticalSpacer(SpacingSize.Small)
 
         ScreenSubtitle("What type of account would you like to create?")

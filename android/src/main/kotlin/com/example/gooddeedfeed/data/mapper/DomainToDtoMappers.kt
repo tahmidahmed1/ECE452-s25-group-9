@@ -25,4 +25,53 @@ fun DomainSex.toDto(): Sex = when (this) {
 fun DomainUserType.toDto(): UserType = when (this) {
     DomainUserType.VOLUNTEER -> UserType.VOLUNTEER
     DomainUserType.ORGANIZER -> UserType.ORGANIZER
+}
+
+fun LostFoundItemDto.toDomain(): com.example.gooddeedfeed.domain.model.DomainLostFoundItem {
+    return com.example.gooddeedfeed.domain.model.DomainLostFoundItem(
+        id = id.toString(),
+        title = title,
+        description = description,
+        location = location,
+        date = createdAt,
+        type = if (itemType == "lost") com.example.gooddeedfeed.domain.model.DomainLostFoundType.LOST 
+              else com.example.gooddeedfeed.domain.model.DomainLostFoundType.FOUND,
+        images = images,
+        contactName = contactName,
+        isResolved = isResolved,
+        reward = reward,
+        tags = tags ?: emptyList(),
+        expiryDate = expiresAt,
+        daysRemaining = daysRemaining
+    )
+}
+
+fun com.example.gooddeedfeed.domain.model.DomainLostFoundType.toApiString(): String = when (this) {
+    com.example.gooddeedfeed.domain.model.DomainLostFoundType.LOST -> "lost"
+    com.example.gooddeedfeed.domain.model.DomainLostFoundType.FOUND -> "found"
+}
+
+fun com.example.gooddeedfeed.domain.model.DomainLostFoundItem.toPresentationModel(): com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundItem {
+    return com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundItem(
+        id = id,
+        title = title,
+        description = description,
+        location = location,
+        date = date,
+        type = if (type == com.example.gooddeedfeed.domain.model.DomainLostFoundType.LOST) 
+               com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType.LOST
+               else com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType.FOUND,
+        images = images,
+        contactName = contactName,
+        isResolved = isResolved,
+        reward = reward,
+        tags = tags,
+        expiryDate = expiryDate,
+        daysRemaining = daysRemaining
+    )
+}
+
+fun com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType.toDomain(): com.example.gooddeedfeed.domain.model.DomainLostFoundType = when (this) {
+    com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType.LOST -> com.example.gooddeedfeed.domain.model.DomainLostFoundType.LOST
+    com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType.FOUND -> com.example.gooddeedfeed.domain.model.DomainLostFoundType.FOUND
 } 

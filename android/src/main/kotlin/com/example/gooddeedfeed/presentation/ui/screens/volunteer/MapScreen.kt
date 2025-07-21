@@ -85,11 +85,9 @@ fun MapScreen(
  * This uses the approximate relationship between Google Maps zoom levels and visible distance
  */
 private fun calculateZoomForRadius(radiusKm: Float): Float {
-
     val radiusMeters = radiusKm * 1000.0
     val paddingFactor = 1.8 // This ensures the circle fits comfortably with some padding
     val requiredViewDistance = radiusMeters * paddingFactor
-
 
     val metersPerPixelAtZoom0 = 156543.03392 * 0.7071
     val screenWidthPixels = 1000.0

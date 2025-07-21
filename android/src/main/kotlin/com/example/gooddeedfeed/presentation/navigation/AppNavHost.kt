@@ -35,8 +35,6 @@ import com.example.gooddeedfeed.presentation.ui.screens.onboarding.OnboardingScr
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 
-private const val TAG = "AppNavHost"
-
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
     object SignIn : Screen("sign_in")

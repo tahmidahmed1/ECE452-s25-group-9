@@ -80,6 +80,7 @@ import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesVi
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.SubscriptionViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
+import com.example.gooddeedfeed.presentation.ui.screens.volunteer.VolunteerOpportunityDetailScreen
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -150,7 +151,11 @@ fun ListScreen(
                     },
                 )
             } else if (selectedOpportunity != null) {
-                VolunteerOpportunityDetailScreen(opportunity = selectedOpportunity!!, onBack = { selectedOpportunity = null })
+                VolunteerOpportunityDetailScreen(
+                    opportunity = selectedOpportunity!!,
+                    onBack = { selectedOpportunity = null },
+                    onJoin = { opportunityId -> viewModel.joinOpportunity(opportunityId) }
+                )
             } else {
                 Column(modifier = modifier.fillMaxSize()) {
                     HeaderSection(
@@ -461,99 +466,6 @@ private fun OrganizerCard(
 }
 
 @Composable
-private fun OpportunityCard(
-    opportunity: VolunteerOpportunity,
-    onJoinClick: () -> Unit,
-    onClick: () -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = opportunity.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f),
-                )
-
-                Text(
-                    text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Text(
-                text = opportunity.organizationName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = "Location",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = opportunity.location,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Icon(
-                    imageVector = Icons.Default.DateRange,
-                    contentDescription = "Date",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = opportunity.date,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = opportunity.description,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = onJoinClick,
-                modifier = Modifier.align(Alignment.End),
-                enabled = opportunity.currentVolunteers < opportunity.requiredVolunteers,
-            ) {
-                Text(if (opportunity.currentVolunteers < opportunity.requiredVolunteers) "Join" else "Full")
-            }
-        }
-    }
-}
-
-@Composable
 private fun OrganizerProfileScreen(
     organizer: DomainOrganizerWithSubscriptionStatus,
     onBack: () -> Unit,
@@ -716,58 +628,6 @@ private fun OrganizerProfileScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun VolunteerOpportunityDetailScreen(opportunity: VolunteerOpportunity, onBack: () -> Unit) {
-    val images = listOf(
-        "https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=600&q=60",
-        "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60",
-        "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=60",
-    )
-
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
-            Spacer(Modifier.width(8.dp))
-            Text(opportunity.title, style = MaterialTheme.typography.headlineMedium)
-        }
-
-        Spacer(Modifier.height(8.dp))
-        Text(opportunity.description, style = MaterialTheme.typography.bodyMedium)
-
-        Spacer(Modifier.height(16.dp))
-        Text("Images", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
-            items(images) { url ->
-                Card(shape = RoundedCornerShape(8.dp)) {
-                    AsyncImage(model = url, contentDescription = null, modifier = Modifier.size(140.dp).aspectRatio(1f), contentScale = ContentScale.Crop)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Column {
-                Text("Date", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(opportunity.date, style = MaterialTheme.typography.bodyMedium)
-            }
-            Column {
-                Text("Volunteers", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("${opportunity.currentVolunteers}/${opportunity.requiredVolunteers}", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-        Text("Location", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.height(4.dp))
-        Text(opportunity.location, style = MaterialTheme.typography.bodyMedium)
-
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = { /* mock apply */ }, enabled = opportunity.currentVolunteers < opportunity.requiredVolunteers) {
-            Text(if (opportunity.currentVolunteers < opportunity.requiredVolunteers) "Apply" else "Full")
         }
     }
 }

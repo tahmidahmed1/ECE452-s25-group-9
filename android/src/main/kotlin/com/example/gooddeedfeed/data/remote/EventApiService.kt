@@ -289,4 +289,106 @@ class EventApiService @Inject constructor(
             throw Exception("Failed to set main event image: ${e.message}")
         }
     }
+
+    suspend fun joinEvent(eventId: Int): Map<String, Any> {
+        Log.d(TAG, "🚀 Starting joinEvent request for event ID: $eventId")
+
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for joinEvent")
+            throw Exception("No authentication session found")
+        }
+
+        return try {
+            Log.d(TAG, "📤 Sending joinEvent request with session authorization...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying joinEvent URL: $baseUrl/events/$eventId/join")
+                client.post("$baseUrl/events/$eventId/join") {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                }
+            }
+
+            Log.d(TAG, "📥 joinEvent response status: ${response.status}")
+
+            if (response.status.value in 200..299) {
+                val responseBody: Map<String, Any> = response.body()
+                Log.d(TAG, "✅ joinEvent successful - Event ID: $eventId")
+                responseBody
+            } else {
+                Log.e(TAG, "❌ joinEvent failed with status ${response.status}")
+                throw Exception("Server returned ${response.status.value}: ${response.status.description}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ joinEvent failed with exception", e)
+            throw Exception("Failed to join event: ${e.message}")
+        }
+    }
+
+    suspend fun leaveEvent(eventId: Int): Map<String, Any> {
+        Log.d(TAG, "🚀 Starting leaveEvent request for event ID: $eventId")
+
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for leaveEvent")
+            throw Exception("No authentication session found")
+        }
+
+        return try {
+            Log.d(TAG, "📤 Sending leaveEvent request with session authorization...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying leaveEvent URL: $baseUrl/events/$eventId/leave")
+                client.post("$baseUrl/events/$eventId/leave") {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                }
+            }
+
+            Log.d(TAG, "📥 leaveEvent response status: ${response.status}")
+
+            if (response.status.value in 200..299) {
+                val responseBody: Map<String, Any> = response.body()
+                Log.d(TAG, "✅ leaveEvent successful - Event ID: $eventId")
+                responseBody
+            } else {
+                Log.e(TAG, "❌ leaveEvent failed with status ${response.status}")
+                throw Exception("Server returned ${response.status.value}: ${response.status.description}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ leaveEvent failed with exception", e)
+            throw Exception("Failed to leave event: ${e.message}")
+        }
+    }
+
+    suspend fun getMyJoinedEvents(): List<EventDto> {
+        Log.d(TAG, "🚀 Starting getMyJoinedEvents request")
+
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for getMyJoinedEvents")
+            throw Exception("No authentication session found")
+        }
+
+        return try {
+            Log.d(TAG, "📤 Sending getMyJoinedEvents request with session authorization...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying getMyJoinedEvents URL: $baseUrl/users/me/joined-events")
+                client.get("$baseUrl/users/me/joined-events") {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                }
+            }
+
+            Log.d(TAG, "📥 getMyJoinedEvents response status: ${response.status}")
+
+            if (response.status.value in 200..299) {
+                val events: List<EventDto> = response.body()
+                Log.d(TAG, "✅ getMyJoinedEvents successful - Found ${events.size} joined events")
+                events
+            } else {
+                Log.e(TAG, "❌ getMyJoinedEvents failed with status ${response.status}")
+                throw Exception("Server returned ${response.status.value}: ${response.status.description}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ getMyJoinedEvents failed with exception", e)
+            throw Exception("Failed to get joined events: ${e.message}")
+        }
+    }
 } 

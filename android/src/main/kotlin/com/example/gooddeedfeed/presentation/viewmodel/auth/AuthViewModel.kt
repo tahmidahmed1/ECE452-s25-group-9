@@ -249,7 +249,6 @@ constructor(
         _uiState.value = AuthUiState.Success(user)
     }
 
-
     fun updateUserProfile(update: DomainUserUpdate) {
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
@@ -263,7 +262,6 @@ constructor(
             }
         }
     }
-
 
     fun uploadProfilePicture(file: File) {
         _uiState.value = AuthUiState.Loading
@@ -393,7 +391,6 @@ constructor(
             }
         }
     }
-
 
     fun subscribeToOrganizer(organizerId: Int) {
         viewModelScope.launch {
