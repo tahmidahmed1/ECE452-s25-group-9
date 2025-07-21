@@ -13,7 +13,6 @@ import com.example.gooddeedfeed.data.remote.dto.OnboardingStepTwoOrganizerDto
 import com.example.gooddeedfeed.data.remote.dto.OrganizationImagesResponseDto
 import com.example.gooddeedfeed.data.remote.dto.ProfilePictureUploadResponse
 import com.example.gooddeedfeed.data.remote.dto.SignUpRequestDto
-import com.example.gooddeedfeed.data.remote.dto.SessionResponseDto
 import com.example.gooddeedfeed.data.remote.dto.UserDto
 import com.example.gooddeedfeed.data.remote.dto.UserType
 import com.example.gooddeedfeed.data.remote.dto.UserUpdateDto

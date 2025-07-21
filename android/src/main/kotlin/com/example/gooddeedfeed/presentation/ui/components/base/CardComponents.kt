@@ -174,9 +174,11 @@ fun ActionCard(
                     Modifier.border(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(BorderRadius.lg)
+                        shape = RoundedCornerShape(BorderRadius.lg),
                     )
-                } else Modifier
+                } else {
+                    Modifier
+                },
             ),
         shape = RoundedCornerShape(BorderRadius.lg),
         colors = CardDefaults.cardColors(

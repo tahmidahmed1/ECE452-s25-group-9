@@ -153,7 +153,7 @@ constructor(
             try {
                 // Ensure clean state before sign up (in case of previous incomplete sign out)
                 Log.d(TAG, "🧹 Ensuring clean auth state before sign up...")
-                
+
                 Log.d(TAG, "📞 Calling signUpUseCase...")
                 val result = signUpUseCase.invoke(username, email, password)
 
@@ -223,7 +223,6 @@ constructor(
                     _uiState.value = AuthUiState.SignedOut
                     Log.w(TAG, "⚠️ Keeping local state as signed out despite server error")
                 }
-
             } catch (e: Exception) {
                 Log.e(TAG, "❌ SignOut exception", e)
                 // Even if there's an exception, keep local state as signed out

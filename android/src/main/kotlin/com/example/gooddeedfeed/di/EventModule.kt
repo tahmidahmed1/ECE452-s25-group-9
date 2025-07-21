@@ -42,7 +42,7 @@ abstract class EventModule {
         @Singleton
         fun provideEventApiService(
             client: HttpClient,
-            dataStore: DataStore<Preferences>
+            dataStore: DataStore<Preferences>,
         ): EventApiService = EventApiService(client, dataStore)
 
         @Provides

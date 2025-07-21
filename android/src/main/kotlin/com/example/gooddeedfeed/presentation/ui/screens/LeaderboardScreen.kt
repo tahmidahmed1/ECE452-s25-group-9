@@ -89,7 +89,7 @@ fun StatsScreen(
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
-    
+
     // Check badges when visiting this page to ensure badges are up to date
     LaunchedEffect(Unit) {
         badgeViewModel.checkBadgeAchievements()

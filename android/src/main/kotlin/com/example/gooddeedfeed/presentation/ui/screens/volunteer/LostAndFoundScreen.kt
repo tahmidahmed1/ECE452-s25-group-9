@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
@@ -18,11 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import android.net.Uri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -31,7 +30,6 @@ import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostAndFoundViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundItem
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,7 +108,7 @@ fun LostAndFoundScreen(
                     .border(
                         width = 2.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ),
                 containerColor = MaterialTheme.colorScheme.primary,
                 shape = RoundedCornerShape(12.dp),
@@ -150,7 +148,7 @@ fun LostAndFoundScreen(
             is UiState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
@@ -158,16 +156,16 @@ fun LostAndFoundScreen(
             is UiState.Error -> {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = currentState.message,
                         color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                     Button(
                         onClick = { viewModel.loadItems(selectedFilter) },
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 8.dp),
                     ) {
                         Text("Retry")
                     }
@@ -180,27 +178,27 @@ fun LostAndFoundScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "No items",
                             modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "No lost or found items yet",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                         Text(
                             text = "Be the first to report a lost or found item!",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.padding(top = 8.dp),
                         )
                     }
                 } else {
@@ -518,7 +516,7 @@ private fun LostFoundDetailScreen(
                 .border(
                     width = 2.dp,
                     color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ),
             shape = RoundedCornerShape(12.dp),
         ) {
@@ -651,15 +649,15 @@ private fun CreateLostFoundScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
-        
+
         // Gallery launcher for multiple images
         val galleryLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetMultipleContents()
+            contract = ActivityResultContracts.GetMultipleContents(),
         ) { uris: List<Uri> ->
             val newImages = (selectedImages + uris).take(10)
             selectedImages = newImages
         }
-        
+
         Button(
             onClick = { galleryLauncher.launch("image/*") },
             modifier = Modifier
@@ -667,11 +665,11 @@ private fun CreateLostFoundScreen(
                 .border(
                     width = 2.dp,
                     color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
-                contentColor = MaterialTheme.colorScheme.primary
+                contentColor = MaterialTheme.colorScheme.primary,
             ),
             shape = RoundedCornerShape(12.dp),
         ) {
@@ -698,12 +696,12 @@ private fun CreateLostFoundScreen(
                         )
                         IconButton(
                             onClick = { selectedImages = selectedImages - imageUri },
-                            modifier = Modifier.align(Alignment.TopEnd)
+                            modifier = Modifier.align(Alignment.TopEnd),
                         ) {
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Remove image",
-                                tint = MaterialTheme.colorScheme.error
+                                tint = MaterialTheme.colorScheme.error,
                             )
                         }
                     }
@@ -726,7 +724,7 @@ private fun CreateLostFoundScreen(
                 },
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
 
@@ -737,14 +735,14 @@ private fun CreateLostFoundScreen(
                 .border(
                     width = 2.dp,
                     color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ),
             enabled = !hasValidation,
             shape = RoundedCornerShape(12.dp),
         ) {
             Text("Submit Report")
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
     }
 } 

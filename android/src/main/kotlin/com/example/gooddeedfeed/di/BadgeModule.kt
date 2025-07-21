@@ -28,7 +28,7 @@ abstract class BadgeModule {
         @Singleton
         fun provideBadgeApiService(
             httpClient: HttpClient,
-            dataStore: DataStore<Preferences>
+            dataStore: DataStore<Preferences>,
         ): BadgeApiService {
             return BadgeApiService(httpClient, dataStore)
         }

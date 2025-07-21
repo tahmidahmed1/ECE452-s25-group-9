@@ -431,7 +431,7 @@ fun FiltersDrawer(
                                     label = { Text("Use Distance Filter") },
                                 )
                             }
-                            
+
                             if (filters.useDistanceFilter) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(

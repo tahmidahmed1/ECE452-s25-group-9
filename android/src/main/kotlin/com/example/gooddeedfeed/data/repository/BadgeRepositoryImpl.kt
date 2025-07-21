@@ -17,7 +17,6 @@ class BadgeRepositoryImpl @Inject constructor(
     private val badgeApiService: BadgeApiService,
 ) : BadgeRepository {
 
-
     override suspend fun getAllBadges(): Flow<Result<List<DomainBadge>>> {
         return badgeApiService.getAllBadges().map { result ->
             result.map { badgeDtos ->

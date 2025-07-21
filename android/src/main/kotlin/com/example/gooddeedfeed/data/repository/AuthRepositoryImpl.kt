@@ -45,7 +45,7 @@ class AuthRepositoryImpl @Inject constructor(
         }
 
         Log.d(TAG, "✅ Auth data saved successfully")
-        
+
         // Verify the data was saved correctly
         val savedSessionId = dataStore.data.first()[SESSION_ID_KEY]
         val savedUserId = dataStore.data.first()[USER_ID_KEY]
@@ -188,10 +188,11 @@ class AuthRepositoryImpl @Inject constructor(
             Log.e(TAG, "❌ Exception message: ${e.message}")
 
             // If getCurrentUser fails, it might be due to invalid/expired token
-            if (e.message?.contains("401") == true || 
-                e.message?.contains("unauthorized") == true || 
+            if (e.message?.contains("401") == true ||
+                e.message?.contains("unauthorized") == true ||
                 e.message?.contains("Authentication failed") == true ||
-                e.message?.contains("No authentication token found") == true) {
+                e.message?.contains("No authentication token found") == true
+            ) {
                 Log.d(TAG, "🧹 Clearing invalid authentication data due to auth failure...")
                 clearAuthData()
             }

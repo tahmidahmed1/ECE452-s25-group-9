@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 class BadgeApiService @Inject constructor(
     client: HttpClient,
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
 ) : BaseApiService(client) {
 
     companion object {
@@ -58,7 +58,7 @@ class BadgeApiService @Inject constructor(
 
     suspend fun getUserBadges(): Flow<Result<List<UserBadgeDto>>> = flow {
         Log.d(TAG, "🚀 Starting getUserBadges request")
-        
+
         // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
@@ -94,7 +94,7 @@ class BadgeApiService @Inject constructor(
 
     suspend fun checkBadgeAchievements(): Flow<Result<BadgeCheckResponseDto>> = flow {
         Log.d(TAG, "🚀 Starting checkBadgeAchievements request")
-        
+
         // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {

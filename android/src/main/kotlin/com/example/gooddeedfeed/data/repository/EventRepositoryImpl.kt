@@ -18,7 +18,6 @@ class EventRepositoryImpl @Inject constructor(
     private val authRepository: AuthRepository,
 ) : EventRepository {
 
-
     override suspend fun getMyEvents(): Flow<List<VolunteerEvent>> = flow {
         val currentUserResult = authRepository.getCurrentUser()
         val userId = currentUserResult.getOrNull()?.id
@@ -67,5 +66,4 @@ class EventRepositoryImpl @Inject constructor(
     override suspend fun setMainEventImage(eventId: Int, imageId: Int): Result<Unit> = runCatching {
         apiService.setMainEventImage(eventId, imageId)
     }
-
 } 

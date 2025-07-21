@@ -63,7 +63,7 @@ class LostAndFoundViewModel @Inject constructor(
         reward: String?,
         tags: List<String>,
         expiryDays: Int,
-        images: List<String>
+        images: List<String>,
     ) {
         viewModelScope.launch {
             _createItemState.value = UiState.Loading
@@ -71,7 +71,7 @@ class LostAndFoundViewModel @Inject constructor(
             try {
                 // TODO: Replace with real API call
                 _createItemState.value = UiState.Success(Unit)
-                
+
                 // Refresh items list
                 loadItems()
             } catch (e: Exception) {
