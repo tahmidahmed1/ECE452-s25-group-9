@@ -25,5 +25,4 @@ object AppConstants {
         HistoryItem("Food Drive", "Apr 20 2024", false),
         HistoryItem("Coding Workshop", "Mar 12 2024", true),
     )
-
 } 

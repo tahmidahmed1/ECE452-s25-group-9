@@ -20,7 +20,7 @@ object LostFoundModule {
     @Singleton
     fun provideLostFoundApiService(
         httpClient: HttpClient,
-        dataStore: DataStore<Preferences>
+        dataStore: DataStore<Preferences>,
     ): LostFoundApiService {
         return LostFoundApiService(httpClient, dataStore)
     }
@@ -28,7 +28,7 @@ object LostFoundModule {
     @Provides
     @Singleton
     fun provideLostFoundRepository(
-        apiService: LostFoundApiService
+        apiService: LostFoundApiService,
     ): LostFoundRepository {
         return LostFoundRepositoryImpl(apiService)
     }

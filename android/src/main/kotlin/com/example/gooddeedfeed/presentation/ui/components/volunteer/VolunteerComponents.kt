@@ -94,74 +94,75 @@ fun OpportunityCard(
                             colors = listOf(
                                 MaterialTheme.colorScheme.primaryContainer,
                                 MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
-                            )
-                        )
-                    )
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+                            ),
+                        ),
+                    ),
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.SpaceBetween,
                 ) {
                     // Top Row: Status Badge and Urgency
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
                     ) {
                         // Availability Status
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = if (opportunity.currentVolunteers < opportunity.requiredVolunteers) 
-                                        Color.Green.copy(alpha = 0.9f) 
-                                    else 
-                                        Color.Red.copy(alpha = 0.9f),
-                                    shape = RoundedCornerShape(12.dp)
+                                    color = if (opportunity.currentVolunteers < opportunity.requiredVolunteers) {
+                                        Color.Green.copy(alpha = 0.9f)
+                                    } else {
+                                        Color.Red.copy(alpha = 0.9f)
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
                                 )
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
                         ) {
                             Text(
                                 text = if (opportunity.currentVolunteers < opportunity.requiredVolunteers) "OPEN" else "FULL",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = Color.White,
                             )
                         }
-                        
+
                         // Karma Points Badge
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .background(
                                     color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = RoundedCornerShape(12.dp),
                                 )
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.EmojiEvents,
                                 contentDescription = "Karma",
                                 modifier = Modifier.size(16.dp),
-                                tint = Color.White
+                                tint = Color.White,
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "${opportunity.karmaPoints}",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = Color.White,
                             )
                         }
                     }
-                    
+
                     // Bottom: Organization and Category
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
+                        verticalAlignment = Alignment.Bottom,
                     ) {
                         Text(
                             text = opportunity.organizationName,
@@ -170,14 +171,14 @@ fun OpportunityCard(
                             color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
-                        
+
                         Spacer(modifier = Modifier.width(8.dp))
-                        
+
                         CategoryChip(
                             category = opportunity.category,
-                            isDarkBackground = true
+                            isDarkBackground = true,
                         )
                     }
                 }
@@ -192,7 +193,7 @@ fun OpportunityCard(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -200,7 +201,7 @@ fun OpportunityCard(
                 // Key Details Grid
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     // Left Column
                     Column(modifier = Modifier.weight(1f)) {
@@ -208,24 +209,24 @@ fun OpportunityCard(
                             icon = Icons.Default.LocationOn,
                             text = opportunity.location,
                         )
-                        
+
                         Spacer(modifier = Modifier.height(4.dp))
-                        
+
                         OpportunityDetailRow(
                             icon = Icons.Default.AccessTime,
                             text = "All Day",
                         )
                     }
-                    
+
                     // Right Column
                     Column(modifier = Modifier.weight(1f)) {
                         OpportunityDetailRow(
                             icon = Icons.Default.DateRange,
                             text = opportunity.date,
                         )
-                        
+
                         Spacer(modifier = Modifier.height(4.dp))
-                        
+
                         OpportunityDetailRow(
                             icon = Icons.Default.Person,
                             text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers}",
@@ -240,7 +241,7 @@ fun OpportunityCard(
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -256,17 +257,17 @@ fun OpportunityCard(
                         Text(
                             text = "Progress",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 2.dp)
+                            modifier = Modifier.padding(top = 2.dp),
                         ) {
                             Text(
                                 text = "${((opportunity.currentVolunteers.toFloat() / opportunity.requiredVolunteers) * 100).toInt()}%",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Box(
@@ -274,14 +275,14 @@ fun OpportunityCard(
                                     .width(60.dp)
                                     .height(4.dp)
                                     .clip(RoundedCornerShape(2.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth(opportunity.currentVolunteers.toFloat() / opportunity.requiredVolunteers)
                                         .height(4.dp)
                                         .clip(RoundedCornerShape(2.dp))
-                                        .background(MaterialTheme.colorScheme.primary)
+                                        .background(MaterialTheme.colorScheme.primary),
                                 )
                             }
                         }
@@ -290,11 +291,11 @@ fun OpportunityCard(
                     Button(
                         onClick = onJoinClick,
                         enabled = opportunity.currentVolunteers < opportunity.requiredVolunteers,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Text(
                             text = if (opportunity.currentVolunteers < opportunity.requiredVolunteers) "Join Event" else "Full",
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                 }
@@ -338,16 +339,16 @@ fun CategoryChip(
             modifier = modifier
                 .background(
                     color = Color.White.copy(alpha = 0.9f),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 )
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
         ) {
             Text(
                 text = category.name.replace("_", " ").lowercase()
                     .split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } },
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
         }
     } else {

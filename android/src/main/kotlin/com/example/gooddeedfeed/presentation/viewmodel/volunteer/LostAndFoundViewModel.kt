@@ -35,7 +35,7 @@ enum class LostFoundType {
 
 @HiltViewModel
 class LostAndFoundViewModel @Inject constructor(
-    private val lostFoundRepository: com.example.gooddeedfeed.domain.repository.LostFoundRepository
+    private val lostFoundRepository: com.example.gooddeedfeed.domain.repository.LostFoundRepository,
 ) : ViewModel() {
 
     companion object {
@@ -51,7 +51,7 @@ class LostAndFoundViewModel @Inject constructor(
     fun loadItems(filterType: LostFoundType? = null) {
         Log.d(TAG, "🔄 ViewModel: Loading lost and found items")
         Log.d(TAG, "📝 ViewModel filter: $filterType")
-        
+
         viewModelScope.launch {
             _uiState.value = UiState.Loading
 
@@ -84,7 +84,7 @@ class LostAndFoundViewModel @Inject constructor(
         Log.d(TAG, "📝 ViewModel data - title: $title, type: $itemType, location: $location")
         Log.d(TAG, "📝 ViewModel data - description: $description, reward: $reward, expiryDays: $expiryDays")
         Log.d(TAG, "📝 ViewModel data - tags: $tags, images: ${images.size} images")
-        
+
         viewModelScope.launch {
             _createItemState.value = UiState.Loading
 
@@ -96,7 +96,7 @@ class LostAndFoundViewModel @Inject constructor(
                     itemType = itemType.toDomain(),
                     reward = reward,
                     tags = tags,
-                    expiryDays = expiryDays
+                    expiryDays = expiryDays,
                 )
 
                 result.fold(
@@ -109,7 +109,7 @@ class LostAndFoundViewModel @Inject constructor(
                     onFailure = { error ->
                         Log.e(TAG, "❌ ViewModel: Failed to create item", error)
                         _createItemState.value = UiState.Error(error.message ?: "Failed to create item")
-                    }
+                    },
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "❌ ViewModel: Exception during create item", e)

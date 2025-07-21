@@ -27,7 +27,7 @@ class LostFoundRepositoryImpl @Inject constructor(
     override suspend fun getLostFoundItems(
         filterType: DomainLostFoundType?,
         limit: Int,
-        offset: Int
+        offset: Int,
     ): Flow<List<DomainLostFoundItem>> = flow {
         Log.d(TAG, "🔄 Repository: Getting lost and found items")
         Log.d(TAG, "📝 Repository params - filterType: $filterType, limit: $limit, offset: $offset")
@@ -35,7 +35,7 @@ class LostFoundRepositoryImpl @Inject constructor(
             val response = apiService.getLostFoundItems(
                 itemType = filterType?.toApiString(),
                 limit = limit,
-                offset = offset
+                offset = offset,
             )
             Log.d(TAG, "✅ Repository: API call successful, got ${response.items.size} items, total: ${response.totalCount}")
             val domainItems = response.items.map { it.toDomain() }
@@ -63,13 +63,13 @@ class LostFoundRepositoryImpl @Inject constructor(
         itemType: DomainLostFoundType,
         reward: String?,
         tags: List<String>,
-        expiryDays: Int
+        expiryDays: Int,
     ): Result<DomainLostFoundItem> {
         Log.d(TAG, "🚀 Repository: Creating lost and found item")
         Log.d(TAG, "📝 Repository data - title: $title, type: $itemType, location: $location")
         Log.d(TAG, "📝 Repository data - description: $description, reward: $reward, expiryDays: $expiryDays")
         Log.d(TAG, "📝 Repository data - tags: $tags")
-        
+
         return try {
             val createDto = CreateLostFoundItemDto(
                 title = title,
@@ -78,14 +78,14 @@ class LostFoundRepositoryImpl @Inject constructor(
                 itemType = itemType.toApiString(),
                 reward = reward,
                 tags = tags,
-                expiryDays = expiryDays
+                expiryDays = expiryDays,
             )
-            
+
             Log.d(TAG, "🔄 Repository: Created DTO with itemType: ${createDto.itemType}")
 
             val itemDto = apiService.createLostFoundItem(createDto)
             Log.d(TAG, "✅ Repository: API call successful, created item with ID: ${itemDto.id}")
-            
+
             val domainItem = itemDto.toDomain()
             Log.d(TAG, "✅ Repository: Converted to domain item, returning success")
             Result.success(domainItem)
@@ -103,7 +103,7 @@ class LostFoundRepositoryImpl @Inject constructor(
         location: String?,
         reward: String?,
         tags: List<String>?,
-        isResolved: Boolean?
+        isResolved: Boolean?,
     ): Result<DomainLostFoundItem> {
         return try {
             val updateDto = UpdateLostFoundItemDto(
@@ -112,7 +112,7 @@ class LostFoundRepositoryImpl @Inject constructor(
                 location = location,
                 reward = reward,
                 tags = tags,
-                isResolved = isResolved
+                isResolved = isResolved,
             )
 
             val itemDto = apiService.updateLostFoundItem(itemId.toInt(), updateDto)

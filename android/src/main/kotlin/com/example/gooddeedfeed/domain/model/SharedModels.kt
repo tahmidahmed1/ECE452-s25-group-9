@@ -67,4 +67,3 @@ data class SocialMediaLink(
     val platform: SocialMediaPlatform,
     val url: String,
 )
-

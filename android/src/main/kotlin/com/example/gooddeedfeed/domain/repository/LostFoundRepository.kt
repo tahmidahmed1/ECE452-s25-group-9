@@ -9,7 +9,7 @@ interface LostFoundRepository {
     suspend fun getLostFoundItems(
         filterType: DomainLostFoundType? = null,
         limit: Int = 50,
-        offset: Int = 0
+        offset: Int = 0,
     ): Flow<List<DomainLostFoundItem>>
 
     suspend fun getLostFoundItem(itemId: String): Result<DomainLostFoundItem>
@@ -21,7 +21,7 @@ interface LostFoundRepository {
         itemType: DomainLostFoundType,
         reward: String?,
         tags: List<String>,
-        expiryDays: Int
+        expiryDays: Int,
     ): Result<DomainLostFoundItem>
 
     suspend fun updateLostFoundItem(
@@ -31,7 +31,7 @@ interface LostFoundRepository {
         location: String? = null,
         reward: String? = null,
         tags: List<String>? = null,
-        isResolved: Boolean? = null
+        isResolved: Boolean? = null,
     ): Result<DomainLostFoundItem>
 
     suspend fun deleteLostFoundItem(itemId: String): Result<Unit>

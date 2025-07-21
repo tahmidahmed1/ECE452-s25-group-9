@@ -114,7 +114,7 @@ fun HomeScreen(
                 userTypeDisplay = homeData.userTypeDisplay,
                 onActionClick = { action -> viewModel.handleAction(action) },
                 onLogout = onLogout,
-                homeViewModel = viewModel // Pass viewModel here
+                homeViewModel = viewModel, // Pass viewModel here
             )
         }
         is UiState.Error -> {
@@ -165,7 +165,7 @@ private fun HomeContent(
     userTypeDisplay: UserTypeDisplay,
     onActionClick: (HomeAction) -> Unit,
     onLogout: () -> Unit,
-    homeViewModel: HomeViewModel // Add this parameter
+    homeViewModel: HomeViewModel, // Add this parameter
 ) {
     ScreenContainer {
         Column {
@@ -248,14 +248,14 @@ private fun getIconForAction(iconName: String) = when (iconName) {
 @Composable
 private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
     data class EventItem(val title: String, val time: String)
-    
+
     val joinedEventsState by homeViewModel.joinedEventsState.collectAsStateWithLifecycle()
-    
+
     // Load joined events when the component is created
     LaunchedEffect(Unit) {
         homeViewModel.loadJoinedEvents()
     }
-    
+
     val eventsMap = remember(joinedEventsState) {
         val data = (joinedEventsState as? UiState.Success)?.data
         if (data != null) {
@@ -271,7 +271,7 @@ private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
                     events.map { event ->
                         EventItem(
                             title = event.title,
-                            time = event.startTime ?: "All Day"
+                            time = event.startTime ?: "All Day",
                         )
                     }
                 }

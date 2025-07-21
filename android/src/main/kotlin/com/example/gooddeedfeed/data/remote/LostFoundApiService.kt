@@ -47,14 +47,14 @@ class LostFoundApiService @Inject constructor(
     suspend fun getLostFoundItems(
         itemType: String? = null,
         limit: Int = 50,
-        offset: Int = 0
+        offset: Int = 0,
     ): LostFoundItemsResponseDto {
         Log.d(TAG, "🔄 Getting lost and found items")
         Log.d(TAG, "📝 Parameters - itemType: $itemType, limit: $limit, offset: $offset")
-        
+
         val url = buildUrl("lost-found")
         Log.d(TAG, "🌐 Request URL: $url")
-        
+
         return try {
             val response = client.get(url) {
                 parameter("item_type", itemType)
@@ -65,7 +65,7 @@ class LostFoundApiService @Inject constructor(
                     Log.d(TAG, "🔐 Added Authorization header with session")
                 }
             }.body<LostFoundItemsResponseDto>()
-            
+
             Log.d(TAG, "✅ Successfully retrieved ${response.items.size} items, total: ${response.totalCount}")
             response
         } catch (e: Exception) {
@@ -87,10 +87,10 @@ class LostFoundApiService @Inject constructor(
         Log.d(TAG, "📝 Item data - title: ${item.title}, type: ${item.itemType}, location: ${item.location}")
         Log.d(TAG, "📝 Item data - description: ${item.description}, reward: ${item.reward}, expiryDays: ${item.expiryDays}")
         Log.d(TAG, "📝 Item data - tags: ${item.tags}")
-        
+
         val url = buildUrl("lost-found")
         Log.d(TAG, "🌐 POST URL: $url")
-        
+
         return try {
             val response = client.post(url) {
                 contentType(ContentType.Application.Json)
@@ -100,7 +100,7 @@ class LostFoundApiService @Inject constructor(
                     Log.d(TAG, "🔐 Added Authorization header with session")
                 } ?: Log.w(TAG, "⚠️ No session ID found - request might fail")
             }.body<LostFoundItemDto>()
-            
+
             Log.d(TAG, "✅ Successfully created lost and found item with ID: ${response.id}")
             Log.d(TAG, "📋 Created item - title: ${response.title}, isActive: ${response.isActive}")
             response
@@ -134,12 +134,16 @@ class LostFoundApiService @Inject constructor(
             setBody(
                 MultiPartFormDataContent(
                     formData {
-                        append("file", imageFile.readBytes(), Headers.build {
-                            append(HttpHeaders.ContentType, "image/*")
-                            append(HttpHeaders.ContentDisposition, "filename=\"${imageFile.name}\"")
-                        })
-                    }
-                )
+                        append(
+                            "file",
+                            imageFile.readBytes(),
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "image/*")
+                                append(HttpHeaders.ContentDisposition, "filename=\"${imageFile.name}\"")
+                            },
+                        )
+                    },
+                ),
             )
             getSessionIdFromDataStore()?.let { sessionId ->
                 header("Authorization", "Bearer $sessionId")

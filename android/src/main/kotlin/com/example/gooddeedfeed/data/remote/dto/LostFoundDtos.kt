@@ -20,13 +20,13 @@ data class LostFoundItemDto(
     @SerialName("is_active") val isActive: Boolean,
     @SerialName("contact_name") val contactName: String,
     @SerialName("images") val images: List<String>,
-    @SerialName("days_remaining") val daysRemaining: Int?
+    @SerialName("days_remaining") val daysRemaining: Int?,
 )
 
 @Serializable
 data class LostFoundItemsResponseDto(
     @SerialName("items") val items: List<LostFoundItemDto>,
-    @SerialName("total_count") val totalCount: Int
+    @SerialName("total_count") val totalCount: Int,
 )
 
 @Serializable
@@ -37,7 +37,7 @@ data class CreateLostFoundItemDto(
     @SerialName("item_type") val itemType: String,
     @SerialName("reward") val reward: String?,
     @SerialName("tags") val tags: List<String>?,
-    @SerialName("expiry_days") val expiryDays: Int
+    @SerialName("expiry_days") val expiryDays: Int,
 )
 
 @Serializable
@@ -47,12 +47,12 @@ data class UpdateLostFoundItemDto(
     @SerialName("location") val location: String?,
     @SerialName("reward") val reward: String?,
     @SerialName("tags") val tags: List<String>?,
-    @SerialName("is_resolved") val isResolved: Boolean?
+    @SerialName("is_resolved") val isResolved: Boolean?,
 )
 
 @Serializable
 data class LostFoundImageUploadResponseDto(
     @SerialName("message") val message: String,
     @SerialName("image_url") val imageUrl: String,
-    @SerialName("image_id") val imageId: Int
+    @SerialName("image_id") val imageId: Int,
 )
