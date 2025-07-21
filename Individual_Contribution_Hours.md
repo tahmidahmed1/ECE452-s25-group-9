@@ -1,0 +1,21 @@
+## Individual Contribution Hours Table
+
+| Task ID | Task Description                     | Start Date | End Date   | Tahmid Ahmed (hours) | Robert Bae (hours) | Michael Davey (hours) | Tameem Hossain (hours) | Sagar Patel (hours) | Christen Wong (hours) |
+|---------|--------------------------------------|------------|------------|-----------------------|---------------------|------------------------|-------------------------|----------------------|-------------------------|
+| 8       | Add Firebase                         | 2025-07-08 | 2025-07-18 | 7                     | 5                   | 7                      | 9                       | 9                   | 5                       |
+| 7       | Fix GCP API Issue                    | 2025-06-22 | 2025-06-27 | 7                     | 5                   | 7                      | 9                       | 9                   | 5                       |
+| 6       | Clean Codebase                       | 2025-06-16 | 2025-06-20 | 7                     | 5                   | 7                      | 7                       | 9                   | 5                       |
+| 5       | Fix Logging and Toasts              | 2025-06-15 | 2025-06-20 | 7                     | 5                   | 7                      | 7                       | 9                   | 5                       |
+| 4       | Implement Add Event for Organizers | 2025-06-15 | 2025-07-18 | 7                     | 5                   | 7                      | 7                       | 9                   | 5                       |
+| 3       | Integrate Map                       | 2025-06-15 | 2025-06-27 | 7                     | 5                   | 7                      | 7                       | 9                   | 5                       |
+| 2       | Fix App Theming                     | 2025-06-12 | 2025-07-18 | 7                     | 5                   | 7                      | 7                       | 9                   | 5                       |
+| 1       | Implement Tab Nav Bar               | 2025-06-12 | 2025-06-16 | 7                     | 5                   | 7                      | 7                       | 9                   | 5                       |
+| D1      | Proposal Document                   | 2025-05-14 | 2025-06-03 | 9                     | 5                   | 7                      | 7                       | 7                   | 5                       |
+| D2      | Buddy team's evaluation             | 2025-06-04 | 2025-06-14 | 9                     | 5                   | 7                      | 7                       | 7                   | 5                       |
+| D3      | Prototype Demo                      | 2025-06-15 | 2025-06-25 | 9                     | 5                   | 7                      | 7                       | 7                   | 5                       |
+| D3      | Prototype Document                  | 2025-06-26 | 2025-06-29 | 9                     | 5                   | 7                      | 7                       | 7                   | 5                       |
+| D4      | Architecture Style Examples         | 2025-06-30 | 2025-07-11 | 7                     | 5                   | 7                      | 7                       | 9                   | 5                       |
+| D5      | Design Pattern Examples             | 2025-07-12 | 2025-07-18 | 7                     | 5                   | 7                      | 7                       | 9                   | 5                       |
+| D6      | Final Presentation                  | 2025-07-19 | 2025-07-28 | 9                     | 5                   | 7                      | 7                       | 7                   | 5                       |
+| D6      | Arch + Design Document             | 2025-07-29 | 2025-07-31 | 9                     | 5                   | 7                      | 7                       | 7                   | 5                       |
+| D7      | Final Status Report                 | 2025-08-01 | 2025-08-03 | 9                     | 5                   | 7                      | 7                       | 7                   | 5                       |
