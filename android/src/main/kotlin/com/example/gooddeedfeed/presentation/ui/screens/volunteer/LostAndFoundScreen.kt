@@ -1,5 +1,8 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,79 +16,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import android.net.Uri
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostAndFoundViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundItem
+import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType
 
-data class LostFoundItem(
-    val id: String,
-    val title: String,
-    val description: String,
-    val location: String,
-    val date: String,
-    val type: LostFoundType,
-    val images: List<String>,
-    val contactName: String,
-    val isResolved: Boolean = false,
-)
-
-enum class LostFoundType {
-    LOST, FOUND
-}
-
-private val mockItems = listOf(
-    LostFoundItem(
-        id = "1",
-        title = "Black iPhone 14",
-        description = "Lost my black iPhone 14 near the beach cleanup event. Has a blue case with stickers.",
-        location = "Santa Monica Beach",
-        date = "2 days ago",
-        type = LostFoundType.LOST,
-        images = listOf(
-            "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=60",
-            "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=400&q=60",
-        ),
-        contactName = "Sarah Chen",
-    ),
-    LostFoundItem(
-        id = "2",
-        title = "Blue Water Bottle",
-        description = "Found this blue water bottle at the community garden. Has 'Mike' written on it.",
-        location = "Community Garden",
-        date = "1 day ago",
-        type = LostFoundType.FOUND,
-        images = listOf(
-            "https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=400&q=60",
-        ),
-        contactName = "Alex Johnson",
-    ),
-    LostFoundItem(
-        id = "3",
-        title = "Red Backpack",
-        description = "Lost my red hiking backpack during the park cleanup. Contains my volunteer badge and some personal items.",
-        location = "Central Park",
-        date = "3 days ago",
-        type = LostFoundType.LOST,
-        images = listOf(
-            "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=400&q=60",
-        ),
-        contactName = "Emma Davis",
-    ),
-    LostFoundItem(
-        id = "4",
-        title = "Silver Watch",
-        description = "Found this silver watch near the food bank entrance. Looks like it might be expensive.",
-        location = "Food Bank",
-        date = "5 days ago",
-        type = LostFoundType.FOUND,
-        images = listOf(
-            "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=400&q=60",
-        ),
-        contactName = "Jordan Kim",
-    ),
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,10 +39,23 @@ fun LostAndFoundScreen(
     user: DomainUser,
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    viewModel: LostAndFoundViewModel = hiltViewModel(),
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val createItemState by viewModel.createItemState.collectAsStateWithLifecycle()
     var selectedItem by remember { mutableStateOf<LostFoundItem?>(null) }
     var showCreateForm by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf<LostFoundType?>(null) }
+
+    // Load items when screen opens
+    LaunchedEffect(Unit) {
+        viewModel.loadItems()
+    }
+
+    // Load items when filter changes
+    LaunchedEffect(selectedFilter) {
+        viewModel.loadItems(selectedFilter)
+    }
 
     if (selectedItem != null) {
         LostFoundDetailScreen(
@@ -146,8 +105,15 @@ fun LostAndFoundScreen(
 
             FloatingActionButton(
                 onClick = { showCreateForm = true },
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier
+                    .size(48.dp)
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(12.dp)
+                    ),
                 containerColor = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Report Item")
             }
@@ -180,21 +146,79 @@ fun LostAndFoundScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Items list
-        val filteredItems = if (selectedFilter == null) {
-            mockItems
-        } else {
-            mockItems.filter { it.type == selectedFilter }
-        }
-
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 16.dp),
-        ) {
-            items(filteredItems) { item ->
-                LostFoundItemCard(
-                    item = item,
-                    onClick = { selectedItem = item },
-                )
+        when (val currentState = uiState) {
+            is UiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            is UiState.Error -> {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = currentState.message,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = { viewModel.loadItems(selectedFilter) },
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Text("Retry")
+                    }
+                }
+            }
+            is UiState.Success -> {
+                val items = currentState.data
+                if (items.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "No items",
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No lost or found items yet",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Be the first to report a lost or found item!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                    ) {
+                        items(items) { item ->
+                            LostFoundItemCard(
+                                item = item,
+                                onClick = { selectedItem = item },
+                            )
+                        }
+                    }
+                }
+            }
+            else -> {
+                // Idle state
             }
         }
     }
@@ -400,6 +424,67 @@ private fun LostFoundDetailScreen(
             }
         }
 
+        // Reward section
+        item.reward?.let { reward ->
+            if (reward.isNotBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Reward",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = reward,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+
+        // Tags section
+        if (item.tags.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Tags",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(item.tags) { tag ->
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Text(
+                            text = tag,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        // Expiry information
+        item.daysRemaining?.let { days ->
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                color = if (days <= 3) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Text(
+                    text = if (days > 0) "$days days remaining" else "Expired",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (days <= 3) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+            }
+        }
+
         if (item.images.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
@@ -428,7 +513,14 @@ private fun LostFoundDetailScreen(
 
         Button(
             onClick = { /* Mock contact */ },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            shape = RoundedCornerShape(12.dp),
         ) {
             Icon(Icons.Default.Phone, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -484,51 +576,175 @@ private fun CreateLostFoundScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Validation state
+        val titleError = title.isBlank()
+        val descriptionError = description.isBlank()
+        val locationError = location.isBlank()
+
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Item Title") },
+            label = { Text("Item Title *") },
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            isError = titleError,
+            supportingText = if (titleError) { { Text("Title is required", color = MaterialTheme.colorScheme.error) } } else null,
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description") },
+            label = { Text("Description *") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3,
+            maxLines = 5,
+            shape = RoundedCornerShape(12.dp),
+            isError = descriptionError,
+            supportingText = if (descriptionError) { { Text("Description is required", color = MaterialTheme.colorScheme.error) } } else null,
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = location,
             onValueChange = { location = it },
-            label = { Text("Location") },
+            label = { Text("Location *") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            isError = locationError,
+            supportingText = if (locationError) { { Text("Location is required", color = MaterialTheme.colorScheme.error) } } else null,
+        )
+
+        var reward by remember { mutableStateOf("") }
+        OutlinedTextField(
+            value = reward,
+            onValueChange = { reward = it },
+            label = { Text("Reward (Optional)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+        )
+
+        var tags by remember { mutableStateOf("") }
+        OutlinedTextField(
+            value = tags,
+            onValueChange = { tags = it },
+            label = { Text("Tags (e.g., technology, personal, jewelry)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Expiry slider
+        var expiryDays by remember { mutableStateOf(7) }
+        Text(
+            text = "Expiry: $expiryDays days",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Slider(
+            value = expiryDays.toFloat(),
+            onValueChange = { expiryDays = it.toInt() },
+            valueRange = 1f..30f,
+            steps = 29,
             modifier = Modifier.fillMaxWidth(),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedButton(
-            onClick = { /* Mock image picker */ },
-            modifier = Modifier.fillMaxWidth(),
+        var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
+        
+        // Gallery launcher for multiple images
+        val galleryLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetMultipleContents()
+        ) { uris: List<Uri> ->
+            val newImages = (selectedImages + uris).take(10)
+            selectedImages = newImages
+        }
+        
+        Button(
+            onClick = { galleryLauncher.launch("image/*") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.primary
+            ),
+            shape = RoundedCornerShape(12.dp),
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add Images")
+            Text("Add Images (${selectedImages.size}/10)")
+        }
+
+        // Show selected images
+        if (selectedImages.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(selectedImages) { imageUri ->
+                    Box {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Selected image",
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+                        IconButton(
+                            onClick = { selectedImages = selectedImages - imageUri },
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Remove image",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Validation errors
+        val hasValidation = title.isBlank() || description.isBlank() || location.isBlank() || selectedImages.isEmpty()
+        if (hasValidation) {
+            Text(
+                text = when {
+                    title.isBlank() -> "Title is required"
+                    description.isBlank() -> "Description is required"
+                    location.isBlank() -> "Location is required"
+                    selectedImages.isEmpty() -> "At least one image is required"
+                    else -> ""
+                },
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
         Button(
             onClick = onSubmit,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = title.isNotBlank() && description.isNotBlank() && location.isNotBlank(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            enabled = !hasValidation,
+            shape = RoundedCornerShape(12.dp),
         ) {
             Text("Submit Report")
         }
+        
+        Spacer(modifier = Modifier.height(24.dp))
     }
 } 

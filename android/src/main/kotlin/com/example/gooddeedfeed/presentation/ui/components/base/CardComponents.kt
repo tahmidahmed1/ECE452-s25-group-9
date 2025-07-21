@@ -157,6 +157,7 @@ fun ActionCard(
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showBorder: Boolean = false,
 ) {
     Card(
         onClick = onClick,
@@ -167,6 +168,15 @@ fun ActionCard(
                 elevation = Elevation.sm,
                 shape = RoundedCornerShape(BorderRadius.lg),
                 spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            )
+            .then(
+                if (showBorder) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(BorderRadius.lg)
+                    )
+                } else Modifier
             ),
         shape = RoundedCornerShape(BorderRadius.lg),
         colors = CardDefaults.cardColors(

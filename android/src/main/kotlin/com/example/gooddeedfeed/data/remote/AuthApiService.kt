@@ -13,7 +13,7 @@ import com.example.gooddeedfeed.data.remote.dto.OnboardingStepTwoOrganizerDto
 import com.example.gooddeedfeed.data.remote.dto.OrganizationImagesResponseDto
 import com.example.gooddeedfeed.data.remote.dto.ProfilePictureUploadResponse
 import com.example.gooddeedfeed.data.remote.dto.SignUpRequestDto
-import com.example.gooddeedfeed.data.remote.dto.TokenResponseDto
+import com.example.gooddeedfeed.data.remote.dto.SessionResponseDto
 import com.example.gooddeedfeed.data.remote.dto.UserDto
 import com.example.gooddeedfeed.data.remote.dto.UserType
 import com.example.gooddeedfeed.data.remote.dto.UserUpdateDto
@@ -47,7 +47,7 @@ class AuthApiService @Inject constructor(
 
     companion object {
         private const val TAG = "AuthApiService"
-        private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
+        private val SESSION_ID_KEY = stringPreferencesKey("session_id")
     }
 
     // Override the base URLs to use the correct server port (9000)
@@ -59,13 +59,13 @@ class AuthApiService @Inject constructor(
         "http://127.0.0.1:9000/api", // Loopback
     )
 
-    private suspend fun getTokenFromDataStore(): String? {
+    private suspend fun getSessionIdFromDataStore(): String? {
         return try {
-            val token = dataStore.data.first()[JWT_TOKEN_KEY]
-            Log.d(TAG, "🔍 Token from DataStore: ${if (token != null) "Found (${token.take(20)}...)" else "Not found"}")
-            token
+            val sessionId = dataStore.data.first()[SESSION_ID_KEY]
+            Log.d(TAG, "🔍 Session ID from DataStore: ${if (sessionId != null) "Found ($sessionId)" else "Not found"}")
+            sessionId
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to get token from DataStore", e)
+            Log.e(TAG, "❌ Failed to get session ID from DataStore", e)
             null
         }
     }
@@ -103,38 +103,13 @@ class AuthApiService @Inject constructor(
                 }
             }
 
-            val tokenResponse: TokenResponseDto = response.body()
-            Log.d(TAG, "✅ SignUp successful - Token type: ${tokenResponse.token_type}")
+            val authResponse: AuthResponseDto = response.body()
+            Log.d(TAG, "✅ SignUp successful - Session type: ${authResponse.session_type}")
+            Log.d(TAG, "✅ SignUp successful - User ID: ${authResponse.user.id}")
+            Log.d(TAG, "✅ SignUp successful - Username: ${authResponse.user.username}")
+            Log.d(TAG, "✅ SignUp successful - Onboarding completed: ${authResponse.user.onboarding_completed}")
 
-            // Now get user info
-            Log.d(TAG, "📤 Getting user info after sign up...")
-            val userResponse = withFallbackUrls { baseUrl ->
-                Log.d(TAG, "🌐 Trying getCurrentUser URL: $baseUrl/users/me")
-                client.get("$baseUrl/users/me") {
-                    header("Authorization", "Bearer ${tokenResponse.access_token}")
-                }
-            }
-
-            Log.d(TAG, "📥 User info response status: ${userResponse.status}")
-
-            // Check for success status before trying to parse user response
-            if (!userResponse.status.isSuccess()) {
-                val errorBody = userResponse.bodyAsText()
-                Log.e(TAG, "❌ Get user info failed with status ${userResponse.status}")
-                Log.e(TAG, "❌ Error response body: $errorBody")
-                throw Exception("Failed to get user info: ${userResponse.status.description}")
-            }
-
-            val userDto: UserDto = userResponse.body()
-            Log.d(TAG, "✅ User info retrieved - User ID: ${userDto.id}")
-            Log.d(TAG, "✅ User info retrieved - Username: ${userDto.username}")
-
-            // Return combined response
-            AuthResponseDto(
-                access_token = tokenResponse.access_token,
-                token_type = tokenResponse.token_type,
-                user = userDto,
-            )
+            authResponse
         } catch (e: Exception) {
             Log.e(TAG, "❌ SignUp failed with exception", e)
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
@@ -150,8 +125,8 @@ class AuthApiService @Inject constructor(
         return try {
             Log.d(TAG, "📤 Sending signIn request with URL fallback...")
             val response = withFallbackUrls { baseUrl ->
-                Log.d(TAG, "🌐 Trying signIn URL: $baseUrl/token")
-                client.post("$baseUrl/token") {
+                Log.d(TAG, "🌐 Trying signIn URL: $baseUrl/login")
+                client.post("$baseUrl/login") {
                     contentType(ContentType.Application.FormUrlEncoded)
                     setBody("username=$username&password=$password")
                 }
@@ -174,38 +149,13 @@ class AuthApiService @Inject constructor(
                 }
             }
 
-            val tokenResponse: TokenResponseDto = response.body()
-            Log.d(TAG, "✅ SignIn successful - Token type: ${tokenResponse.token_type}")
+            val authResponse: AuthResponseDto = response.body()
+            Log.d(TAG, "✅ SignIn successful - Session type: ${authResponse.session_type}")
+            Log.d(TAG, "✅ SignIn successful - User ID: ${authResponse.user.id}")
+            Log.d(TAG, "✅ SignIn successful - Username: ${authResponse.user.username}")
+            Log.d(TAG, "✅ SignIn successful - Onboarding completed: ${authResponse.user.onboarding_completed}")
 
-            // Now get user info
-            Log.d(TAG, "📤 Getting user info after sign in...")
-            val userResponse = withFallbackUrls { baseUrl ->
-                Log.d(TAG, "🌐 Trying getCurrentUser URL: $baseUrl/users/me")
-                client.get("$baseUrl/users/me") {
-                    header("Authorization", "Bearer ${tokenResponse.access_token}")
-                }
-            }
-
-            Log.d(TAG, "📥 User info response status: ${userResponse.status}")
-
-            // Check for success status before trying to parse user response
-            if (!userResponse.status.isSuccess()) {
-                val errorBody = userResponse.bodyAsText()
-                Log.e(TAG, "❌ Get user info failed with status ${userResponse.status}")
-                Log.e(TAG, "❌ Error response body: $errorBody")
-                throw Exception("Failed to get user info: ${userResponse.status.description}")
-            }
-
-            val userDto: UserDto = userResponse.body()
-            Log.d(TAG, "✅ User info retrieved - User ID: ${userDto.id}")
-            Log.d(TAG, "✅ User info retrieved - Username: ${userDto.username}")
-
-            // Return combined response
-            AuthResponseDto(
-                access_token = tokenResponse.access_token,
-                token_type = tokenResponse.token_type,
-                user = userDto,
-            )
+            authResponse
         } catch (e: Exception) {
             Log.e(TAG, "❌ SignIn failed with exception", e)
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
@@ -217,19 +167,19 @@ class AuthApiService @Inject constructor(
     suspend fun getCurrentUser(): UserDto {
         Log.d(TAG, "🚀 Starting getCurrentUser request")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore")
-            throw Exception("No authentication token found")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore")
+            throw Exception("No authentication session found")
         }
 
         return try {
-            Log.d(TAG, "📤 Sending getCurrentUser request with manual Authorization header...")
+            Log.d(TAG, "📤 Sending getCurrentUser request with session authorization...")
             val response = withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying getCurrentUser URL: $baseUrl/users/me")
                 client.get("$baseUrl/users/me") {
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
 
@@ -237,7 +187,7 @@ class AuthApiService @Inject constructor(
             Log.d(TAG, "📥 getCurrentUser response headers: ${response.headers}")
 
             if (response.status.value == 401) {
-                Log.e(TAG, "❌ getCurrentUser received 401 Unauthorized - token not sent or invalid")
+                Log.e(TAG, "❌ getCurrentUser received 401 Unauthorized - session not sent or invalid")
                 throw Exception("Authentication failed: ${response.status}")
             }
 
@@ -258,10 +208,10 @@ class AuthApiService @Inject constructor(
         Log.d(TAG, "🚀 Starting setUserType request")
         Log.d(TAG, "📝 UserType: $userType")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for setUserType")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for setUserType")
             return false
         }
 
@@ -272,7 +222,7 @@ class AuthApiService @Inject constructor(
                 Log.d(TAG, "🌐 Trying setUserType URL: $baseUrl/onboarding/step-one")
                 client.post("$baseUrl/onboarding/step-one") {
                     contentType(ContentType.Application.Json)
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                     setBody(request)
                 }
             }
@@ -289,17 +239,17 @@ class AuthApiService @Inject constructor(
     suspend fun uploadProfilePicture(file: File): ProfilePictureUploadResponse {
         Log.d(TAG, "🚀 Starting uploadProfilePicture request")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for uploadProfilePicture")
-            throw Exception("No authentication token found")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for uploadProfilePicture")
+            throw Exception("No authentication session found")
         }
 
         return withFallbackUrls { baseUrl ->
             Log.d(TAG, "🌐 Trying uploadProfilePicture URL: $baseUrl/upload-profile-picture")
             client.post("$baseUrl/upload-profile-picture") {
-                header("Authorization", "Bearer $token")
+                header("Authorization", "Bearer $sessionId")
                 setBody(
                     MultiPartFormDataContent(
                         formData {
@@ -321,18 +271,18 @@ class AuthApiService @Inject constructor(
     suspend fun removeProfilePicture(): Boolean {
         Log.d(TAG, "🚀 Starting removeProfilePicture request")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for removeProfilePicture")
-            throw Exception("No authentication token found")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for removeProfilePicture")
+            throw Exception("No authentication session found")
         }
 
         return try {
             withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying removeProfilePicture URL: $baseUrl/remove-profile-picture")
                 client.post("$baseUrl/remove-profile-picture") {
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                     contentType(ContentType.Application.Json)
                 }
             }
@@ -349,17 +299,17 @@ class AuthApiService @Inject constructor(
     suspend fun uploadBannerImage(file: File): BannerUploadResponse {
         Log.d(TAG, "🚀 Starting uploadBannerImage request")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for uploadBannerImage")
-            throw Exception("No authentication token found")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for uploadBannerImage")
+            throw Exception("No authentication session found")
         }
 
         return withFallbackUrls { baseUrl ->
             Log.d(TAG, "🌐 Trying uploadBannerImage URL: $baseUrl/upload-profile-banner")
             client.post("$baseUrl/upload-profile-banner") {
-                header("Authorization", "Bearer $token")
+                header("Authorization", "Bearer $sessionId")
                 setBody(
                     MultiPartFormDataContent(
                         formData {
@@ -381,17 +331,17 @@ class AuthApiService @Inject constructor(
     suspend fun uploadOrganizationImages(files: List<File>): OrganizationImagesResponseDto {
         Log.d(TAG, "🚀 Starting uploadOrganizationImages request")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for uploadOrganizationImages")
-            throw Exception("No authentication token found")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for uploadOrganizationImages")
+            throw Exception("No authentication session found")
         }
 
         return withFallbackUrls { baseUrl ->
             Log.d(TAG, "🌐 Trying uploadOrganizationImages URL: $baseUrl/upload-organization-images")
             client.post("$baseUrl/upload-organization-images") {
-                header("Authorization", "Bearer $token")
+                header("Authorization", "Bearer $sessionId")
                 setBody(
                     MultiPartFormDataContent(
                         formData {
@@ -419,10 +369,10 @@ class AuthApiService @Inject constructor(
         Log.d(TAG, "🚀 Starting completeOrganizerOnboarding")
         Log.d(TAG, "📝 Profile: $profile")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for completeOrganizerOnboarding")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for completeOrganizerOnboarding")
             return false
         }
 
@@ -441,7 +391,7 @@ class AuthApiService @Inject constructor(
                 Log.d(TAG, "🌐 Trying URL: $baseUrl/complete-organizer-onboarding")
                 client.post("$baseUrl/complete-organizer-onboarding") {
                     contentType(ContentType.Application.Json)
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                     setBody(
                         OnboardingStepTwoOrganizerDto(
                             full_name = profile.fullName,
@@ -472,10 +422,10 @@ class AuthApiService @Inject constructor(
         Log.d(TAG, "🚀 Starting completeVolunteerOnboarding")
         Log.d(TAG, "📝 Profile: $profile")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for completeVolunteerOnboarding")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for completeVolunteerOnboarding")
             return false
         }
 
@@ -496,7 +446,7 @@ class AuthApiService @Inject constructor(
                 Log.d(TAG, "🌐 Trying URL: $endpoint")
                 client.post(endpoint) {
                     contentType(ContentType.Application.Json)
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                     setBody(
                         OnboardingStepThreeVolunteerDto(
                             full_name = profile.fullName,
@@ -527,11 +477,11 @@ class AuthApiService @Inject constructor(
     suspend fun updateProfile(updates: UserUpdateDto): UserDto {
         Log.d(TAG, "🚀 Starting updateProfile request")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for updateProfile")
-            throw Exception("No authentication token found")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for updateProfile")
+            throw Exception("No authentication session found")
         }
 
         val response = withFallbackUrls { baseUrl ->
@@ -539,7 +489,7 @@ class AuthApiService @Inject constructor(
             Log.d(TAG, "🌐 Trying updateProfile URL: $endpoint")
             client.put(endpoint) {
                 contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer $token")
+                header("Authorization", "Bearer $sessionId")
                 setBody(updates)
             }
         }
@@ -562,10 +512,10 @@ class AuthApiService @Inject constructor(
     suspend fun signOut(): Boolean {
         Log.d(TAG, "🚀 Starting signOut request")
 
-        // Get token for authenticated logout call
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.w(TAG, "⚠️ No token found for logout - proceeding with client-side logout only")
+        // Get session ID for authenticated logout call
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.w(TAG, "⚠️ No session ID found for logout - proceeding with client-side logout only")
             return true
         }
 
@@ -574,7 +524,7 @@ class AuthApiService @Inject constructor(
             val response = withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying logout URL: $baseUrl/logout")
                 client.post("$baseUrl/logout") {
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                     contentType(ContentType.Application.Json)
                 }
             }
@@ -599,11 +549,11 @@ class AuthApiService @Inject constructor(
     suspend fun increaseKarmaPointsDevOnly(): UserDto {
         Log.d(TAG, "🚀 Starting increaseKarmaPointsDevOnly request")
 
-        // Manually get token from DataStore since Auth interceptor is not working
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for increaseKarmaPointsDevOnly")
-            throw Exception("No authentication token found")
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for increaseKarmaPointsDevOnly")
+            throw Exception("No authentication session found")
         }
 
         return try {
@@ -611,7 +561,7 @@ class AuthApiService @Inject constructor(
             val response = withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying karma increase URL: $baseUrl/dev/increase-karma")
                 client.post("$baseUrl/dev/increase-karma") {
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                     contentType(ContentType.Application.Json)
                 }
             }

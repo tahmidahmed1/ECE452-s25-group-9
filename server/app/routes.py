@@ -1,19 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, WebSocket, WebSocketDisconnect, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
+from sqlalchemy import text
 from fastapi.responses import JSONResponse
 from sqlalchemy import or_
 import math
 from sqlalchemy import func
 
 from .database import get_db
-from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, InAppNotification
+from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, InAppNotification, LostFoundItem, LostFoundImage
 from sqlalchemy.orm import selectinload
+from . import schemas
 from .schemas import (
-    UserCreate, User as UserSchema, Token, OnboardingStepOne, OnboardingStepTwoOrganizer,
+    UserCreate, User as UserSchema, SessionResponse, OnboardingStepOne, OnboardingStepTwoOrganizer,
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
     UserUpdate, EventCreate, EventImageOut,
     MessageCreate, MessageOut,
@@ -26,10 +28,11 @@ from .schemas import (
     NotificationRequest, NotificationResponse,
     InAppNotificationCreate, InAppNotificationOut, InAppNotificationUpdate,
     InAppNotificationsResponse,
+    LostFoundItemCreate, LostFoundItemOut, LostFoundItemUpdate, LostFoundItemsResponse,
 )
-from .auth import (
-    authenticate_user, create_access_token, get_password_hash, 
-    get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES
+from .session_auth import (
+    authenticate_user, get_password_hash, get_current_active_user, get_current_user,
+    create_session, invalidate_session, invalidate_all_user_sessions
 )
 from .storage import storage_service
 from .firebase_service import firebase_service
@@ -87,15 +90,16 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-@router.post("/register", response_model=Token)
+@router.post("/register")
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    logger.info(f"Registration request received for username: {user.username}, email: {user.email}")
+    logger.info(f"📝 Registration request received for username: {user.username}, email: {user.email}")
     
     # Check if user already exists
     dup_user = db.query(User).filter(or_(User.username == user.username, User.email == user.email)).first()
     if dup_user:
         message = "Username already registered" if dup_user.username == user.username else "Email already registered"
-        logger.warning(f"Registration failed: {message}")
+        logger.warning(f"📝 Registration failed: {message}")
+        logger.info(f"📝 Existing user found - ID: {dup_user.id}, Username: {dup_user.username}, Email: {dup_user.email}")
         return JSONResponse(status_code=409, content={"success": False, "message": message})
     
     # Create new user (onboarding_completed defaults to False)
@@ -150,47 +154,81 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     
-    logger.info(f"User created successfully: {user.username}")
+    logger.info(f"📝 User created successfully: {user.username}")
+    logger.info(f"📝 New user details - ID: {db_user.id}, Username: {db_user.username}")
+    logger.info(f"📝 New user - Email: {db_user.email}")
+    logger.info(f"📝 New user - Onboarding completed: {db_user.onboarding_completed}")
+    logger.info(f"📝 New user - User type: {db_user.user_type}")
+    logger.info(f"📝 New user - Is active: {db_user.is_active}")
     
-    # Generate token for the new user
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": db_user.username}, expires_delta=access_token_expires
-    )
-    logger.info(f"Token generated for user: {user.username}")
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Create session for the new user
+    session_id = create_session(db_user)
+    logger.info(f"📝 Session created for user: {user.username}")
+    logger.info(f"📝 Session ID: {session_id}")
+    
+    # Return session and user data
+    logger.info(f"📝 Returning registration response with user data and session")
+    logger.info(f"📝 Response will contain user ID: {db_user.id}, username: {db_user.username}")
+    return {
+        "session_id": session_id,
+        "session_type": "session",
+        "user": db_user
+    }
 
-@router.post("/token", response_model=Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    logger.info(f"Login request received for username: {form_data.username}")
+@router.post("/login")
+def login_for_session(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    logger.info(f"🔐 Login request received for username: {form_data.username}")
     
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        logger.warning(f"Login failed for username: {form_data.username}")
+        logger.warning(f"🔐 Login failed for username: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    logger.info(f"Login successful for username: {form_data.username}")
-    return {"access_token": access_token, "token_type": "bearer"}
+    
+    logger.info(f"🔐 User authenticated successfully - ID: {user.id}, Username: {user.username}")
+    logger.info(f"🔐 User onboarding completed: {user.onboarding_completed}")
+    logger.info(f"🔐 User type: {user.user_type}")
+    
+    # Invalidate any existing sessions for this user to ensure clean login
+    invalidate_all_user_sessions(user.id)
+    
+    # Create new session
+    session_id = create_session(user)
+    logger.info(f"🔐 Login successful for username: {form_data.username}")
+    logger.info(f"🔐 Session ID: {session_id}")
+    
+    # Return session and user data  
+    logger.info(f"🔐 Returning login response with user data and session")
+    logger.info(f"🔐 Response will contain user ID: {user.id}, username: {user.username}")
+    return {
+        "session_id": session_id,
+        "session_type": "session",
+        "user": user
+    }
 
 @router.get("/users/me", response_model=UserSchema)
 def read_users_me(current_user: User = Depends(get_current_active_user)):
-    logger.info(f"User info request for: {current_user.username}")
+    logger.info(f"🔍 /users/me - User info request for: {current_user.username}")
+    logger.info(f"🔍 /users/me - User ID: {current_user.id}")
+    logger.info(f"🔍 /users/me - User onboarding completed: {current_user.onboarding_completed}")
+    logger.info(f"🔍 /users/me - User type: {current_user.user_type}")
+    logger.info(f"🔍 /users/me - User email: {current_user.email}")
     return current_user
 
 @router.post("/logout")
 def logout(current_user: User = Depends(get_current_active_user)):
-    """Logout endpoint - for JWT tokens this just logs the action since tokens are stateless"""
-    logger.info(f"Logout request for user: {current_user.username}")
-    # With JWT tokens, we can't invalidate them server-side without a blacklist
-    # So we just log the logout action and return success
-    # The client should delete the token from local storage
+    """Logout endpoint - invalidates the user's session"""
+    logger.info(f"🚪 Logout request for user: {current_user.username} (ID: {current_user.id})")
+    logger.info(f"🚪 Logout - User email: {current_user.email}")
+    logger.info(f"🚪 Logout - User onboarding completed: {current_user.onboarding_completed}")
+    
+    # Invalidate all sessions for this user
+    invalidate_all_user_sessions(current_user.id)
+    
+    logger.info("🚪 Logout completed - All user sessions invalidated")
     return {"message": "Successfully logged out"}
 
 # Profile picture upload endpoint
@@ -1743,8 +1781,31 @@ def increase_karma_dev_only(
         db.commit()
 
         # After karma updated, check for new badges automatically
-        # Reuse the function directly
-        check_badge_achievements(current_user=current_user, db=db)
+        # Check badges (but don't return the result here since this is a dev endpoint)
+        try:
+            # Call the badge check function inline to ensure badges are awarded
+            existing_badge_ids = db.execute(
+                text("SELECT badge_id FROM user_badges WHERE user_id = :user_id"),
+                {"user_id": current_user.id}
+            ).fetchall()
+            existing_ids = [row[0] for row in existing_badge_ids]
+            
+            # Get badges user can earn based on karma points
+            available_badges = db.query(Badge).filter(
+                Badge.is_active == True,
+                Badge.required_karma_points <= current_user.karma_points,
+                ~Badge.id.in_(existing_ids) if existing_ids else True
+            ).all()
+            
+            # Award new badges
+            for badge in available_badges:
+                db.execute(
+                    text("INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (:user_id, :badge_id, NOW())"),
+                    {"user_id": current_user.id, "badge_id": badge.id}
+                )
+                logger.info(f"User {current_user.username} earned badge: {badge.name}")
+        except Exception as e:
+            logger.warning(f"Badge check failed after karma increase: {e}")
 
         db.refresh(current_user)
         
@@ -1762,3 +1823,595 @@ def increase_karma_dev_only(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to increase karma points"
         )
+
+
+# ===== BADGE ENDPOINTS =====
+
+@router.get("/badges", response_model=List[BadgeSchema])
+async def get_all_badges(db: Session = Depends(get_db)):
+    """Get all available badges"""
+    try:
+        badges = db.query(Badge).filter(Badge.is_active == True).all()
+        return badges
+    except Exception as e:
+        logger.error(f"Failed to get badges: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get badges"
+        )
+
+
+@router.get("/users/me/badges", response_model=List[UserBadge])
+async def get_user_badges(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get badges earned by the current user"""
+    try:
+        # Query user badges with their badge information
+        user_badge_rows = db.query(Badge, user_badges.c.earned_at).join(
+            user_badges,
+            Badge.id == user_badges.c.badge_id
+        ).filter(
+            user_badges.c.user_id == current_user.id
+        ).all()
+        
+        # Convert to UserBadge format
+        result = []
+        for badge, earned_at in user_badge_rows:
+            result.append(UserBadge(
+                badge=BadgeSchema(
+                    id=badge.id,
+                    name=badge.name,
+                    description=badge.description,
+                    required_karma_points=badge.required_karma_points,
+                    icon_name=badge.icon_name,
+                    color=badge.color,
+                    is_active=badge.is_active,
+                    created_at=badge.created_at
+                ),
+                earned_at=earned_at
+            ))
+        
+        logger.info(f"Retrieved {len(result)} badges for user {current_user.username}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get user badges: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get user badges"
+        )
+
+
+@router.post("/users/me/check-badges", response_model=BadgeCheckResponse)
+async def check_badge_achievements_endpoint(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check if user has achieved new badges"""
+    try:
+        # Get all badges the user doesn't have yet
+        existing_badge_ids = db.execute(
+            text("SELECT badge_id FROM user_badges WHERE user_id = :user_id"),
+            {"user_id": current_user.id}
+        ).fetchall()
+        existing_ids = [row[0] for row in existing_badge_ids]
+        
+        # Get badges user can earn based on karma points
+        available_badges = db.query(Badge).filter(
+            Badge.is_active == True,
+            Badge.required_karma_points <= current_user.karma_points,
+            ~Badge.id.in_(existing_ids) if existing_ids else True
+        ).all()
+        
+        newly_earned = []
+        
+        # Award new badges
+        for badge in available_badges:
+            # Add badge to user
+            db.execute(
+                text("INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (:user_id, :badge_id, NOW())"),
+                {"user_id": current_user.id, "badge_id": badge.id}
+            )
+            
+            newly_earned.append(BadgeAchievement(
+                badge_name=badge.name,
+                description=badge.description,
+                icon_name=badge.icon_name,
+                color=badge.color
+            ))
+        
+        if newly_earned:
+            db.commit()
+            logger.info(f"User {current_user.username} earned {len(newly_earned)} new badges")
+        
+        return BadgeCheckResponse(
+            newly_earned_badges=newly_earned,
+            total_user_badges=len(existing_ids) + len(newly_earned)
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to check badge achievements: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check badge achievements"
+        )
+
+
+# ===== LOST & FOUND ENDPOINTS =====
+
+@router.post("/lost-found", response_model=schemas.LostFoundItemOut)
+async def create_lost_found_item(
+    item_data: schemas.LostFoundItemCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new lost or found item"""
+    try:
+        from datetime import datetime, timedelta
+        
+        # Calculate expiry date
+        expires_at = datetime.utcnow() + timedelta(days=item_data.expiry_days)
+        
+        # Create the lost/found item
+        db_item = LostFoundItem(
+            user_id=current_user.id,
+            title=item_data.title,
+            description=item_data.description,
+            location=item_data.location,
+            item_type=item_data.item_type.value,
+            reward=item_data.reward,
+            tags=item_data.tags,
+            expiry_days=item_data.expiry_days,
+            expires_at=expires_at
+        )
+        
+        db.add(db_item)
+        db.commit()
+        db.refresh(db_item)
+        
+        logger.info(f"Created lost/found item {db_item.id} by user {current_user.username}")
+        
+        # Convert to response format
+        return convert_lost_found_item_to_out(db_item, current_user)
+        
+    except Exception as e:
+        logger.error(f"Failed to create lost/found item: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create lost/found item"
+        )
+
+
+@router.get("/lost-found", response_model=schemas.LostFoundItemsResponse)
+async def get_lost_found_items(
+    item_type: Optional[str] = None,
+    limit: int = Query(50, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get lost and found items with optional filtering"""
+    try:
+        from datetime import datetime
+        
+        query = db.query(LostFoundItem).filter(
+            LostFoundItem.is_active == True,
+            LostFoundItem.expires_at > datetime.utcnow()
+        )
+        
+        if item_type:
+            query = query.filter(LostFoundItem.item_type == item_type)
+        
+        # Get total count
+        total_count = query.count()
+        
+        # Get paginated results
+        items = query.order_by(LostFoundItem.created_at.desc()).offset(offset).limit(limit).all()
+        
+        # Convert to response format
+        items_out = []
+        for item in items:
+            user = db.query(User).filter(User.id == item.user_id).first()
+            items_out.append(convert_lost_found_item_to_out(item, user))
+        
+        return schemas.LostFoundItemsResponse(
+            items=items_out,
+            total_count=total_count
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get lost/found items: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get lost/found items"
+        )
+
+
+@router.get("/lost-found/{item_id}", response_model=schemas.LostFoundItemOut)
+async def get_lost_found_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get a specific lost/found item by ID"""
+    try:
+        item = db.query(LostFoundItem).filter(
+            LostFoundItem.id == item_id,
+            LostFoundItem.is_active == True
+        ).first()
+        
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lost/found item not found"
+            )
+        
+        user = db.query(User).filter(User.id == item.user_id).first()
+        return convert_lost_found_item_to_out(item, user)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get lost/found item: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get lost/found item"
+        )
+
+
+@router.put("/lost-found/{item_id}", response_model=schemas.LostFoundItemOut)
+async def update_lost_found_item(
+    item_id: int,
+    item_data: schemas.LostFoundItemUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update a lost/found item (only by owner)"""
+    try:
+        item = db.query(LostFoundItem).filter(
+            LostFoundItem.id == item_id,
+            LostFoundItem.user_id == current_user.id
+        ).first()
+        
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lost/found item not found or not owned by user"
+            )
+        
+        # Update fields
+        update_data = item_data.dict(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(item, field, value)
+        
+        db.commit()
+        db.refresh(item)
+        
+        logger.info(f"Updated lost/found item {item_id} by user {current_user.username}")
+        
+        return convert_lost_found_item_to_out(item, current_user)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update lost/found item: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update lost/found item"
+        )
+
+
+@router.delete("/lost-found/{item_id}")
+async def delete_lost_found_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a lost/found item (only by owner)"""
+    try:
+        item = db.query(LostFoundItem).filter(
+            LostFoundItem.id == item_id,
+            LostFoundItem.user_id == current_user.id
+        ).first()
+        
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lost/found item not found or not owned by user"
+            )
+        
+        # Soft delete by setting is_active to False
+        item.is_active = False
+        db.commit()
+        
+        logger.info(f"Deleted lost/found item {item_id} by user {current_user.username}")
+        
+        return {"message": "Lost/found item deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete lost/found item: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete lost/found item"
+        )
+
+
+@router.post("/lost-found/{item_id}/images")
+async def upload_lost_found_image(
+    item_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload an image for a lost/found item (only by owner)"""
+    try:
+        # Check if item exists and is owned by user
+        item = db.query(LostFoundItem).filter(
+            LostFoundItem.id == item_id,
+            LostFoundItem.user_id == current_user.id
+        ).first()
+        
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lost/found item not found or not owned by user"
+            )
+        
+        # Check if item already has maximum images (10)
+        current_image_count = db.query(LostFoundImage).filter(
+            LostFoundImage.lost_found_item_id == item_id
+        ).count()
+        
+        if current_image_count >= 10:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Maximum of 10 images allowed per item"
+            )
+        
+        # Validate file type
+        if not file.content_type.startswith('image/'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only image files are allowed"
+            )
+        
+        # Save file and get URL (using same logic as event images)
+        file_url = await save_lost_found_image(file, item_id)
+        
+        # Create image record
+        db_image = LostFoundImage(
+            lost_found_item_id=item_id,
+            image_url=file_url
+        )
+        
+        db.add(db_image)
+        db.commit()
+        db.refresh(db_image)
+        
+        logger.info(f"Uploaded image for lost/found item {item_id} by user {current_user.username}")
+        
+        return {
+            "message": "Image uploaded successfully",
+            "image_url": file_url,
+            "image_id": db_image.id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to upload lost/found image: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to upload image"
+        )
+
+
+@router.delete("/lost-found/{item_id}/images/{image_id}")
+async def delete_lost_found_image(
+    item_id: int,
+    image_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete an image from a lost/found item (only by owner)"""
+    try:
+        # Check if item exists and is owned by user
+        item = db.query(LostFoundItem).filter(
+            LostFoundItem.id == item_id,
+            LostFoundItem.user_id == current_user.id
+        ).first()
+        
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lost/found item not found or not owned by user"
+            )
+        
+        # Check if image exists for this item
+        image = db.query(LostFoundImage).filter(
+            LostFoundImage.id == image_id,
+            LostFoundImage.lost_found_item_id == item_id
+        ).first()
+        
+        if not image:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Image not found"
+            )
+        
+        # Delete the image file (implement cleanup if needed)
+        # await delete_lost_found_image_file(image.image_url)
+        
+        # Delete the image record
+        db.delete(image)
+        db.commit()
+        
+        logger.info(f"Deleted image {image_id} from lost/found item {item_id} by user {current_user.username}")
+        
+        return {"message": "Image deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete lost/found image: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete image"
+        )
+
+
+async def save_lost_found_image(file: UploadFile, item_id: int) -> str:
+    """Save uploaded image for lost/found item and return URL"""
+    import os
+    import uuid
+    from pathlib import Path
+    
+    try:
+        # Create upload directory if it doesn't exist
+        upload_dir = Path("uploads/lost_found")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate unique filename
+        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+        unique_filename = f"{item_id}_{uuid.uuid4()}.{file_extension}"
+        file_path = upload_dir / unique_filename
+        
+        # Save file
+        content = await file.read()
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        # Return URL (adjust based on your file serving setup)
+        return f"/uploads/lost_found/{unique_filename}"
+        
+    except Exception as e:
+        logger.error(f"Failed to save lost/found image: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save image"
+        )
+
+
+def convert_lost_found_item_to_out(item: LostFoundItem, user: User) -> schemas.LostFoundItemOut:
+    """Helper function to convert LostFoundItem to LostFoundItemOut schema"""
+    from datetime import datetime
+    
+    # Calculate days remaining
+    days_remaining = None
+    if item.expires_at:
+        delta = item.expires_at - datetime.utcnow()
+        days_remaining = max(0, delta.days)
+    
+    # Get contact name
+    contact_name = None
+    if user.user_type == "volunteer":
+        contact_name = user.full_name or user.username
+    elif user.user_type == "organizer":
+        contact_name = user.organization_name or user.username
+    else:
+        contact_name = user.username
+    
+    # Get image URLs
+    image_urls = [img.image_url for img in item.images] if item.images else []
+    
+    return schemas.LostFoundItemOut(
+        id=item.id,
+        user_id=item.user_id,
+        title=item.title,
+        description=item.description,
+        location=item.location,
+        item_type=schemas.LostFoundType(item.item_type),
+        reward=item.reward,
+        tags=item.tags or [],
+        expiry_days=item.expiry_days,
+        created_at=item.created_at,
+        expires_at=item.expires_at,
+        is_resolved=item.is_resolved,
+        is_active=item.is_active,
+        images=image_urls,
+        contact_name=contact_name,
+        days_remaining=days_remaining
+    )
+
+
+@router.post("/lost-found/cleanup-expired")
+async def cleanup_expired_lost_found_items(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Cleanup expired lost/found items (admin only or can be called as background task)"""
+    try:
+        from datetime import datetime
+        
+        # Find expired items
+        expired_items = db.query(LostFoundItem).filter(
+            LostFoundItem.is_active == True,
+            LostFoundItem.expires_at < datetime.utcnow()
+        ).all()
+        
+        if not expired_items:
+            return {"message": "No expired items to cleanup", "count": 0}
+        
+        # Deactivate expired items
+        for item in expired_items:
+            item.is_active = False
+        
+        db.commit()
+        
+        logger.info(f"Cleaned up {len(expired_items)} expired lost/found items")
+        
+        return {
+            "message": f"Successfully cleaned up {len(expired_items)} expired items",
+            "count": len(expired_items)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to cleanup expired lost/found items: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to cleanup expired items"
+        )
+
+
+def schedule_lost_found_cleanup():
+    """Background task to automatically cleanup expired lost/found items"""
+    import asyncio
+    from datetime import datetime
+    from .database import SessionLocal
+    
+    async def cleanup_task():
+        db = SessionLocal()
+        try:
+            # Find expired items
+            expired_items = db.query(LostFoundItem).filter(
+                LostFoundItem.is_active == True,
+                LostFoundItem.expires_at < datetime.utcnow()
+            ).all()
+            
+            if expired_items:
+                # Deactivate expired items
+                for item in expired_items:
+                    item.is_active = False
+                
+                db.commit()
+                logger.info(f"Background cleanup: deactivated {len(expired_items)} expired lost/found items")
+            
+        except Exception as e:
+            logger.error(f"Background cleanup failed: {e}")
+            db.rollback()
+        finally:
+            db.close()
+    
+    # Run the cleanup task
+    asyncio.create_task(cleanup_task())

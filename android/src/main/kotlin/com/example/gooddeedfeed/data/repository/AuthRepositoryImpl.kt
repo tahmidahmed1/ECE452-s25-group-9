@@ -27,36 +27,44 @@ class AuthRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "AuthRepositoryImpl"
-        private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
+        private val SESSION_ID_KEY = stringPreferencesKey("session_id")
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val USERNAME_KEY = stringPreferencesKey("username")
     }
 
-    private suspend fun saveAuthData(token: String, userId: String, username: String) {
+    private suspend fun saveAuthData(sessionId: String, userId: String, username: String) {
         Log.d(TAG, "💾 Saving auth data to DataStore")
-        Log.d(TAG, "💾 Token: ${token.take(20)}...")
+        Log.d(TAG, "💾 Session ID: $sessionId")
         Log.d(TAG, "💾 User ID: $userId")
         Log.d(TAG, "💾 Username: $username")
 
         dataStore.edit { preferences ->
-            preferences[JWT_TOKEN_KEY] = token
+            preferences[SESSION_ID_KEY] = sessionId
             preferences[USER_ID_KEY] = userId
             preferences[USERNAME_KEY] = username
         }
 
         Log.d(TAG, "✅ Auth data saved successfully")
+        
+        // Verify the data was saved correctly
+        val savedSessionId = dataStore.data.first()[SESSION_ID_KEY]
+        val savedUserId = dataStore.data.first()[USER_ID_KEY]
+        val savedUsername = dataStore.data.first()[USERNAME_KEY]
+        Log.d(TAG, "🔍 Verification - Saved session ID: $savedSessionId")
+        Log.d(TAG, "🔍 Verification - Saved user ID: $savedUserId")
+        Log.d(TAG, "🔍 Verification - Saved username: $savedUsername")
     }
 
-    private suspend fun getToken(): String? {
-        val token = dataStore.data.first()[JWT_TOKEN_KEY]
-        Log.d(TAG, "🔍 Retrieved token from DataStore: ${if (token != null) "Found" else "Not found"}")
-        return token
+    private suspend fun getSessionId(): String? {
+        val sessionId = dataStore.data.first()[SESSION_ID_KEY]
+        Log.d(TAG, "🔍 Retrieved session ID from DataStore: ${if (sessionId != null) "Found" else "Not found"}")
+        return sessionId
     }
 
     private suspend fun clearAuthData() {
         Log.d(TAG, "🧹 Clearing auth data from DataStore")
         dataStore.edit { preferences ->
-            preferences.remove(JWT_TOKEN_KEY)
+            preferences.remove(SESSION_ID_KEY)
             preferences.remove(USER_ID_KEY)
             preferences.remove(USERNAME_KEY)
         }
@@ -80,7 +88,7 @@ class AuthRepositoryImpl @Inject constructor(
 
             Log.d(TAG, "💾 Saving new authentication data...")
             saveAuthData(
-                token = response.access_token,
+                sessionId = response.session_id,
                 userId = response.user.id.toString(),
                 username = response.user.username,
             )
@@ -114,7 +122,7 @@ class AuthRepositoryImpl @Inject constructor(
 
             Log.d(TAG, "💾 Saving new authentication data...")
             saveAuthData(
-                token = response.access_token,
+                sessionId = response.session_id,
                 userId = response.user.id.toString(),
                 username = response.user.username,
             )
@@ -134,35 +142,34 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun signOut(): Result<Unit> {
         Log.d(TAG, "🔄 Repository signOut called")
 
-        // Always clear local data first to ensure clean logout state
-        Log.d(TAG, "🧹 Clearing stored authentication data immediately...")
-        clearAuthData()
-
-        return try {
+        try {
+            // First try to call server logout while we still have the token
             Log.d(TAG, "📞 Calling AuthApiService.signOut...")
             api.signOut()
-
-            Log.d(TAG, "✅ Repository signOut successful")
-            Result.success(Unit)
+            Log.d(TAG, "✅ Server signOut successful")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Repository signOut API failed", e)
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
             Log.e(TAG, "❌ Exception message: ${e.message}")
-
-            // Local data already cleared above, so this is still a successful logout
-            Log.w(TAG, "⚠️ Server signOut failed, but local auth data was already cleared")
-            Result.success(Unit) // Return success since local cleanup succeeded
+            Log.w(TAG, "⚠️ Server signOut failed, but continuing with local cleanup...")
+        } finally {
+            // ALWAYS clear local data regardless of server response
+            Log.d(TAG, "🧹 Clearing stored authentication data...")
+            clearAuthData()
+            Log.d(TAG, "✅ Local authentication data cleared")
         }
+
+        return Result.success(Unit)
     }
 
     override suspend fun getCurrentUser(): Result<DomainUser> {
         Log.d(TAG, "🔄 Repository getCurrentUser called")
 
         return try {
-            val token = getToken()
-            if (token == null) {
-                Log.w(TAG, "⚠️ No token found - user not authenticated")
-                return Result.failure(Exception("No authentication token found"))
+            val sessionId = getSessionId()
+            if (sessionId == null) {
+                Log.w(TAG, "⚠️ No session ID found - user not authenticated")
+                return Result.failure(Exception("No authentication session found"))
             }
 
             Log.d(TAG, "📞 Calling AuthApiService.getCurrentUser...")
@@ -180,9 +187,12 @@ class AuthRepositoryImpl @Inject constructor(
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
             Log.e(TAG, "❌ Exception message: ${e.message}")
 
-            // If getCurrentUser fails, it might be due to invalid token
-            if (e.message?.contains("401") == true || e.message?.contains("unauthorized") == true) {
-                Log.d(TAG, "🧹 Clearing invalid authentication data...")
+            // If getCurrentUser fails, it might be due to invalid/expired token
+            if (e.message?.contains("401") == true || 
+                e.message?.contains("unauthorized") == true || 
+                e.message?.contains("Authentication failed") == true ||
+                e.message?.contains("No authentication token found") == true) {
+                Log.d(TAG, "🧹 Clearing invalid authentication data due to auth failure...")
                 clearAuthData()
             }
 

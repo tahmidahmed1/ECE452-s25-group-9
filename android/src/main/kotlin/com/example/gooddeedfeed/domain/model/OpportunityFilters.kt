@@ -8,4 +8,5 @@ data class OpportunityFilters(
     val maxKarmaPoints: Int = 200,
     val dateFilter: DateFilter = DateFilter.ALL,
     val radiusKm: Float = 50f,
+    val useDistanceFilter: Boolean = false,
 ) 

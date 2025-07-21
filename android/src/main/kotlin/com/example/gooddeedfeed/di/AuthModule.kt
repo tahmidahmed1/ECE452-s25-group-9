@@ -39,7 +39,7 @@ import javax.inject.Singleton
 object AuthModule {
 
     private const val TAG = "AuthModule"
-    private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
+    private val SESSION_ID_KEY = stringPreferencesKey("session_id")
 
     @Provides
     @Singleton
@@ -61,23 +61,23 @@ object AuthModule {
             install(Auth) {
                 bearer {
                     loadTokens {
-                        Log.d(TAG, "🔐 Auth interceptor: Loading token for authentication...")
-                        val token = runBlocking {
+                        Log.d(TAG, "🔐 Auth interceptor: Loading session ID for authentication...")
+                        val sessionId = runBlocking {
                             try {
-                                val tokenValue = dataStore.data.first()[JWT_TOKEN_KEY]
-                                Log.d(TAG, "🔍 Auth interceptor: Token from DataStore: ${if (tokenValue != null) "Found (${tokenValue.take(20)}...)" else "Not found"}")
-                                tokenValue
+                                val sessionValue = dataStore.data.first()[SESSION_ID_KEY]
+                                Log.d(TAG, "🔍 Auth interceptor: Session ID from DataStore: ${if (sessionValue != null) "Found (${sessionValue.take(20)}...)" else "Not found"}")
+                                sessionValue
                             } catch (e: Exception) {
-                                Log.e(TAG, "❌ Auth interceptor: Failed to load token from DataStore", e)
+                                Log.e(TAG, "❌ Auth interceptor: Failed to load session ID from DataStore", e)
                                 null
                             }
                         }
 
-                        if (token != null) {
-                            Log.d(TAG, "✅ Auth interceptor: Token loaded successfully, will add to request")
-                            BearerTokens(token, "") // Empty string for refresh token since server doesn't support it
+                        if (sessionId != null) {
+                            Log.d(TAG, "✅ Auth interceptor: Session ID loaded successfully, will add to request")
+                            BearerTokens(sessionId, "") // Empty string for refresh token since server doesn't support it
                         } else {
-                            Log.d(TAG, "ℹ️ Auth interceptor: No token found - requests will not be authenticated")
+                            Log.d(TAG, "ℹ️ Auth interceptor: No session ID found - requests will not be authenticated")
                             null
                         }
                     }

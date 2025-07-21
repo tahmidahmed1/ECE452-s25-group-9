@@ -226,6 +226,7 @@ private fun HomeContent(
                     title = actionItem.title,
                     description = actionItem.description,
                     onClick = { onActionClick(actionItem.action) },
+                    showBorder = actionItem.title == "Lost & Found"
                 )
                 VerticalSpacer(SpacingSize.Small)
             }

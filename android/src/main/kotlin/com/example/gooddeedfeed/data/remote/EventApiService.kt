@@ -1,6 +1,9 @@
 package com.example.gooddeedfeed.data.remote
 
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.remote.dto.EventDto
 import com.example.gooddeedfeed.data.remote.dto.EventImageDto
 import com.example.gooddeedfeed.data.remote.dto.toDto
@@ -13,8 +16,29 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import kotlinx.coroutines.flow.first
+import javax.inject.Inject
 
-class EventApiService(client: HttpClient) : BaseApiService(client) {
+class EventApiService @Inject constructor(
+    client: HttpClient,
+    private val dataStore: DataStore<Preferences>
+) : BaseApiService(client) {
+
+    companion object {
+        private const val TAG = "EventApiService"
+        private val SESSION_ID_KEY = stringPreferencesKey("session_id")
+    }
+
+    private suspend fun getSessionIdFromDataStore(): String? {
+        return try {
+            val sessionId = dataStore.data.first()[SESSION_ID_KEY]
+            Log.d(TAG, "🔍 Session ID from DataStore: ${if (sessionId != null) "Found" else "Not found"}")
+            sessionId
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to get session ID from DataStore", e)
+            null
+        }
+    }
 
     private fun buildUrl(path: String): String = "${possibleUrls.first()}/$path"
 
@@ -70,91 +94,205 @@ class EventApiService(client: HttpClient) : BaseApiService(client) {
         return event
     }
 
-    suspend fun createEvent(token: String, data: CreateEventData): EventDto {
+    suspend fun createEvent(data: CreateEventData): EventDto {
+        Log.d(TAG, "🚀 Starting createEvent request")
+        
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for createEvent")
+            throw Exception("No authentication session found")
+        }
+
         return try {
-            val response = client.post(buildUrl("events")) {
-                header(HttpHeaders.Authorization, "Bearer $token")
-                contentType(ContentType.Application.Json)
-                setBody(data.toDto())
+            Log.d(TAG, "📤 Sending createEvent request with session authorization...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying createEvent URL: $baseUrl/events")
+                client.post("$baseUrl/events") {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                    contentType(ContentType.Application.Json)
+                    setBody(data.toDto())
+                }
             }
 
+            Log.d(TAG, "📥 createEvent response status: ${response.status}")
+
             if (response.status.value in 200..299) {
-                response.body<EventDto>()
+                val eventDto: EventDto = response.body()
+                Log.d(TAG, "✅ createEvent successful - Event ID: ${eventDto.id}")
+                eventDto
             } else {
+                Log.e(TAG, "❌ createEvent failed with status ${response.status}")
                 throw Exception("Server returned ${response.status.value}: ${response.status.description}")
             }
         } catch (e: Exception) {
+            Log.e(TAG, "❌ createEvent failed with exception", e)
             throw Exception("Failed to create event: ${e.message}")
         }
     }
 
-    suspend fun updateEvent(token: String, id: Int, data: CreateEventData): EventDto {
+    suspend fun updateEvent(id: Int, data: CreateEventData): EventDto {
+        Log.d(TAG, "🚀 Starting updateEvent request for event ID: $id")
+        
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for updateEvent")
+            throw Exception("No authentication session found")
+        }
+
         return try {
-            val response = client.patch(buildUrl("events/$id")) {
-                header(HttpHeaders.Authorization, "Bearer $token")
-                contentType(ContentType.Application.Json)
-                setBody(data.toDto())
+            Log.d(TAG, "📤 Sending updateEvent request with session authorization...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying updateEvent URL: $baseUrl/events/$id")
+                client.patch("$baseUrl/events/$id") {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                    contentType(ContentType.Application.Json)
+                    setBody(data.toDto())
+                }
             }
 
+            Log.d(TAG, "📥 updateEvent response status: ${response.status}")
+
             if (response.status.value in 200..299) {
-                response.body<EventDto>()
+                val eventDto: EventDto = response.body()
+                Log.d(TAG, "✅ updateEvent successful - Event ID: ${eventDto.id}")
+                eventDto
             } else {
+                Log.e(TAG, "❌ updateEvent failed with status ${response.status}")
                 throw Exception("Server returned ${response.status.value}: ${response.status.description}")
             }
         } catch (e: Exception) {
+            Log.e(TAG, "❌ updateEvent failed with exception", e)
             throw Exception("Failed to update event: ${e.message}")
         }
     }
 
-    suspend fun deleteEvent(token: String, id: Int) {
-        client.delete(buildUrl("events/$id")) {
-            header(HttpHeaders.Authorization, "Bearer $token")
+    suspend fun deleteEvent(id: Int) {
+        Log.d(TAG, "🚀 Starting deleteEvent request for event ID: $id")
+        
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for deleteEvent")
+            throw Exception("No authentication session found")
+        }
+
+        try {
+            Log.d(TAG, "📤 Sending deleteEvent request with session authorization...")
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying deleteEvent URL: $baseUrl/events/$id")
+                client.delete("$baseUrl/events/$id") {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                }
+            }
+            Log.d(TAG, "✅ deleteEvent successful for event ID: $id")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ deleteEvent failed with exception", e)
+            throw Exception("Failed to delete event: ${e.message}")
         }
     }
 
-    suspend fun uploadEventImage(token: String, eventId: Int, file: java.io.File) {
-        client.submitFormWithBinaryData(
-            url = buildUrl("events/$eventId/upload-image"),
-            formData = formData {
-                append(
-                    "file",
-                    file.readBytes(),
-                    Headers.build {
-                        append(HttpHeaders.ContentType, "image/jpeg")
-                        append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+    suspend fun uploadEventImage(eventId: Int, file: java.io.File) {
+        Log.d(TAG, "🚀 Starting uploadEventImage request for event ID: $eventId")
+        
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for uploadEventImage")
+            throw Exception("No authentication session found")
+        }
+
+        try {
+            Log.d(TAG, "📤 Sending uploadEventImage request with session authorization...")
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying uploadEventImage URL: $baseUrl/events/$eventId/upload-image")
+                client.submitFormWithBinaryData(
+                    url = "$baseUrl/events/$eventId/upload-image",
+                    formData = formData {
+                        append(
+                            "file",
+                            file.readBytes(),
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "image/jpeg")
+                                append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                            },
+                        )
                     },
-                )
-            },
-        ) {
-            header(HttpHeaders.Authorization, "Bearer $token")
+                ) {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                }
+            }
+            Log.d(TAG, "✅ uploadEventImage successful for event ID: $eventId")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ uploadEventImage failed with exception", e)
+            throw Exception("Failed to upload event image: ${e.message}")
         }
     }
 
-    suspend fun uploadEventImageToCarousel(token: String, eventId: Int, file: java.io.File, isMain: Boolean) {
-        client.submitFormWithBinaryData(
-            url = buildUrl("events/$eventId/images/upload"),
-            formData = formData {
-                append(
-                    "file",
-                    file.readBytes(),
-                    Headers.build {
-                        append(HttpHeaders.ContentType, "image/jpeg")
-                        append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+    suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean) {
+        Log.d(TAG, "🚀 Starting uploadEventImageToCarousel request for event ID: $eventId")
+        
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for uploadEventImageToCarousel")
+            throw Exception("No authentication session found")
+        }
+
+        try {
+            Log.d(TAG, "📤 Sending uploadEventImageToCarousel request with session authorization...")
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying uploadEventImageToCarousel URL: $baseUrl/events/$eventId/images/upload")
+                client.submitFormWithBinaryData(
+                    url = "$baseUrl/events/$eventId/images/upload",
+                    formData = formData {
+                        append(
+                            "file",
+                            file.readBytes(),
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "image/jpeg")
+                                append(HttpHeaders.ContentDisposition, "filename=${file.name}")
+                            },
+                        )
+                        append("is_main", isMain.toString())
                     },
-                )
-                append("is_main", isMain.toString())
-            },
-        ) {
-            header(HttpHeaders.Authorization, "Bearer $token")
+                ) {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                }
+            }
+            Log.d(TAG, "✅ uploadEventImageToCarousel successful for event ID: $eventId")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ uploadEventImageToCarousel failed with exception", e)
+            throw Exception("Failed to upload event image to carousel: ${e.message}")
         }
     }
 
     suspend fun getEventImages(eventId: Int): List<EventImageDto> =
         client.get(buildUrl("events/$eventId/images")).body()
 
-    suspend fun setMainEventImage(token: String, eventId: Int, imageId: Int) {
-        client.patch(buildUrl("events/$eventId/images/$imageId/set-main")) {
-            header(HttpHeaders.Authorization, "Bearer $token")
+    suspend fun setMainEventImage(eventId: Int, imageId: Int) {
+        Log.d(TAG, "🚀 Starting setMainEventImage request for event ID: $eventId, image ID: $imageId")
+        
+        // Get session ID from DataStore
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for setMainEventImage")
+            throw Exception("No authentication session found")
+        }
+
+        try {
+            Log.d(TAG, "📤 Sending setMainEventImage request with session authorization...")
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying setMainEventImage URL: $baseUrl/events/$eventId/images/$imageId/set-main")
+                client.patch("$baseUrl/events/$eventId/images/$imageId/set-main") {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                }
+            }
+            Log.d(TAG, "✅ setMainEventImage successful for event ID: $eventId, image ID: $imageId")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ setMainEventImage failed with exception", e)
+            throw Exception("Failed to set main event image: ${e.message}")
         }
     }
 } 

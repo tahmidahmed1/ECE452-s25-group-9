@@ -419,20 +419,36 @@ fun FiltersDrawer(
                         icon = Icons.Default.LocationOn,
                     ) {
                         Column {
-                            Text(
-                                text = "${filters.radiusKm.toInt()} km radius",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(bottom = 8.dp),
-                            )
-                            Slider(
-                                value = filters.radiusKm,
-                                onValueChange = { newRadius ->
-                                    onFiltersChange(filters.copy(radiusKm = newRadius))
-                                },
-                                valueRange = 1f..200f,
-                                steps = 19,
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                FilterChip(
+                                    selected = filters.useDistanceFilter,
+                                    onClick = {
+                                        onFiltersChange(filters.copy(useDistanceFilter = !filters.useDistanceFilter))
+                                    },
+                                    label = { Text("Use Distance Filter") },
+                                )
+                            }
+                            
+                            if (filters.useDistanceFilter) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "${filters.radiusKm.toInt()} km radius",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
+                                Slider(
+                                    value = filters.radiusKm,
+                                    onValueChange = { newRadius ->
+                                        onFiltersChange(filters.copy(radiusKm = newRadius))
+                                    },
+                                    valueRange = 1f..200f,
+                                    steps = 19,
+                                )
+                            }
                         }
                     }
 

@@ -25,29 +25,22 @@ class User(Base):
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
     
-    # Onboarding and user type fields
     user_type = Column(Enum(UserType), nullable=True)
     onboarding_completed = Column(Boolean, default=False)
     
-    # Contact info (for all users)
     full_name = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     
-    # Profile picture URL
     profile_picture_url = Column(String, nullable=True)
     
-
-    # Banner image URL (for organizers)
     banner_url = Column(String, nullable=True)
     
-    # Organization fields (for organizers)
     organization_name = Column(String, nullable=True)
     organization_description = Column(Text, nullable=True)
     organization_website = Column(String, nullable=True)
-    organization_social_media = Column(JSON, nullable=True)  # Store social media links as JSON
+    organization_social_media = Column(JSON, nullable=True)  # Store
     organization_images = Column(JSON, nullable=True)  # Store array of image URLs
     
-    # Enhanced volunteer profile fields
     sex = Column(Enum(Sex), nullable=True)
     description = Column(Text, nullable=True)
     skills = Column(JSON, nullable=True)  # Store as JSON array
@@ -58,7 +51,6 @@ class User(Base):
     has_drivers_license = Column(Boolean, nullable=True)
     disabilities = Column(Text, nullable=True)
     
-    # Karma points for leaderboard
     karma_points = Column(Integer, default=0, nullable=False)
     
     # Push notification fields
@@ -89,9 +81,11 @@ class User(Base):
         secondaryjoin="User.id == user_subscriptions.c.subscriber_id",
         back_populates="subscribed_to"
     )
+    
+    # Lost & Found items
+    lost_found_items = relationship("LostFoundItem", back_populates="user")
 
 
-# Association table for many-to-many relationship between users and badges
 user_badges = Table(
     'user_badges',
     Base.metadata,
@@ -112,8 +106,6 @@ class Badge(Base):
     color = Column(String, nullable=True)  # Hex color code for badge styling
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-        # Relationship to users who have earned this badge
     users = relationship("User", secondary=user_badges, back_populates="badges")
 
 class Message(Base):
@@ -204,4 +196,38 @@ class InAppNotification(Base):
     is_read = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     read_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class LostFoundItem(Base):
+    __tablename__ = "lost_found_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    location = Column(String, nullable=False)
+    item_type = Column(String, nullable=False)  # "lost" or "found"
+    reward = Column(String, nullable=True)
+    tags = Column(JSON, nullable=True)  # List of tags
+    expiry_days = Column(Integer, default=30, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    is_resolved = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="lost_found_items")
+    images = relationship("LostFoundImage", back_populates="lost_found_item", cascade="all, delete-orphan")
+
+
+class LostFoundImage(Base):
+    __tablename__ = "lost_found_images"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    lost_found_item_id = Column(Integer, ForeignKey("lost_found_items.id", ondelete="CASCADE"), nullable=False)
+    image_url = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    lost_found_item = relationship("LostFoundItem", back_populates="images")
 

@@ -31,6 +31,10 @@ class SocialMediaPlatform(str, Enum):
     TWITTER = "twitter"
     LINKEDIN = "linkedin"
 
+class LostFoundType(str, Enum):
+    LOST = "lost"
+    FOUND = "found"
+
 class SocialMediaLink(BaseModel):
     platform: SocialMediaPlatform
     url: HttpUrl
@@ -127,11 +131,11 @@ class OnboardingComplete(BaseModel):
     disabilities: Optional[str] = None
 
 # Authentication schemas
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+class SessionResponse(BaseModel):
+    session_id: str
+    session_type: str
 
-class TokenData(BaseModel):
+class SessionData(BaseModel):
     username: Optional[str] = None
 
 class ProfilePictureUploadResponse(BaseModel):
@@ -384,6 +388,48 @@ class InAppNotificationUpdate(BaseModel):
 class InAppNotificationsResponse(BaseModel):
     notifications: List[InAppNotificationOut]
     unread_count: int
+    
+    class Config:
+        from_attributes = True
+
+# Lost & Found schemas
+class LostFoundItemBase(BaseModel):
+    title: str
+    description: str
+    location: str
+    item_type: LostFoundType
+    reward: Optional[str] = None
+    tags: Optional[List[str]] = []
+    expiry_days: Optional[int] = 30
+
+class LostFoundItemCreate(LostFoundItemBase):
+    pass
+
+class LostFoundItemUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    location: Optional[str] = None
+    reward: Optional[str] = None
+    tags: Optional[List[str]] = None
+    is_resolved: Optional[bool] = None
+
+class LostFoundItemOut(LostFoundItemBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    is_resolved: bool = False
+    is_active: bool = True
+    images: Optional[List[str]] = []
+    contact_name: Optional[str] = None
+    days_remaining: Optional[int] = None
+    
+    class Config:
+        from_attributes = True
+
+class LostFoundItemsResponse(BaseModel):
+    items: List[LostFoundItemOut]
+    total_count: int
     
     class Config:
         from_attributes = True

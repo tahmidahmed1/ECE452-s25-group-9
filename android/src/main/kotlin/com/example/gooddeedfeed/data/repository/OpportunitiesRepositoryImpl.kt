@@ -109,7 +109,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
     override suspend fun getOpportunitiesWithFilters(
         lat: Double?,
         lon: Double?,
-        radiusKm: Float,
+        radiusKm: Float?,
         filters: OpportunityFilters,
     ): Flow<List<VolunteerOpportunity>> = flow {
         val opportunities = try {
@@ -130,7 +130,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
             apiService.getAllEvents(
                 lat = lat,
                 lon = lon,
-                radiusKm = radiusKm,
+                radiusKm = radiusKm ?: 50f,
                 category = categoryParam,
                 onlyAvailable = filters.onlyAvailable,
                 almostFull = filters.almostFull,

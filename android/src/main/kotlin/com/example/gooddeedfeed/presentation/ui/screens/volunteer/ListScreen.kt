@@ -109,6 +109,11 @@ fun ListScreen(
         }
     }
 
+    // Apply filters when they change
+    LaunchedEffect(filters) {
+        viewModel.applyFilters(filters)
+    }
+
     // Location permission handling
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted() else viewModel.onLocationPermissionDenied()

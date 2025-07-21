@@ -42,7 +42,7 @@ interface OpportunitiesRepository {
     suspend fun getOpportunitiesWithFilters(
         lat: Double? = null,
         lon: Double? = null,
-        radiusKm: Float = 50f,
+        radiusKm: Float? = 50f,
         filters: OpportunityFilters,
     ): Flow<List<VolunteerOpportunity>>
 

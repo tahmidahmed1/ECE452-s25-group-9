@@ -72,7 +72,7 @@ class ChatViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "ChatViewModel"
-        private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
+        private val SESSION_ID_KEY = stringPreferencesKey("session_id")
     }
 
     private val _conversationsState = MutableStateFlow<UiState<List<ChatConversation>>>(UiState.Loading)
@@ -94,23 +94,33 @@ class ChatViewModel @Inject constructor(
             try {
                 _conversationsState.value = UiState.Loading
 
-                val token = getAuthToken()
-                if (token.isNullOrEmpty()) {
-                    _conversationsState.value = UiState.Error("No authentication token found")
+                val sessionId = getSessionId()
+                if (sessionId.isNullOrEmpty()) {
+                    _conversationsState.value = UiState.Error("No authentication session found")
                     return@launch
                 }
 
                 chatApiService.withFallbackUrls { baseUrl ->
                     httpClient.get("$baseUrl/conversations") {
-                        header("Authorization", "Bearer $token")
+                        header("Authorization", "Bearer $sessionId")
                     }
                 }.let { response ->
+                    if (response.status.value == 401) {
+                        Log.w(TAG, "Session expired or invalid - authentication required")
+                        _conversationsState.value = UiState.Error("Session expired. Please log in again.")
+                        return@launch
+                    }
                     val conversations = response.body<List<ChatConversation>>()
                     _conversationsState.value = UiState.Success(conversations)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load conversations", e)
-                _conversationsState.value = UiState.Error("Failed to load conversations: ${e.message}")
+                val errorMessage = when {
+                    e.message?.contains("401") == true -> "Session expired. Please log in again."
+                    e.message?.contains("Invalid or expired session") == true -> "Session expired. Please log in again."
+                    else -> "Failed to load conversations: ${e.message}"
+                }
+                _conversationsState.value = UiState.Error(errorMessage)
             }
         }
     }
@@ -120,15 +130,15 @@ class ChatViewModel @Inject constructor(
             try {
                 _messagesState.value = UiState.Loading
 
-                val token = getAuthToken()
-                if (token.isNullOrEmpty()) {
-                    _messagesState.value = UiState.Error("No authentication token found")
+                val sessionId = getSessionId()
+                if (sessionId.isNullOrEmpty()) {
+                    _messagesState.value = UiState.Error("No authentication session found")
                     return@launch
                 }
 
                 chatApiService.withFallbackUrls { baseUrl ->
                     httpClient.get("$baseUrl/messages/$otherUserId") {
-                        header("Authorization", "Bearer $token")
+                        header("Authorization", "Bearer $sessionId")
                     }
                 }.let { response ->
                     val messages = response.body<List<MessageResponse>>()
@@ -158,9 +168,9 @@ class ChatViewModel @Inject constructor(
             try {
                 _sendMessageState.value = UiState.Loading
 
-                val token = getAuthToken()
-                if (token.isNullOrEmpty()) {
-                    _sendMessageState.value = UiState.Error("No authentication token found")
+                val sessionId = getSessionId()
+                if (sessionId.isNullOrEmpty()) {
+                    _sendMessageState.value = UiState.Error("No authentication session found")
                     return@launch
                 }
 
@@ -172,7 +182,7 @@ class ChatViewModel @Inject constructor(
                 chatApiService.withFallbackUrls { baseUrl ->
                     httpClient.post("$baseUrl/messages") {
                         contentType(ContentType.Application.Json)
-                        header("Authorization", "Bearer $token")
+                        header("Authorization", "Bearer $sessionId")
                         setBody(request)
                     }
                 }.let { response ->
@@ -204,8 +214,8 @@ class ChatViewModel @Inject constructor(
     fun connectToWebSocket(roomId: Int, currentUser: DomainUser) {
         viewModelScope.launch {
             try {
-                val token = getAuthToken()
-                if (token.isNullOrEmpty()) {
+                val sessionId = getSessionId()
+                if (sessionId.isNullOrEmpty()) {
                     Log.e(TAG, "No authentication token for WebSocket connection")
                     return@launch
                 }
@@ -233,11 +243,11 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private suspend fun getAuthToken(): String? {
+    private suspend fun getSessionId(): String? {
         return try {
-            dataStore.data.first()[JWT_TOKEN_KEY]
+            dataStore.data.first()[SESSION_ID_KEY]
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get auth token", e)
+            Log.e(TAG, "Failed to get session ID", e)
             null
         }
     }

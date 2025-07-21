@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -67,13 +70,14 @@ fun BadgeAchievementDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.95f)
+                .heightIn(max = 600.dp)
                 .scale(scale.value),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface,
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -103,11 +107,18 @@ fun BadgeAchievementDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Display badges
-                badges.forEach { badge ->
-                    BadgeItem(badge = badge)
-                    if (badge != badges.last()) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                // Scrollable badges section
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    badges.forEach { badge ->
+                        BadgeItem(badge = badge)
+                        if (badge != badges.last()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
                 }
 
@@ -132,9 +143,10 @@ private fun BadgeItem(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Row(
             modifier = Modifier
@@ -168,7 +180,7 @@ private fun BadgeItem(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    text = badge.badgeName,
+                    text = mapBadgeNameToFunName(badge.badgeName, badge.iconName),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -195,5 +207,31 @@ private fun getIconForBadge(iconName: String): ImageVector {
         "Shield" -> Icons.Default.Shield
         "Psychology" -> Icons.Default.Psychology
         else -> Icons.Default.Star
+    }
+}
+
+private fun mapBadgeNameToFunName(badgeName: String, iconName: String): String {
+    return when (badgeName) {
+        "Karma 200" -> when (iconName) {
+            "Star" -> "Newcomer"
+            else -> "Newcomer"
+        }
+        "Karma 400" -> when (iconName) {
+            "WorkspacePremium" -> "Helper"
+            else -> "Helper"
+        }
+        "Karma 600" -> when (iconName) {
+            "LocalFireDepartment" -> "Rising Star"
+            else -> "Rising Star"
+        }
+        "Karma 800" -> when (iconName) {
+            "EmojiEvents" -> "Community Champion"
+            else -> "Community Champion"
+        }
+        "Karma 1000" -> when (iconName) {
+            "WorkspacePremium" -> "Dedicated Volunteer"
+            else -> "Dedicated Volunteer"
+        }
+        else -> badgeName // Return original name if no mapping found
     }
 } 

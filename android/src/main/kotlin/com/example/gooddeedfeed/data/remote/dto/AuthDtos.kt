@@ -18,15 +18,15 @@ data class SignInRequestDto(
 
 @Serializable
 data class AuthResponseDto(
-    val access_token: String,
-    val token_type: String,
+    val session_id: String,
+    val session_type: String,
     val user: UserDto,
 )
 
 @Serializable
-data class TokenResponseDto(
-    val access_token: String,
-    val token_type: String,
+data class SessionResponseDto(
+    val session_id: String,
+    val session_type: String,
 )
 
 @Serializable

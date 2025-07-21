@@ -1,8 +1,5 @@
 package com.example.gooddeedfeed.data.repository
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.remote.EventApiService
 import com.example.gooddeedfeed.data.remote.dto.toDomain
 import com.example.gooddeedfeed.domain.model.CreateEventData
@@ -11,7 +8,6 @@ import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.repository.EventRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,12 +16,8 @@ import javax.inject.Singleton
 class EventRepositoryImpl @Inject constructor(
     private val apiService: EventApiService,
     private val authRepository: AuthRepository,
-    private val dataStore: DataStore<Preferences>,
 ) : EventRepository {
 
-    companion object {
-        private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
-    }
 
     override suspend fun getMyEvents(): Flow<List<VolunteerEvent>> = flow {
         val currentUserResult = authRepository.getCurrentUser()
@@ -39,15 +31,15 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createEvent(eventData: CreateEventData): Result<VolunteerEvent> = runCatching {
-        apiService.createEvent(token(), eventData).toDomain()
+        apiService.createEvent(eventData).toDomain()
     }
 
     override suspend fun updateEvent(eventId: Int, eventData: CreateEventData): Result<VolunteerEvent> = runCatching {
-        apiService.updateEvent(token(), eventId, eventData).toDomain()
+        apiService.updateEvent(eventId, eventData).toDomain()
     }
 
     override suspend fun deleteEvent(eventId: Int): Result<Unit> = runCatching {
-        apiService.deleteEvent(token(), eventId)
+        apiService.deleteEvent(eventId)
     }
 
     override suspend fun getEventById(eventId: Int): Result<VolunteerEvent> = runCatching {
@@ -65,20 +57,15 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit> = runCatching {
-        apiService.uploadEventImage(token(), eventId, file)
+        apiService.uploadEventImage(eventId, file)
     }
 
     override suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean): Result<Unit> = runCatching {
-        apiService.uploadEventImageToCarousel(token(), eventId, file, isMain)
+        apiService.uploadEventImageToCarousel(eventId, file, isMain)
     }
 
     override suspend fun setMainEventImage(eventId: Int, imageId: Int): Result<Unit> = runCatching {
-        apiService.setMainEventImage(token(), eventId, imageId)
+        apiService.setMainEventImage(eventId, imageId)
     }
 
-    private suspend fun token(): String {
-        // Get token from DataStore
-        val preferences = dataStore.data.first()
-        return preferences[JWT_TOKEN_KEY] ?: throw Exception("No authentication token found")
-    }
 } 

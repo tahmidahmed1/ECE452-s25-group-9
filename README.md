@@ -53,7 +53,7 @@ This script will:
 │   │   ├── models.py      # SQLAlchemy models
 │   │   ├── schemas.py     # Pydantic schemas
 │   │   ├── routes.py      # API endpoints
-│   │   ├── auth.py        # JWT authentication
+│   │   ├── auth.py        # authentication
 │   │   ├── storage.py     # MinIO object storage
 │   │   └── database.py    # Database configuration
 │   ├── alembic/           # Database migrations
@@ -66,7 +66,7 @@ This script will:
 
 ## Features
 
-- **Authentication:** JWT-based user registration and login
+- **Authentication:** session-based user registration and login
 - **Onboarding:** Multi-step user type selection and profile completion
 - **Object Storage:** Profile picture uploads with MinIO S3-compatible storage
 - **Database:** PostgreSQL with Alembic migrations
@@ -81,7 +81,7 @@ This script will:
 
 
 **Tech Stack:**
-- Backend: Python FastAPI, SQLAlchemy, PostgreSQL, MinIO, JWT auth
+- Backend: Python FastAPI, SQLAlchemy, PostgreSQL, MinIO, session auth
 - Frontend: Android (Jetpack Compose, MVVM, Hilt, Ktor client)
 - Infrastructure: Docker Compose, Alembic migrations
 
@@ -156,7 +156,6 @@ This project uses environment variables for configuration. The main configuratio
 
 ### Required Environment Variables:
 
-- `JWT_SECRET`: Secret key for JWT token authentication (server)
 - `GOOGLE_MAPS_API_KEY`: Google Maps API key for Android app
 - `DB_URL`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`: Database configuration
 - `MINIO_*`: Object storage configuration (handled by Docker Compose)

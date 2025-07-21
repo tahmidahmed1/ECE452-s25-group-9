@@ -36,7 +36,7 @@ class GetOpportunitiesUseCase @Inject constructor(
     suspend fun getOpportunitiesWithFilters(
         lat: Double?,
         lon: Double?,
-        radiusKm: Float,
+        radiusKm: Float?,
         filters: OpportunityFilters,
     ): Flow<List<VolunteerOpportunity>> {
         return repository.getOpportunitiesWithFilters(lat, lon, radiusKm, filters)

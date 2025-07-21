@@ -90,7 +90,7 @@ class OpportunitiesViewModel @Inject constructor(
                             allOpportunities = opportunities
                             _uiState.value = currentState.copy(
                                 data = currentState.data.copy(
-                                    opportunities = filterByRadius(opportunities, currentState.data.currentLocation, currentState.data.radiusKm),
+                                    opportunities = filterByRadius(opportunities, currentState.data.currentLocation, currentState.data.radiusKm, true),
                                     selectedCategory = category,
                                 ),
                             )
@@ -112,7 +112,7 @@ class OpportunitiesViewModel @Inject constructor(
                         allOpportunities = opportunities
                         _uiState.value = currentState.copy(
                             data = currentState.data.copy(
-                                opportunities = filterByRadius(opportunities, currentState.data.currentLocation, currentState.data.radiusKm),
+                                opportunities = filterByRadius(opportunities, currentState.data.currentLocation, currentState.data.radiusKm, true),
                                 selectedCategory = null,
                             ),
                         )
@@ -143,8 +143,8 @@ class OpportunitiesViewModel @Inject constructor(
         }
     }
 
-    private fun filterByRadius(opportunities: List<VolunteerOpportunity>, location: Location?, radiusKm: Float): List<VolunteerOpportunity> {
-        if (location == null) return opportunities
+    private fun filterByRadius(opportunities: List<VolunteerOpportunity>, location: Location?, radiusKm: Float, useDistanceFilter: Boolean = true): List<VolunteerOpportunity> {
+        if (location == null || !useDistanceFilter) return opportunities
 
         return opportunities.filter { opp ->
             if (opp.latitude == 0.0 && opp.longitude == 0.0) {
@@ -162,7 +162,7 @@ class OpportunitiesViewModel @Inject constructor(
             _uiState.value = currentState.copy(
                 data = currentState.data.copy(
                     radiusKm = newRadius,
-                    opportunities = filterByRadius(allOpportunities, currentState.data.currentLocation, newRadius),
+                    opportunities = filterByRadius(allOpportunities, currentState.data.currentLocation, newRadius, true),
                 ),
             )
         }
@@ -198,16 +198,17 @@ class OpportunitiesViewModel @Inject constructor(
 
     fun applyFilters(filters: OpportunityFilters) {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
             val currentState = _uiState.value
             if (currentState is UiState.Success) {
+                _uiState.value = UiState.Loading
                 val location = currentState.data.currentLocation
                 val lat = location?.latitude
                 val lon = location?.longitude
                 val radiusKm = currentState.data.radiusKm
 
                 try {
-                    getOpportunitiesUseCase.getOpportunitiesWithFilters(lat, lon, radiusKm, filters)
+                    val effectiveRadiusKm = if (filters.useDistanceFilter) radiusKm else null
+                    getOpportunitiesUseCase.getOpportunitiesWithFilters(lat, lon, effectiveRadiusKm, filters)
                         .catch { e ->
                             _uiState.value = UiState.Error("Failed to apply filters: ${e.message}")
                         }
@@ -293,7 +294,7 @@ class OpportunitiesViewModel @Inject constructor(
                 .collect { loc ->
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
-                        val filtered = filterByRadius(allOpportunities, loc, currentState.data.radiusKm)
+                        val filtered = filterByRadius(allOpportunities, loc, currentState.data.radiusKm, true)
                         _uiState.value = currentState.copy(
                             data = currentState.data.copy(
                                 currentLocation = loc,

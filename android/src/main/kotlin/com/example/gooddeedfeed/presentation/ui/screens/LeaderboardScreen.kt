@@ -89,6 +89,12 @@ fun StatsScreen(
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
+    
+    // Check badges when visiting this page to ensure badges are up to date
+    LaunchedEffect(Unit) {
+        badgeViewModel.checkBadgeAchievements()
+        badgeViewModel.loadUserBadges()
+    }
     // Show error toast if there's an error
     uiState.errorMessage?.let { error ->
         LaunchedEffect(error) {
@@ -423,7 +429,7 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
 
             // Badge name
             Text(
-                text = badge.name,
+                text = mapBadgeNameToFunName(badge.name, badge.iconName),
                 style = MaterialTheme.typography.bodySmall,
                 color = contentColor,
                 textAlign = TextAlign.Center,
@@ -436,7 +442,7 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
             // Required points or earned indicator
             if (isEarned) {
                 Text(
-                    text = "✓ Earned",
+                    text = "${badge.requiredKarmaPoints} pts",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
@@ -653,6 +659,32 @@ private fun getIconForBadgeName(iconName: String): ImageVector {
         "Shield" -> Icons.Default.Shield
         "Psychology" -> Icons.Default.Psychology
         else -> Icons.Default.Star
+    }
+}
+
+private fun mapBadgeNameToFunName(badgeName: String, iconName: String): String {
+    return when (badgeName) {
+        "Karma 200" -> when (iconName) {
+            "Star" -> "Newcomer"
+            else -> "Newcomer"
+        }
+        "Karma 400" -> when (iconName) {
+            "WorkspacePremium" -> "Helper"
+            else -> "Helper"
+        }
+        "Karma 600" -> when (iconName) {
+            "LocalFireDepartment" -> "Rising Star"
+            else -> "Rising Star"
+        }
+        "Karma 800" -> when (iconName) {
+            "EmojiEvents" -> "Community Champion"
+            else -> "Community Champion"
+        }
+        "Karma 1000" -> when (iconName) {
+            "WorkspacePremium" -> "Dedicated Volunteer"
+            else -> "Dedicated Volunteer"
+        }
+        else -> badgeName // Return original name if no mapping found
     }
 }
 

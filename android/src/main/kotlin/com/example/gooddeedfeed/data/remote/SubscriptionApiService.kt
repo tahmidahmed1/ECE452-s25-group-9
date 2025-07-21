@@ -22,14 +22,14 @@ class SubscriptionApiService(
 
     companion object {
         private const val TAG = "SubscriptionApiService"
-        private val JWT_TOKEN_KEY = stringPreferencesKey("jwt_token")
+        private val SESSION_ID_KEY = stringPreferencesKey("session_id")
     }
 
-    private suspend fun getTokenFromDataStore(): String? {
+    private suspend fun getSessionIdFromDataStore(): String? {
         return try {
-            dataStore.data.first()[JWT_TOKEN_KEY]
+            dataStore.data.first()[SESSION_ID_KEY]
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Failed to get token from DataStore", e)
+            Log.e(TAG, "❌ Failed to get session ID from DataStore", e)
             null
         }
     }
@@ -37,10 +37,10 @@ class SubscriptionApiService(
     suspend fun subscribeToOrganizer(organizerId: Int): SubscriptionResponseDto {
         Log.d(TAG, "🚀 Starting subscribeToOrganizer request for organizer: $organizerId")
 
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for subscribeToOrganizer")
-            throw Exception("No authentication token found")
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for subscribeToOrganizer")
+            throw Exception("No authentication session found")
         }
 
         val request = SubscriptionCreateDto(organizerId)
@@ -50,7 +50,7 @@ class SubscriptionApiService(
                 Log.d(TAG, "🌐 Trying subscribeToOrganizer URL: $baseUrl/subscriptions")
                 client.post("$baseUrl/subscriptions") {
                     contentType(ContentType.Application.Json)
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                     setBody(request)
                 }
             }.body<SubscriptionResponseDto>()
@@ -63,17 +63,17 @@ class SubscriptionApiService(
     suspend fun unsubscribeFromOrganizer(organizerId: Int): SubscriptionResponseDto {
         Log.d(TAG, "🚀 Starting unsubscribeFromOrganizer request for organizer: $organizerId")
 
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for unsubscribeFromOrganizer")
-            throw Exception("No authentication token found")
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for unsubscribeFromOrganizer")
+            throw Exception("No authentication session found")
         }
 
         return try {
             withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying unsubscribeFromOrganizer URL: $baseUrl/subscriptions/$organizerId")
                 client.delete("$baseUrl/subscriptions/$organizerId") {
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                 }
             }.body<SubscriptionResponseDto>()
         } catch (e: Exception) {
@@ -85,17 +85,17 @@ class SubscriptionApiService(
     suspend fun getUserSubscriptions(): UserSubscriptionsResponseDto {
         Log.d(TAG, "🚀 Starting getUserSubscriptions request")
 
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for getUserSubscriptions")
-            throw Exception("No authentication token found")
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for getUserSubscriptions")
+            throw Exception("No authentication session found")
         }
 
         return try {
             withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying getUserSubscriptions URL: $baseUrl/subscriptions")
                 client.get("$baseUrl/subscriptions") {
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                 }
             }.body<UserSubscriptionsResponseDto>()
         } catch (e: Exception) {
@@ -107,17 +107,17 @@ class SubscriptionApiService(
     suspend fun getSubscriptionStatus(organizerId: Int): SubscriptionStatusDto {
         Log.d(TAG, "🚀 Starting getSubscriptionStatus request for organizer: $organizerId")
 
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for getSubscriptionStatus")
-            throw Exception("No authentication token found")
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for getSubscriptionStatus")
+            throw Exception("No authentication session found")
         }
 
         return try {
             withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying getSubscriptionStatus URL: $baseUrl/subscriptions/status/$organizerId")
                 client.get("$baseUrl/subscriptions/status/$organizerId") {
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                 }
             }.body<SubscriptionStatusDto>()
         } catch (e: Exception) {
@@ -129,10 +129,10 @@ class SubscriptionApiService(
     suspend fun getOrganizersWithSubscriptionStatus(query: String? = null): List<OrganizerWithSubscriptionStatusDto> {
         Log.d(TAG, "🚀 Starting getOrganizersWithSubscriptionStatus request")
 
-        val token = getTokenFromDataStore()
-        if (token == null) {
-            Log.e(TAG, "❌ No JWT token found in DataStore for getOrganizersWithSubscriptionStatus")
-            throw Exception("No authentication token found")
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for getOrganizersWithSubscriptionStatus")
+            throw Exception("No authentication session found")
         }
 
         return try {
@@ -144,7 +144,7 @@ class SubscriptionApiService(
                 }
                 Log.d(TAG, "🌐 Trying getOrganizersWithSubscriptionStatus URL: $url")
                 client.get(url) {
-                    header("Authorization", "Bearer $token")
+                    header("Authorization", "Bearer $sessionId")
                 }
             }.body<List<OrganizerWithSubscriptionStatusDto>>()
         } catch (e: Exception) {
