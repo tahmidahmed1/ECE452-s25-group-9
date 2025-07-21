@@ -124,7 +124,6 @@ fun EventManagementScreen(
 
         when (val currentState = uiState) {
             is UiState.Idle -> {
-                // Idle state – nothing to show yet
             }
             is UiState.Loading -> {
                 Box(
@@ -206,7 +205,6 @@ fun EventManagementScreen(
         }
     }
 
-    // Delete confirmation dialog
     if (eventToDelete != null) {
         AlertDialog(
             onDismissRequest = { eventToDelete = null },
@@ -240,7 +238,6 @@ private fun EventCard(
     onDeleteClick: (VolunteerEvent) -> Unit,
     onViewClick: (VolunteerEvent) -> Unit,
 ) {
-    // Debug logging for event card
     Log.d("EventCard", "=== EVENT CARD DEBUGGING ===")
     Log.d("EventCard", "Event ID: ${event.id}, Title: ${event.title}")
     Log.d("EventCard", "Event imageUrl: ${event.imageUrl}")
@@ -253,7 +250,6 @@ private fun EventCard(
     val mainImage = event.images.firstOrNull { it.is_main }
     Log.d("EventCard", "Main image found: ${mainImage?.let { "ID: ${it.id}, URL: ${it.image_url}" } ?: "NONE"}")
 
-    // Fallback logic: use first image if no main image is set
     val fallbackImage = if (mainImage == null && event.images.isNotEmpty()) {
         event.images.first().also {
             Log.d("EventCard", "Using fallback image: ID: ${it.id}, URL: ${it.image_url}")
@@ -273,7 +269,6 @@ private fun EventCard(
             .clickable { onViewClick(event) },
     ) {
         Column {
-            // Banner image if available - prioritize main image from images list
             if (bannerUrl != null) {
                 Log.d("EventCard", "Displaying banner for event ${event.id}: $bannerUrl")
                 AsyncImage(
@@ -335,7 +330,6 @@ private fun EventCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Event description
                 if (event.description.isNotBlank()) {
                     Text(
                         text = event.description,
@@ -345,7 +339,6 @@ private fun EventCard(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Stats row – volunteers and karma points
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Column {
                         Text(
@@ -373,7 +366,6 @@ private fun EventCard(
                     }
                 }
 
-                // status removed
             }
         }
     }

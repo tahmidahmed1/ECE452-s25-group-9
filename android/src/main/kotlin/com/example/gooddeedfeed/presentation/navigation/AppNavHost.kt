@@ -56,21 +56,16 @@ fun appNavHost(
     val currentState = uiState // Store in local variable to enable smart cast
     val toastState by rememberToastState()
 
-    // Track onboarding completion for welcome messages
     var isNavigatingFromOnboarding by remember { mutableStateOf(false) }
     var showLoadingOverlay by remember { mutableStateOf(false) }
 
-    // Navigate to SignIn on sign-out
-    // Skip the toast on first launch when the user is already signed out
     val hasProcessedInitialSignedOut = remember { mutableStateOf(false) }
 
     LaunchedEffect(currentState) {
         if (currentState is AuthUiState.SignedOut) {
             if (hasProcessedInitialSignedOut.value) {
-                // Real sign-out triggered in-app – show confirmation
                 ToastManager.showSuccess("Signed out successfully")
             } else {
-                // Initial SignedOut (no prior user session)
                 hasProcessedInitialSignedOut.value = true
             }
 
@@ -88,7 +83,6 @@ fun appNavHost(
                 SplashScreen(
                     authState = currentState,
                     onSplashFinished = {
-                        // Don't navigate yet - let the auth state handler decide
                         when (currentState) {
                             is AuthUiState.Success -> {
                                 val user = currentState.user
@@ -109,7 +103,6 @@ fun appNavHost(
                                 }
                             }
                             else -> {
-                                // Still loading auth state, stay on splash
                             }
                         }
                     },
@@ -157,7 +150,6 @@ fun appNavHost(
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(
                     onOnboardingComplete = {
-                        // Show loading overlay and refresh user data
                         isNavigatingFromOnboarding = true
                         showLoadingOverlay = true
                         viewModel.refreshUser()
@@ -171,19 +163,15 @@ fun appNavHost(
             composable(Screen.AuthenticatedHome.route) {
                 val user = (currentState as? AuthUiState.Success)?.user
                 if (user != null) {
-                    // Fallback: Always clear loading overlay when we reach AuthenticatedHome
                     LaunchedEffect(Unit) {
                         if (showLoadingOverlay) {
-                            // Small delay for smooth transition
                             kotlinx.coroutines.delay(500)
                             showLoadingOverlay = false
                         }
                     }
 
-                    // Handle welcome toast for onboarding completion
                     LaunchedEffect(isNavigatingFromOnboarding) {
                         if (isNavigatingFromOnboarding && user.userType != null) {
-                            // Wait for loading overlay to clear, then show welcome message
                             kotlinx.coroutines.delay(600)
 
                             when (user.userType) {
@@ -195,12 +183,10 @@ fun appNavHost(
                                 }
                             }
 
-                            // Reset the flag
                             isNavigatingFromOnboarding = false
                         }
                     }
 
-                    // Always show main app content
                     TabNavigationScreen(
                         user = user,
                         onLogout = { viewModel.signOut() },
@@ -213,7 +199,6 @@ fun appNavHost(
                                     navController.navigate(Screen.EditOrganizerProfile.route)
                                 }
                                 null -> {
-                                    // Handle case where user type is null - fallback to volunteer
                                     navController.navigate(Screen.EditVolunteerProfile.route)
                                 }
                             }
@@ -255,7 +240,6 @@ fun appNavHost(
             }
         }
 
-        // Global toast overlay positioned at bottom
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -268,7 +252,6 @@ fun appNavHost(
             )
         }
 
-        // Loading overlay with dark translucent background
         if (showLoadingOverlay) {
             Box(
                 modifier = Modifier

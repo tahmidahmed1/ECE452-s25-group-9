@@ -15,7 +15,6 @@ fun ProfileScreen(
     onLogout: () -> Unit,
 ) {
     ScreenContainer {
-        // Header removed per design
 
         VerticalSpacer()
 

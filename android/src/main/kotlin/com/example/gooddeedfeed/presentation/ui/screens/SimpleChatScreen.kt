@@ -139,7 +139,6 @@ private fun ChatListScreen(
             .fillMaxSize()
             .padding(16.dp),
     ) {
-        // Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(bottom = 16.dp),
@@ -156,7 +155,6 @@ private fun ChatListScreen(
             )
         }
 
-        // Conversations list
         when (conversationsState) {
             is UiState.Loading -> {
                 Box(
@@ -332,7 +330,6 @@ private fun ChatMessagesScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        // Top bar
         TopAppBar(
             title = {
                 Column {
@@ -359,7 +356,6 @@ private fun ChatMessagesScreen(
             },
         )
 
-        // Messages
         Box(modifier = Modifier.weight(1f)) {
             when (messagesState) {
                 is UiState.Loading -> {
@@ -427,7 +423,6 @@ private fun ChatMessagesScreen(
             }
         }
 
-        // Message input
         Card(
             modifier = Modifier
                 .fillMaxWidth()

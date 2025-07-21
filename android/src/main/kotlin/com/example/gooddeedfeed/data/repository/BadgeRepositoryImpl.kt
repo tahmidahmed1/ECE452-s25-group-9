@@ -36,7 +36,6 @@ class BadgeRepositoryImpl @Inject constructor(
     override suspend fun checkBadgeAchievements(): Flow<Result<DomainBadgeCheckResponse>> {
         return badgeApiService.checkBadgeAchievements().map { result ->
             result.map { dto ->
-                // Convert DTO to Domain model
                 DomainBadgeCheckResponse(
                     newlyEarnedBadges = dto.newlyEarnedBadges.map { achievement ->
                         DomainBadgeAchievement(

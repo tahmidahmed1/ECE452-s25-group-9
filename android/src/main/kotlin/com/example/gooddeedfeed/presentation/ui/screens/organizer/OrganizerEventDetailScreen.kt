@@ -35,7 +35,6 @@ fun OrganizerEventDetailScreen(
     onBack: () -> Unit,
     viewModel: EventManagementViewModel = hiltViewModel(),
 ) {
-    // Comprehensive logging for debugging
     Log.d("EventDetailScreen", "=== EVENT DETAIL DEBUGGING ===")
     Log.d("EventDetailScreen", "Event ID: ${event.id}")
     Log.d("EventDetailScreen", "Event Title: ${event.title}")
@@ -49,7 +48,6 @@ fun OrganizerEventDetailScreen(
     val mainImage = event.images.firstOrNull { it.is_main }
     Log.d("EventDetailScreen", "Main image found: ${mainImage?.let { "ID: ${it.id}, URL: ${it.image_url}" } ?: "NONE"}")
 
-    // Fallback logic: use first image if no main image is set
     val fallbackImage = if (mainImage == null && event.images.isNotEmpty()) {
         event.images.first().also {
             Log.d("EventDetailScreen", "Using fallback image: ID: ${it.id}, URL: ${it.image_url}")
@@ -104,7 +102,6 @@ fun OrganizerEventDetailScreen(
             Divider(modifier = Modifier.padding(vertical = 16.dp))
             Text(text = event.description, style = MaterialTheme.typography.bodyLarge)
 
-            // Photos section with main image selection
             if (event.images.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -148,7 +145,6 @@ fun OrganizerEventDetailScreen(
                                 contentScale = ContentScale.Crop,
                             )
 
-                            // Main image indicator
                             if (image.is_main) {
                                 Box(
                                     modifier = Modifier

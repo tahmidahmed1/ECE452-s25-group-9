@@ -113,7 +113,6 @@ class OpportunitiesRepositoryImpl @Inject constructor(
         filters: OpportunityFilters,
     ): Flow<List<VolunteerOpportunity>> = flow {
         val opportunities = try {
-            // Convert filters to API parameters
             val categoryParam = if (filters.selectedCategories.isNotEmpty()) {
                 filters.selectedCategories.first().toApiValue()
             } else {

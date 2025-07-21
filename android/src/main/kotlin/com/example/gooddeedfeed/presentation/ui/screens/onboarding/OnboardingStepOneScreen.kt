@@ -30,7 +30,6 @@ fun OnboardingStepOneScreen(
     var selectedUserType by remember { mutableStateOf<DomainUserType?>(null) }
 
     ScreenContainer(modifier = modifier) {
-        // Header removed per design
 
         VerticalSpacer(SpacingSize.Small)
 
@@ -39,7 +38,6 @@ fun OnboardingStepOneScreen(
         VerticalSpacer(SpacingSize.Large)
         Spacer(modifier = Modifier.height(24.dp)) // Extra space for visual balance
 
-        // User type options
         SelectableOptionCard(
             icon = Icons.Default.Person,
             title = "Volunteer",

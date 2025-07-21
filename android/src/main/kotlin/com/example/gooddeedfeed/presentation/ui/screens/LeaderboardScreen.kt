@@ -90,12 +90,10 @@ fun StatsScreen(
 
     val context = LocalContext.current
 
-    // Check badges when visiting this page to ensure badges are up to date
     LaunchedEffect(Unit) {
         badgeViewModel.checkBadgeAchievements()
         badgeViewModel.loadUserBadges()
     }
-    // Show error toast if there's an error
     uiState.errorMessage?.let { error ->
         LaunchedEffect(error) {
             ToastUtils.showErrorToast(context, error)
@@ -109,7 +107,6 @@ fun StatsScreen(
             .verticalScroll(scrollState)
             .padding(16.dp),
     ) {
-        // Header with icon and title (copied from ChatScreen)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(bottom = 24.dp),
@@ -126,7 +123,6 @@ fun StatsScreen(
             )
         }
 
-        // Section: Karma Leaderboard
         SectionCard(title = "Karma Leaderboard") {
             if (uiState.isLoading) {
                 Box(
@@ -149,7 +145,6 @@ fun StatsScreen(
                     modifier = Modifier.heightIn(max = 400.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    // Show current user position first if not in the current page
                     val currentUserId = when (val auth = authState) {
                         is AuthUiState.Success -> auth.user.id
                         else -> null
@@ -166,7 +161,6 @@ fun StatsScreen(
                         LeaderboardEntryCard(entry = entry, isCurrentUser = isCurrent)
                     }
 
-                    // Loading indicator for pagination
                     if (uiState.isLoadingMore) {
                         item {
                             Box(
@@ -180,7 +174,6 @@ fun StatsScreen(
                         }
                     }
 
-                    // Load more trigger
                     if (uiState.hasNextPage && !uiState.isLoadingMore) {
                         item {
                             LaunchedEffect(Unit) {
@@ -194,7 +187,6 @@ fun StatsScreen(
 
         VerticalSpacer(SpacingSize.Large)
 
-        // Section: Badges
         SectionCard(title = "Badges") {
             when (val badgesState = allBadgesState) {
                 is UiState.Loading -> {
@@ -218,7 +210,6 @@ fun StatsScreen(
                     val unearnedBadges = allBadges.filter { !earnedBadgeIds.contains(it.id) }
 
                     if (earnedBadges.isEmpty()) {
-                        // Show explanatory text when no badges are earned
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -247,7 +238,6 @@ fun StatsScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Show preview of available badges
                             if (unearnedBadges.isNotEmpty()) {
                                 Text(
                                     text = "Available badges:",
@@ -266,7 +256,6 @@ fun StatsScreen(
                             }
                         }
                     } else {
-                        // Show earned badges first, then unearned badges
                         Column {
                             if (earnedBadges.isNotEmpty()) {
                                 Text(
@@ -314,7 +303,6 @@ fun StatsScreen(
                     )
                 }
                 is UiState.Idle -> {
-                    // Idle state - show nothing or loading indicator
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -329,12 +317,10 @@ fun StatsScreen(
 
         VerticalSpacer(SpacingSize.Large)
 
-        // Section: Subscriptions
         SubscriptionsSection()
 
         VerticalSpacer(SpacingSize.Large)
 
-        // Section: Volunteer History
         SectionCard(title = "Volunteer History", showExport = true) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AppConstants.VOLUNTEER_HISTORY_ITEMS.forEach { item ->
@@ -362,7 +348,6 @@ fun StatsScreen(
             }
         }
 
-        // Development Mode Karma Increase Button (only for volunteers in dev mode)
         if (BuildConfig.DEV_MODE) {
             val currentAuthState = authState
             if (currentAuthState is AuthUiState.Success && currentAuthState.user.userType?.name == "VOLUNTEER") {
@@ -371,7 +356,6 @@ fun StatsScreen(
                 Button(
                     onClick = {
                         viewModel.increaseKarmaPointsDevOnly { updatedUser ->
-                            // Update the user state in AuthViewModel to immediately reflect new karma points
                             authViewModel.updateUserState(updatedUser)
                             ToastUtils.showSuccessToast(context, "Karma points increased by 100!")
                         }
@@ -417,7 +401,6 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
                 .padding(horizontal = 12.dp, vertical = 8.dp)
                 .fillMaxSize(),
         ) {
-            // Badge icon
             Icon(
                 imageVector = getIconForBadgeName(badge.iconName),
                 contentDescription = badge.name,
@@ -427,7 +410,6 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Badge name
             Text(
                 text = mapBadgeNameToFunName(badge.name, badge.iconName),
                 style = MaterialTheme.typography.bodySmall,
@@ -439,7 +421,6 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Required points or earned indicator
             if (isEarned) {
                 Text(
                     text = "${badge.requiredKarmaPoints} pts",
@@ -481,7 +462,6 @@ private fun exportHistoryPdf(context: android.content.Context, history: List<App
     doc.close()
 }
 
-// SectionCard composable wraps content in grey container and optional export button
 @Composable
 private fun SectionCard(
     title: String,
@@ -530,7 +510,6 @@ private fun LeaderboardEntryCard(
     if (entry == null) return
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    // No additional context needed
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -555,7 +534,6 @@ private fun LeaderboardEntryCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f),
             ) {
-                // Rank
                 Box(
                     modifier = Modifier
                         .size(32.dp)
@@ -583,7 +561,6 @@ private fun LeaderboardEntryCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Profile picture or fallback
                 if (entry.profilePictureUrl != null) {
                     AsyncImage(
                         model = entry.profilePictureUrl,
@@ -609,7 +586,6 @@ private fun LeaderboardEntryCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Name and username
                 Column {
                     Text(
                         text = entry.fullName ?: entry.username,
@@ -627,7 +603,6 @@ private fun LeaderboardEntryCard(
                 }
             }
 
-            // Karma points
             Column(
                 horizontalAlignment = Alignment.End,
             ) {
@@ -745,7 +720,6 @@ private fun SubscriptionsSection(
                 )
             }
             is UiState.Idle -> {
-                // Initial state, show nothing or placeholder
             }
         }
     }

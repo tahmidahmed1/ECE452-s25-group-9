@@ -32,7 +32,6 @@ enum class OpportunityCategory {
     OTHER,
 }
 
-// Helper to convert enum to backend-accepted string value
 fun OpportunityCategory.toApiValue(): String = when (this) {
     OpportunityCategory.COMMUNITY_SERVICE -> "community_service"
     OpportunityCategory.EDUCATION -> "education"

@@ -230,7 +230,6 @@ fun SocialMediaInputSection(
 
         VerticalSpacer(SpacingSize.Small)
 
-        // Display current social media links
         socialMediaLinks.forEach { link ->
             SocialMediaLinkItem(
                 link = link,
@@ -253,7 +252,6 @@ fun SocialMediaInputSection(
         }
     }
 
-    // Add social media dialog
     if (showAddDialog) {
         SocialMediaAddDialog(
             existingPlatforms = socialMediaLinks.map { it.platform },
@@ -334,7 +332,6 @@ private fun SocialMediaAddDialog(
         title = { Text("Add Social Media Link") },
         text = {
             Column {
-                // Platform selection
                 Text(
                     text = "Platform",
                     style = MaterialTheme.typography.bodyMedium,
@@ -363,7 +360,6 @@ private fun SocialMediaAddDialog(
 
                 VerticalSpacer(SpacingSize.Medium)
 
-                // URL input
                 OutlinedTextField(
                     value = url,
                     onValueChange = {
@@ -521,7 +517,6 @@ private fun OrganizationImageItem(
             contentScale = ContentScale.Crop,
         )
 
-        // Remove button
         IconButton(
             onClick = onRemove,
             modifier = Modifier
@@ -542,7 +537,6 @@ private fun OrganizationImageItem(
     }
 }
 
-// Helper functions
 @Composable
 private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {
     return when (platform) {

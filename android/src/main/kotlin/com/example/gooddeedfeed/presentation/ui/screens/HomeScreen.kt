@@ -79,7 +79,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Check if notification prompt has been shown
     var hasNotificationPromptBeenShown by remember { mutableStateOf(true) }
     var showNotificationPrompt by remember { mutableStateOf(false) }
 
@@ -87,10 +86,8 @@ fun HomeScreen(
         viewModel.loadUserHome(user)
     }
 
-    // Show notification prompt on first sign-in
     LaunchedEffect(user) {
         if (user.onboardingCompleted == true) {
-            // Check if we need to show notification prompt
             hasNotificationPromptBeenShown = viewModel.hasNotificationPromptBeenShown()
             if (!hasNotificationPromptBeenShown) {
                 showNotificationPrompt = true
@@ -100,7 +97,6 @@ fun HomeScreen(
 
     when (val currentState = uiState) {
         is UiState.Idle -> {
-            // Initial idle state – show nothing or a small placeholder
             Box(modifier = Modifier.fillMaxSize()) {}
         }
         is UiState.Loading -> {
@@ -142,7 +138,6 @@ fun HomeScreen(
         }
     }
 
-    // Show notification prompt dialog if needed
     if (showNotificationPrompt && user.userType != null) {
         NotificationPromptDialog(
             userType = user.userType!!,
@@ -172,7 +167,6 @@ private fun HomeContent(
 ) {
     ScreenContainer {
         Column {
-            // Welcome header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
@@ -212,7 +206,6 @@ private fun HomeContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Action items (skip Browse Opportunities / My Activities for volunteers)
             val filteredItems = userTypeDisplay.actionItems.filterNot {
                 it.title.contains("Browse Opportunities") || it.title.contains("My Activities")
             }
@@ -231,7 +224,6 @@ private fun HomeContent(
                 VerticalSpacer(SpacingSize.Small)
             }
 
-            // Volunteer-specific calendar
             if (user.userType == DomainUserType.VOLUNTEER) {
                 VolunteerCalendarView()
                 VerticalSpacer(SpacingSize.Large)
@@ -253,7 +245,6 @@ private fun getIconForAction(iconName: String) = when (iconName) {
 @SuppressLint("NewApi")
 @Composable
 private fun VolunteerCalendarView() {
-    // Mock events: 3 tomorrow
     data class EventItem(val title: String, val time: String)
     val tomorrow = LocalDate.now().plusDays(1)
     val eventsMap = remember {
@@ -277,7 +268,6 @@ private fun VolunteerCalendarView() {
         firstDayOfWeek = firstDayOfWeekFromLocale(),
     )
 
-    // Calendar with border
     Box(
         modifier = Modifier
             .height(300.dp)
@@ -329,7 +319,6 @@ private fun VolunteerCalendarView() {
         )
     }
 
-    // Events below calendar
     VerticalSpacer(SpacingSize.Medium)
     val events = eventsMap[selectedDate] ?: emptyList()
     InfoCard(

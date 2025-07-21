@@ -100,7 +100,6 @@ fun AppTopBar(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Only show karma for volunteers
                 if (user.userType?.name == "VOLUNTEER") {
                     Surface(
                         modifier = Modifier,
@@ -359,7 +358,6 @@ fun NotificationDropdownMenu(
                 RoundedCornerShape(12.dp),
             ),
     ) {
-        // Header
         Column(
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -390,7 +388,6 @@ fun NotificationDropdownMenu(
             )
         }
 
-        // Notifications content
         if (notifications.isEmpty()) {
             Box(
                 modifier = Modifier

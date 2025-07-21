@@ -55,7 +55,6 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Loading)
     val uiState: StateFlow<UiState<HomeData>> = _uiState.asStateFlow()
 
-    // Navigation events for home actions to switch bottom tabs
     private val _navigationEvent = MutableSharedFlow<HomeAction>(extraBufferCapacity = 1)
     val navigationEvent: SharedFlow<HomeAction> = _navigationEvent.asSharedFlow()
 
@@ -77,7 +76,6 @@ class HomeViewModel @Inject constructor(
     }
 
     fun handleAction(action: HomeAction) {
-        // Emit navigation event for bottom bar switching
         _navigationEvent.tryEmit(action)
     }
 
@@ -109,7 +107,7 @@ class HomeViewModel @Inject constructor(
         return when (user.userType) {
             DomainUserType.VOLUNTEER -> UserTypeDisplay(
                 title = "Welcome, Volunteer!",
-                subtitle = "Find meaningful ways to give back to your community!",
+                subtitle = "Find ways to give back to your community!",
                 actionItems = listOf(
                     HomeActionItem(
                         iconName = "search",

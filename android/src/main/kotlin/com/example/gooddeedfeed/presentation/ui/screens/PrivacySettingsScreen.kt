@@ -53,7 +53,6 @@ fun PrivacySettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Handle error and success messages
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             ToastManager.showError(message)
@@ -104,7 +103,6 @@ fun PrivacySettingsScreen(
                 onCheckedChange = viewModel::updateNotificationsEnabled,
             )
 
-            // Only show location and profile picture settings for volunteers
             if (user.userType != DomainUserType.ORGANIZER) {
                 SettingToggleRow(
                     title = "Enable Location Services",
@@ -125,7 +123,6 @@ fun PrivacySettingsScreen(
                 textAlign = TextAlign.Center,
             )
 
-            // Add bottom padding
             Spacer(modifier = Modifier.height(48.dp))
         }
     }

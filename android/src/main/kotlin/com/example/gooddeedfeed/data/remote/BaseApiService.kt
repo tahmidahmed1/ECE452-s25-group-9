@@ -28,7 +28,6 @@ abstract class BaseApiService(protected val client: HttpClient) {
                 return block(url)
             } catch (e: Exception) {
                 lastException = e
-                // Continue to next URL
             }
         }
         throw lastException ?: IllegalStateException("All URLs failed and no exception captured")

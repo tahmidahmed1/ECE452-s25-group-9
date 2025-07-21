@@ -32,7 +32,6 @@ class PrivacySettingsViewModel @Inject constructor(
     val uiState: StateFlow<PrivacySettingsState> = _uiState.asStateFlow()
 
     init {
-        // Load initial settings
         loadSettings()
     }
 
@@ -97,7 +96,6 @@ class PrivacySettingsViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, successMessage = null)
 
-                // Update both local and backend settings
                 locationSettingsRepository.setNotificationsEnabled(enabled)
                 notificationRepository.setNotificationsEnabled(enabled).onSuccess {
                     _uiState.value = _uiState.value.copy(

@@ -37,7 +37,6 @@ fun LeaderboardResponseDto.toDomain(): DomainLeaderboardResponse {
 }
 
 fun String.toEmulatorAccessibleUrl(): String {
-    // More comprehensive emulator detection
     val isEmulator = android.os.Build.FINGERPRINT.contains("generic") ||
         android.os.Build.FINGERPRINT.contains("unknown") ||
         android.os.Build.MODEL.contains("google_sdk") ||
@@ -58,7 +57,6 @@ fun String.toEmulatorAccessibleUrl(): String {
         .replace("http://minio:9000", "http://$host:9001")
         .replace("http://minio:9001", "http://$host:9001")
 
-    // Force emulator URL if we detect we're still using localhost and it doesn't work
     if (mappedUrl.contains("localhost") && !isEmulator) {
         mappedUrl = mappedUrl.replace("http://localhost", "http://10.0.2.2")
             .replace("http://127.0.0.1", "http://10.0.2.2")

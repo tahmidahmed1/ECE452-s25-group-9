@@ -17,7 +17,6 @@ import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 
-// DTO → Domain
 fun UserDto.toDomain(): DomainUser {
     return DomainUser(
         id = id,
@@ -71,13 +70,11 @@ fun DomainUserUpdate.toDto(): UserUpdateDto {
     )
 }
 
-// UserType mappers
 fun UserType.toDomain(): DomainUserType = when (this) {
     UserType.VOLUNTEER -> DomainUserType.VOLUNTEER
     UserType.ORGANIZER -> DomainUserType.ORGANIZER
 }
 
-// Sex mappers
 fun Sex.toDomain(): DomainSex = when (this) {
     Sex.MALE -> DomainSex.MALE
     Sex.FEMALE -> DomainSex.FEMALE
@@ -85,7 +82,6 @@ fun Sex.toDomain(): DomainSex = when (this) {
     Sex.PREFER_NOT_TO_SAY -> DomainSex.PREFER_NOT_TO_SAY
 }
 
-// SocialMediaPlatform mappers
 fun SocialMediaPlatformDto.toDomain(): SocialMediaPlatform = when (this) {
     SocialMediaPlatformDto.INSTAGRAM -> SocialMediaPlatform.INSTAGRAM
     SocialMediaPlatformDto.FACEBOOK -> SocialMediaPlatform.FACEBOOK
@@ -93,13 +89,11 @@ fun SocialMediaPlatformDto.toDomain(): SocialMediaPlatform = when (this) {
     SocialMediaPlatformDto.LINKEDIN -> SocialMediaPlatform.LINKEDIN
 }
 
-// SocialMediaLink mappers
 fun SocialMediaLinkDto.toDomain(): SocialMediaLink = SocialMediaLink(
     platform = platform.toDomain(),
     url = url,
 )
 
-// Badge mappers
 fun BadgeDto.toDomain(): DomainBadge = DomainBadge(
     id = id,
     name = name,

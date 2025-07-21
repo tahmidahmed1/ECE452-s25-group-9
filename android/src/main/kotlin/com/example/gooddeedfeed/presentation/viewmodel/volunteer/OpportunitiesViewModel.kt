@@ -125,7 +125,6 @@ class OpportunitiesViewModel @Inject constructor(
         viewModelScope.launch {
             applyForOpportunityUseCase(opportunityId)
                 .onSuccess {
-                    // Opportunity joined successfully - could show a success message
                     loadOpportunities() // Refresh to update status
                 }
                 .onFailure { e ->
@@ -228,10 +227,8 @@ class OpportunitiesViewModel @Inject constructor(
 
     private fun applyOpportunityFilters(opportunities: List<VolunteerOpportunity>, filters: OpportunityFilters): List<VolunteerOpportunity> {
         return opportunities.filter { opportunity ->
-            // Category filter
             val categoryMatch = filters.selectedCategories.isEmpty() || filters.selectedCategories.contains(opportunity.category)
 
-            // Availability filter
             val availabilityMatch = when {
                 filters.onlyAvailable -> opportunity.currentVolunteers < opportunity.requiredVolunteers
                 filters.almostFull -> {
@@ -241,10 +238,8 @@ class OpportunitiesViewModel @Inject constructor(
                 else -> true
             }
 
-            // Karma points filter
             val karmaMatch = opportunity.karmaPoints >= filters.minKarmaPoints && opportunity.karmaPoints <= filters.maxKarmaPoints
 
-            // Date filter
             val dateMatch = when (filters.dateFilter) {
                 DateFilter.ALL -> true
                 DateFilter.TODAY -> isToday(opportunity.date)

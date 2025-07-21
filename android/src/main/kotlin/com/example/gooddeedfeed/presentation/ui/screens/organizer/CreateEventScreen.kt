@@ -96,7 +96,6 @@ fun CreateEventScreen(
     var date by remember { mutableStateOf(eventToEdit?.date ?: "") }
     fun formatExistingTime(raw: String?): String {
         if (raw.isNullOrBlank()) return ""
-        // If already in h:mm a format, return as is
         return try {
             SimpleDateFormat("h:mm a", Locale.getDefault()).parse(raw)
             raw // parsed successfully, already correct format
@@ -118,21 +117,16 @@ fun CreateEventScreen(
     var maxVolunteersText by remember { mutableStateOf(eventToEdit?.maxVolunteers?.toString() ?: "") }
     var category by remember { mutableStateOf(eventToEdit?.category ?: OpportunityCategory.OTHER) }
     var karmaPoints by remember { mutableStateOf(eventToEdit?.karmaPoints ?: 10) }
-    // Pre-fill latitude/longitude when editing
     var latitudeText by remember { mutableStateOf(eventToEdit?.latitude?.toString() ?: "") }
     var longitudeText by remember { mutableStateOf(eventToEdit?.longitude?.toString() ?: "") }
     var showMapPicker by remember { mutableStateOf(false) }
-    // Existing remote images for edit mode
     var existingImages by remember { mutableStateOf<List<EventImageDto>>(eventToEdit?.images ?: emptyList()) }
-    // Newly selected local files
     var newImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
 
-    // Combined list for UI (remote first, then local)
     val allImages: List<Any> = remember(existingImages, newImageFiles) {
         existingImages.map { it.image_url } + newImageFiles
     }
 
-    // Determine initial main image index (remote images have priority)
     var mainImageIndex by remember {
         mutableStateOf(
             existingImages.indexOfFirst { it.is_main }.takeIf { it >= 0 } ?: 0,
@@ -146,7 +140,6 @@ fun CreateEventScreen(
     val scrollState = rememberScrollState()
     val context = LocalContext.current
 
-    // Date/time validation functions
     fun parseEventDateTime(dateStr: String, timeStr: String): Date? {
         return try {
             val dateFormat = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
@@ -182,11 +175,8 @@ fun CreateEventScreen(
         val now = Date()
         val oneHourFromNow = Date(now.time + 60 * 60 * 1000) // Add 1 hour in milliseconds
 
-        // For editing existing events, allow if the new time is at least 1 hour from now
-        // or if we're editing an existing event and the time hasn't changed (moved earlier)
         if (isEditing && eventToEdit != null) {
             val originalDateTime = parseEventDateTime(eventToEdit.date, eventToEdit.startTime)
-            // Allow if new time is valid OR if we're not making it worse than the original
             return eventDateTime.after(oneHourFromNow) ||
                 (originalDateTime != null && !eventDateTime.before(originalDateTime))
         }
@@ -203,11 +193,9 @@ fun CreateEventScreen(
         return endDateTime.after(startDateTime)
     }
 
-    // Validation helper functions
     val isStartDateTimeValid = isEventDateTimeValid(date, startTime)
     val isEndTimeValid = isEndTimeAfterStartTime(date, startTime, endTime)
 
-    // Helper flag – true only when lat & lon are populated by a chosen place
     val isLocationSelected = latitudeText.isNotBlank() && longitudeText.isNotBlank()
 
     val isFormValid = title.isNotBlank() &&
@@ -229,7 +217,6 @@ fun CreateEventScreen(
     val endTimeError = hasAttemptedSubmit && (endTime.isBlank() || (date.isNotBlank() && startTime.isNotBlank() && endTime.isNotBlank() && !isEndTimeValid))
     val maxVolunteersError = hasAttemptedSubmit && (maxVolunteersText.isBlank() || (maxVolunteersText.toIntOrNull() ?: 0) <= 0)
 
-    // Human-readable reason why the form is currently invalid (checks live without submit)
     val formErrorMessage: String? = when {
         title.isBlank() -> "Title is required"
         description.isBlank() -> "Description is required"
@@ -243,8 +230,6 @@ fun CreateEventScreen(
         else -> null
     }
 
-    // Date and time picker states
-    // Compute 'today' as start-of-day in UTC to align with DatePicker's utcTimeMillis values
     val today = java.time.LocalDate.now(java.time.ZoneOffset.UTC)
         .atStartOfDay(java.time.ZoneOffset.UTC)
         .toInstant()
@@ -260,7 +245,6 @@ fun CreateEventScreen(
     val startTimePickerState = rememberTimePickerState()
     val endTimePickerState = rememberTimePickerState()
 
-    // Launcher for Google Places Autocomplete
     val placeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.let { intent ->
@@ -274,7 +258,6 @@ fun CreateEventScreen(
         }
     }
 
-    // Launcher for multiple gallery images
     val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             ImageUtils.saveUriToFile(context, it)?.let { file ->
@@ -285,13 +268,11 @@ fun CreateEventScreen(
         }
     }
 
-    // --- Location autocomplete state & logic ---
     val placesClient = remember { Places.createClient(context) }
     val sessionToken = remember { AutocompleteSessionToken.newInstance() }
     var locationDropdownExpanded by remember { mutableStateOf(false) }
     var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
 
-    // Debounce location query and fetch predictions
     LaunchedEffect(locationText) {
         if (locationText.length >= 2) { // Reduced from 3 to 2 characters
             delay(500) // 500 ms debounce to limit API calls during typing
@@ -306,7 +287,6 @@ fun CreateEventScreen(
                 Log.d("CreateEventScreen", "✅ Received ${predictions.size} predictions")
                 locationDropdownExpanded = predictions.isNotEmpty()
             } catch (e: CancellationException) {
-                // Expected when user keeps typing – ignore
             } catch (e: Exception) {
                 Log.e("CreateEventScreen", "❌ Places API error", e)
                 predictions = emptyList()
@@ -326,7 +306,6 @@ fun CreateEventScreen(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Title row (aligned with Manage Events style)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -372,7 +351,6 @@ fun CreateEventScreen(
                 maxLines = 5,
             )
 
-            // Location input with autocomplete and map button
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.Bottom,
@@ -380,7 +358,6 @@ fun CreateEventScreen(
                 ExposedDropdownMenuBox(
                     expanded = locationDropdownExpanded,
                     onExpandedChange = { expanded ->
-                        // Only allow manual dismissal, not opening
                         if (!expanded) {
                             locationDropdownExpanded = false
                         }
@@ -432,7 +409,6 @@ fun CreateEventScreen(
                     }
                 }
 
-                // Map picker button
                 OutlinedButton(
                     onClick = { showMapPicker = true },
                     shape = RoundedCornerShape(12.dp),
@@ -448,7 +424,6 @@ fun CreateEventScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Image carousel picker
             EventImageCarousel(
                 selectedImages = allImages,
                 mainImageIndex = mainImageIndex,
@@ -459,7 +434,6 @@ fun CreateEventScreen(
                 },
                 onRemoveImage = { index ->
                     if (index < existingImages.size) {
-                        // Remove remote image locally (backend deletion not handled here)
                         existingImages = existingImages.filterIndexed { i, _ -> i != index }
                     } else {
                         val localIndex = index - existingImages.size
@@ -595,7 +569,6 @@ fun CreateEventScreen(
                 supportingText = if (maxVolunteersError) { { Text("Max volunteers is required (1-100)", color = MaterialTheme.colorScheme.error) } } else null,
             )
 
-            // Category dropdown
             var expanded by remember { mutableStateOf(false) }
             val displayName: (OpportunityCategory) -> String = { cat ->
                 cat.name.split("_").joinToString(" ") { word ->
@@ -660,7 +633,6 @@ fun CreateEventScreen(
                 }
             }
 
-            // Karma Points Slider
             Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 Text(
                     text = "Karma Points: $karmaPoints",
@@ -684,7 +656,6 @@ fun CreateEventScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Error message display
             errorMessage?.let { message ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -718,7 +689,6 @@ fun CreateEventScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Show validation hint when button disabled
             formErrorMessage?.let {
                 Text(
                     text = it,
@@ -761,14 +731,12 @@ fun CreateEventScreen(
                                 if (isEditing && eventToEdit != null) {
                                     viewModel.updateEvent(eventToEdit.id, data)
 
-                                    // Upload new images only
                                     newImageFiles.forEachIndexed { nIdx, file ->
                                         val absoluteIndex = existingImages.size + nIdx
                                         val isMain = absoluteIndex == mainImageIndex
                                         viewModel.uploadEventImageToCarousel(eventToEdit.id, file, isMain)
                                     }
 
-                                    // If chosen main image is an existing remote image and different from current main
                                     if (mainImageIndex < existingImages.size) {
                                         val chosenRemote = existingImages[mainImageIndex]
                                         if (!chosenRemote.is_main) {
@@ -778,7 +746,6 @@ fun CreateEventScreen(
                                 } else {
                                     val created = viewModel.createEvent(data)
 
-                                    // Upload images if selected (all are new)
                                     newImageFiles.forEachIndexed { nIdx, file ->
                                         val isMain = nIdx == mainImageIndex // existingImages empty in create mode
                                         viewModel.uploadEventImageToCarousel(created.id, file, isMain)
@@ -793,7 +760,6 @@ fun CreateEventScreen(
                             }
                         }
                     } else {
-                        // Show validation errors
                         hasAttemptedSubmit = true
                     }
                 },
@@ -826,7 +792,6 @@ fun CreateEventScreen(
         )
     }
 
-    // Date Picker Dialog
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -834,7 +799,6 @@ fun CreateEventScreen(
                 Button(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            // Convert millis (UTC midnight) to LocalDate in UTC, then format
                             val utcDate = java.time.Instant.ofEpochMilli(millis)
                                 .atZone(java.time.ZoneOffset.UTC)
                                 .toLocalDate()
@@ -894,7 +858,6 @@ fun CreateEventScreen(
         }
     }
 
-    // Start Time Picker Dialog
     if (showStartTimePicker) {
         CustomTimePickerDialog(
             onDismissRequest = { showStartTimePicker = false },
@@ -910,7 +873,6 @@ fun CreateEventScreen(
         )
     }
 
-    // End Time Picker Dialog
     if (showEndTimePicker) {
         CustomTimePickerDialog(
             onDismissRequest = { showEndTimePicker = false },
@@ -1050,7 +1012,6 @@ private fun EventImageCarousel(
         ),
     ) {
         if (selectedImages.isEmpty()) {
-            // Empty state - entire tile clickable
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -1083,9 +1044,7 @@ private fun EventImageCarousel(
                 }
             }
         } else {
-            // Show carousel with images
             Column(modifier = Modifier.fillMaxSize()) {
-                // Main image display
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1101,7 +1060,6 @@ private fun EventImageCarousel(
                         contentScale = ContentScale.Crop,
                     )
 
-                    // Main image badge
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopStart)
@@ -1117,7 +1075,6 @@ private fun EventImageCarousel(
                         )
                     }
 
-                    // Remove button
                     IconButton(
                         onClick = { onRemoveImage(mainImageIndex) },
                         modifier = Modifier
@@ -1138,7 +1095,6 @@ private fun EventImageCarousel(
                     }
                 }
 
-                // Thumbnail row
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1173,7 +1129,6 @@ private fun EventImageCarousel(
                         }
                     }
 
-                    // Add more button
                     if (selectedImages.size < 10) {
                         item {
                             Box(

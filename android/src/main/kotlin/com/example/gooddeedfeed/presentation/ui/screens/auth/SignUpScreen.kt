@@ -36,7 +36,6 @@ import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SecondaryButton
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 
-// Validation functions for input fields
 private fun validateEmail(email: String): String? {
     if (email.isBlank()) return "Email is required"
     if (!email.contains("@")) return "Email must contain an @ symbol"
@@ -77,7 +76,6 @@ fun SignUpScreen(
     val isLoading = uiState is AuthUiState.Loading
     val context = LocalContext.current
 
-    // Handle success and error states with toasts and navigation
     LaunchedEffect(uiState) {
         when (uiState) {
             is AuthUiState.Success -> {
@@ -96,7 +94,6 @@ fun SignUpScreen(
         }
     }
 
-    // Handle sign up with validation
     val handleSignUp = {
         val usernameError = validateUsername(username)
         val emailError = validateEmail(email)
@@ -129,7 +126,6 @@ fun SignUpScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Logo or App Icon placeholder
             Surface(
                 modifier = Modifier
                     .size(80.dp)

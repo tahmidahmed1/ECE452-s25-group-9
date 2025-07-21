@@ -189,7 +189,6 @@ class ChatViewModel @Inject constructor(
                     val sentMessage = response.body<MessageResponse>()
                     _sendMessageState.value = UiState.Success("Message sent successfully")
 
-                    // Add message to current messages
                     val currentMessages = (_messagesState.value as? UiState.Success)?.data ?: emptyList()
                     val newMessage = ChatMessage(
                         id = sentMessage.id.toString(),
@@ -223,7 +222,6 @@ class ChatViewModel @Inject constructor(
                 chatApiService.withFallbackUrls { baseUrl ->
                     val wsUrl = baseUrl.replace("http", "ws")
                     httpClient.webSocket("$wsUrl/ws/chat/$roomId") {
-                        // Listen for incoming messages
                         for (frame in incoming) {
                             if (frame is Frame.Text) {
                                 val messageText = frame.readText()
@@ -253,7 +251,6 @@ class ChatViewModel @Inject constructor(
     }
 
     private fun formatTimestamp(timestamp: String): String {
-        // Simple timestamp formatting - in real app, use proper date formatting
         return try {
             val time = timestamp.substringAfter("T").substringBefore(".")
             val parts = time.split(":")

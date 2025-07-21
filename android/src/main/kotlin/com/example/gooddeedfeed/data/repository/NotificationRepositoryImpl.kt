@@ -32,12 +32,10 @@ class NotificationRepositoryImpl @Inject constructor(
 
     override suspend fun updateFcmToken(token: String): Result<Unit> {
         return try {
-            // Save token locally
             dataStore.edit { preferences ->
                 preferences[FCM_TOKEN_KEY] = token
             }
 
-            // Send token to backend
             notificationApiService.updateFcmToken(token)
 
             Log.d(TAG, "FCM token updated successfully")
@@ -50,7 +48,6 @@ class NotificationRepositoryImpl @Inject constructor(
 
     override suspend fun getFcmToken(): Result<String?> {
         return try {
-            // Try to get from local storage first
             val localToken = dataStore.data.map { preferences ->
                 preferences[FCM_TOKEN_KEY]
             }.first()
@@ -58,7 +55,6 @@ class NotificationRepositoryImpl @Inject constructor(
             if (localToken != null) {
                 Result.success(localToken)
             } else {
-                // Get new token from Firebase
                 val newToken = firebaseMessaging.token.await()
                 updateFcmToken(newToken)
                 Result.success(newToken)
@@ -75,7 +71,6 @@ class NotificationRepositoryImpl @Inject constructor(
                 preferences[NOTIFICATIONS_ENABLED_KEY] = enabled
             }
 
-            // Update server preference
             notificationApiService.setNotificationPreferences(enabled)
 
             Log.d(TAG, "Notification preferences updated: $enabled")

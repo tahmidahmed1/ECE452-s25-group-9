@@ -30,19 +30,15 @@ fun SplashScreen(
     val context = LocalContext.current
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
 
-    // Early location permission detection
     LaunchedEffect(locationPermissionState.status) {
         val hasLocationPermission = locationPermissionState.status.isGranted
-        // Log location permission status for debugging
         android.util.Log.d("SplashScreen", "Location permission status: $hasLocationPermission")
 
-        // Store location permission status for later use
         if (!hasLocationPermission) {
             android.util.Log.w("SplashScreen", "Location permission not granted - user will see location prompts")
         }
     }
 
-    // As soon as we have a definitive auth state, move on
     LaunchedEffect(authState) {
         when (authState) {
             is AuthUiState.Success, is AuthUiState.SignedOut -> onSplashFinished()
@@ -50,7 +46,6 @@ fun SplashScreen(
         }
     }
 
-    // Minimal placeholder while the auth check completes
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,

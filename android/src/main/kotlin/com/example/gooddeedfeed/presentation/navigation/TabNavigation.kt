@@ -134,7 +134,6 @@ fun TabNavigationScreen(
     onLogout: () -> Unit,
     onEditProfile: () -> Unit = {},
 ) {
-    // Observe home navigation events to switch bottom bar tabs
     val homeViewModel: HomeViewModel = hiltViewModel()
     val badgeViewModel: BadgeViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -142,27 +141,21 @@ fun TabNavigationScreen(
     var showPrivacySettings by remember { mutableStateOf(false) }
     var showLostAndFound by remember { mutableStateOf(false) }
 
-    // Observe latest authenticated user state – keeps UI (karma points, etc.) always in sync
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Fallback to the originally-passed user until we get an updated state
     val currentUser = (authState as? AuthUiState.Success)?.user ?: user
 
-    // Always refresh user data when TabNavigationScreen is first shown
     LaunchedEffect(Unit) {
         authViewModel.refreshUser()
     }
 
-    // Refresh user each time the user switches tabs to ensure latest data
     LaunchedEffect(selectedTabIndex) {
         authViewModel.refreshUser()
     }
 
-    // Generate tabs based on the *current* user type – should always have userType here but adding safety check
     val tabs = getTabsForUserType(currentUser.userType ?: DomainUserType.VOLUNTEER)
 
-    // Handle navigation events from HomeScreen using precomputed tabs
     LaunchedEffect(homeViewModel) {
         homeViewModel.navigationEvent.collect { action ->
             selectedTabIndex = when (action) {
@@ -202,7 +195,6 @@ fun TabNavigationScreen(
                 )
             },
             bottomBar = {
-                // Hide bottom navigation bar when Lost and Found is visible
                 if (!showLostAndFound) {
                     FloatingNavigationBar(
                         tabs = tabs,
@@ -218,13 +210,11 @@ fun TabNavigationScreen(
             Box(modifier = Modifier.padding(paddingValues)) {
                 tabs[selectedTabIndex].screen(currentUser, onLogout)
 
-                // Lost & Found Overlay - positioned within scaffold content area
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showLostAndFound,
                     enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
                     exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
                 ) {
-                    // Use a Box to block interaction with content behind
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -240,9 +230,7 @@ fun TabNavigationScreen(
             }
         }
 
-        // Toast overlay is handled at the app level in AppNavHost
 
-        // Preview Profile Overlay - appears over everything including bottom bar
         androidx.compose.animation.AnimatedVisibility(
             visible = showPreviewProfile,
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
@@ -255,7 +243,6 @@ fun TabNavigationScreen(
             )
         }
 
-        // Privacy & Notifications Overlay
         androidx.compose.animation.AnimatedVisibility(
             visible = showPrivacySettings,
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
@@ -268,7 +255,6 @@ fun TabNavigationScreen(
             )
         }
 
-        // Badge achievement manager for showing badge popups
         BadgeManager(
             badgeViewModel = badgeViewModel,
             userKarmaPoints = currentUser.karmaPoints,

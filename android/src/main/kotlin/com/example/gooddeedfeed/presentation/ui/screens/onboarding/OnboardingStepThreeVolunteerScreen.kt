@@ -117,7 +117,6 @@ fun OnboardingStepThreeVolunteerScreen(
         if (trimmedSkill.isNotBlank() && trimmedSkill !in selectedSkills && trimmedSkill !in predefinedSkills) {
             selectedSkills = selectedSkills + trimmedSkill
             customSkill = ""
-            // Scroll to the beginning to show the newly added custom skill
             coroutineScope.launch {
                 skillsScrollState.animateScrollToItem(0)
             }

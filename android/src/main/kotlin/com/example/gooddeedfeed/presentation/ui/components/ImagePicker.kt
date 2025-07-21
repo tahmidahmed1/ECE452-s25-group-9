@@ -198,7 +198,6 @@ fun ProfileImagePicker(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
 
-    // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
     ) { bitmap: Bitmap? ->
@@ -210,7 +209,6 @@ fun ProfileImagePicker(
         }
     }
 
-    // Gallery launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -227,7 +225,6 @@ fun ProfileImagePicker(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier,
     ) {
-        // Profile picture display
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -251,7 +248,6 @@ fun ProfileImagePicker(
                             contentScale = ContentScale.Crop,
                         )
 
-                        // Remove button for selected image
                         IconButton(
                             onClick = { selectedImageUri = null },
                             modifier = Modifier
@@ -280,7 +276,6 @@ fun ProfileImagePicker(
                             contentScale = ContentScale.Crop,
                         )
 
-                        // Remove button for current image
                         if (onImageRemoved != null) {
                             IconButton(
                                 onClick = {
@@ -315,7 +310,6 @@ fun ProfileImagePicker(
                 }
             }
 
-            // Add/edit indicator
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -349,7 +343,6 @@ fun ProfileImagePicker(
         )
     }
 
-    // Image source selection dialog
     if (showImageSourceDialog) {
         AlertDialog(
             onDismissRequest = { showImageSourceDialog = false },

@@ -12,7 +12,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-// Extension property to create the DataStore instance lazily on the Context
 private val Context.authDataStore by preferencesDataStore(name = "auth")
 
 @Module

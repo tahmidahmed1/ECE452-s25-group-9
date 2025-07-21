@@ -47,9 +47,6 @@ constructor(
         checkCurrentUser()
     }
 
-    /**
-     * Development mode: Quick sign in with auto-generated user
-     */
     fun devModeSignIn(userType: DomainUserType = DomainUserType.VOLUNTEER) {
         Log.d(TAG, "🎯 DevMode signIn initiated")
         Log.d(TAG, "📝 DevMode userType: $userType")
@@ -77,7 +74,6 @@ constructor(
                     Log.d(TAG, "✅ DevMode signUp successful")
                     Log.d(TAG, "🔄 Setting user type to: $userType")
 
-                    // Set the user type after successful signup
                     authRepository.setUserType(userType).onSuccess {
                         Log.d(TAG, "✅ User type set successfully")
                         Log.d(TAG, "🔄 Fetching user details...")
@@ -99,9 +95,6 @@ constructor(
         }
     }
 
-    /**
-     * Development mode: Create account without setting user type (requires onboarding)
-     */
     fun devModeCreateOnboardingAccount() {
         Log.d(TAG, "🎯 DevMode onboarding account creation initiated")
 
@@ -143,7 +136,6 @@ constructor(
     }
 
     fun signUp(username: String, email: String, password: String) {
-        Log.d(TAG, "🎯 SignUp initiated")
         Log.d(TAG, "📝 SignUp params - Username: $username, Email: $email")
 
         Log.d(TAG, "🔄 Setting loading state...")
@@ -151,7 +143,6 @@ constructor(
 
         viewModelScope.launch {
             try {
-                // Ensure clean state before sign up (in case of previous incomplete sign out)
                 Log.d(TAG, "🧹 Ensuring clean auth state before sign up...")
 
                 Log.d(TAG, "📞 Calling signUpUseCase...")
@@ -206,7 +197,6 @@ constructor(
 
         viewModelScope.launch {
             try {
-                // Force immediate state clearing to prevent any stale state
                 Log.d(TAG, "🧹 Clearing UI state immediately...")
                 _uiState.value = AuthUiState.SignedOut
 
@@ -215,17 +205,14 @@ constructor(
 
                 result.onSuccess {
                     Log.d(TAG, "✅ SignOut successful")
-                    // Ensure state remains SignedOut
                     _uiState.value = AuthUiState.SignedOut
                 }.onFailure { error ->
                     Log.e(TAG, "❌ SignOut failed", error)
-                    // Even if server logout fails, keep local state as signed out
                     _uiState.value = AuthUiState.SignedOut
                     Log.w(TAG, "⚠️ Keeping local state as signed out despite server error")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "❌ SignOut exception", e)
-                // Even if there's an exception, keep local state as signed out
                 _uiState.value = AuthUiState.SignedOut
                 Log.w(TAG, "⚠️ Keeping local state as signed out despite exception")
             }
@@ -258,25 +245,18 @@ constructor(
 
     fun refreshUser() = fetchUser()
 
-    /**
-     * Update the current user state with the provided user data
-     */
     fun updateUserState(user: DomainUser) {
         _uiState.value = AuthUiState.Success(user)
     }
 
-    // ------------------ Profile Update ------------------
 
     fun updateUserProfile(update: DomainUserUpdate) {
-        // keep current UI state but show loading maybe
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             val result = authRepository.updateProfile(update)
             result.onSuccess { user: DomainUser ->
-                // Update with the returned user
                 _uiState.value = AuthUiState.Success(user)
 
-                // Refresh user from server to ensure we have the most up-to-date data
                 fetchUser()
             }.onFailure { error: Throwable ->
                 _uiState.value = AuthUiState.Error(error.message ?: "Failed to update profile")
@@ -284,7 +264,6 @@ constructor(
         }
     }
 
-    // ------------------ Profile Picture ------------------
 
     fun uploadProfilePicture(file: File) {
         _uiState.value = AuthUiState.Loading
@@ -292,7 +271,6 @@ constructor(
             try {
                 val result = authRepository.uploadProfilePicture(file)
                 result.onSuccess { url: String ->
-                    // Refresh user after successful upload
                     fetchUser()
                 }.onFailure { err: Throwable ->
                     _uiState.value = AuthUiState.Error(err.message ?: "Failed to upload picture")
@@ -309,7 +287,6 @@ constructor(
             try {
                 val result = authRepository.removeProfilePicture()
                 result.onSuccess {
-                    // Refresh user after successful removal
                     fetchUser()
                 }.onFailure { err: Throwable ->
                     _uiState.value = AuthUiState.Error(err.message ?: "Failed to remove picture")
@@ -320,15 +297,11 @@ constructor(
         }
     }
 
-    /**
-     * Update profile and optionally upload new profile picture
-     */
     fun updateProfile(userUpdate: DomainUserUpdate, profilePictureFile: File? = null) {
         Log.d(TAG, "📝 updateProfile called with: $userUpdate, hasFile=${profilePictureFile != null}")
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
             try {
-                // First upload profile picture if provided
                 profilePictureFile?.let { file ->
                     Log.d(TAG, "📤 Uploading new profile picture: ${file.absolutePath}")
                     val uploadResult = authRepository.uploadProfilePicture(file)
@@ -342,21 +315,17 @@ constructor(
                     }
                 }
 
-                // Then update the profile
                 Log.d(TAG, "📤 Sending profile update payload to repository")
                 val updateResult = authRepository.updateProfile(userUpdate)
                 updateResult.onSuccess { user: DomainUser ->
                     Log.d(TAG, "✅ Profile updated on server. New karma: ${user.karmaPoints}")
-                    // Notify success toast
                     com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Profile updated successfully")
 
                     _uiState.value = AuthUiState.Success(user)
 
-                    // Immediately fetch from server to guarantee freshest data and trigger recomposition
                     fetchUser()
                 }.onFailure { error: Throwable ->
                     Log.e(TAG, "❌ Profile update failed", error)
-                    // Show error toast
                     com.example.gooddeedfeed.presentation.ui.components.ToastManager.showError(error.message ?: "Failed to update profile")
 
                     _uiState.value = AuthUiState.Error(error.message ?: "Failed to update profile")
@@ -393,9 +362,6 @@ constructor(
         }
     }
 
-    /**
-     * Initialize FCM token and update it with the backend
-     */
     fun initializeFcmToken() {
         viewModelScope.launch {
             try {
@@ -412,9 +378,6 @@ constructor(
         }
     }
 
-    /**
-     * Update FCM token (called when new token is received)
-     */
     fun updateFcmToken(token: String) {
         viewModelScope.launch {
             notificationRepository.updateFcmToken(token).onFailure { e ->
@@ -423,9 +386,6 @@ constructor(
         }
     }
 
-    /**
-     * Enable or disable notifications
-     */
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             notificationRepository.setNotificationsEnabled(enabled).onFailure { e ->
@@ -434,9 +394,7 @@ constructor(
         }
     }
 
-    /**
-     * Subscribe to organizer notifications
-     */
+
     fun subscribeToOrganizer(organizerId: Int) {
         viewModelScope.launch {
             notificationRepository.subscribeToOrganizer(organizerId).onSuccess {
@@ -447,9 +405,6 @@ constructor(
         }
     }
 
-    /**
-     * Unsubscribe from organizer notifications
-     */
     fun unsubscribeFromOrganizer(organizerId: Int) {
         viewModelScope.launch {
             notificationRepository.unsubscribeFromOrganizer(organizerId).onSuccess {

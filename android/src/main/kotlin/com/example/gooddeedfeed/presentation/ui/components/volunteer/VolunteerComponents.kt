@@ -252,7 +252,6 @@ fun FiltersDrawer(
         Column(
             modifier = Modifier.padding(16.dp),
         ) {
-            // Header with toggle button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -282,7 +281,6 @@ fun FiltersDrawer(
                 }
             }
 
-            // Filter content (only show when expanded)
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = slideInVertically() + fadeIn(),
@@ -292,7 +290,6 @@ fun FiltersDrawer(
                     modifier = Modifier.padding(top = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    // Category Filter
                     FilterSection(
                         title = "Category",
                         icon = Icons.Default.Category,
@@ -326,7 +323,6 @@ fun FiltersDrawer(
                         }
                     }
 
-                    // Available Spots Filter
                     FilterSection(
                         title = "Availability",
                         icon = Icons.Default.Group,
@@ -352,7 +348,6 @@ fun FiltersDrawer(
                         }
                     }
 
-                    // Karma Points Range Filter
                     FilterSection(
                         title = "Karma Points",
                         icon = Icons.Default.Star,
@@ -380,7 +375,6 @@ fun FiltersDrawer(
                         }
                     }
 
-                    // Date Range Filter
                     FilterSection(
                         title = "Date Range",
                         icon = Icons.Default.DateRange,
@@ -413,7 +407,6 @@ fun FiltersDrawer(
                         }
                     }
 
-                    // Radius Filter
                     FilterSection(
                         title = "Distance",
                         icon = Icons.Default.LocationOn,
@@ -452,7 +445,6 @@ fun FiltersDrawer(
                         }
                     }
 
-                    // Clear Filters Button
                     OutlinedButton(
                         onClick = {
                             onFiltersChange(OpportunityFilters())

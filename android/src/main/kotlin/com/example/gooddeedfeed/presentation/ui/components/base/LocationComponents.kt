@@ -58,7 +58,6 @@ fun LocationDeniedState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Uh Oh icon
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -76,7 +75,6 @@ fun LocationDeniedState(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Uh Oh title
             Text(
                 text = "Uh Oh!",
                 style = MaterialTheme.typography.headlineMedium,
@@ -87,7 +85,6 @@ fun LocationDeniedState(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Explanation text
             Text(
                 text = "We need location access to show you nearby volunteer opportunities and help you find events in your area.",
                 style = MaterialTheme.typography.bodyLarge,
@@ -97,7 +94,6 @@ fun LocationDeniedState(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Instructions card
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -139,7 +135,6 @@ fun LocationDeniedState(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Action button
             Button(
                 onClick = onOpenSettings,
                 modifier = Modifier.fillMaxWidth(),
@@ -149,7 +144,6 @@ fun LocationDeniedState(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Additional info
             Text(
                 text = "You can also enable location services in Privacy & Notifications settings",
                 style = MaterialTheme.typography.bodySmall,
@@ -208,7 +202,6 @@ fun LocationPermissionHandler(
 
     LocationDeniedState(
         onOpenSettings = {
-            // Open app settings
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 data = android.net.Uri.fromParts("package", context.packageName, null)
             }
@@ -231,7 +224,6 @@ fun LocationPermissionManager(
     content: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Check permission status on screen load
     LaunchedEffect(locationPermissionState.status.isGranted) {
         if (locationPermissionState.status.isGranted) {
             onPermissionGranted()
@@ -241,17 +233,13 @@ fun LocationPermissionManager(
     }
 
     if (locationPermissionState.status.isGranted) {
-        // Permission granted - show main content
         content()
     } else {
-        // Permission denied - show appropriate error state
         if (locationPermissionState.status.shouldShowRationale) {
-            // Permission denied but not permanently - show rationale
             PermissionRationaleCard {
                 locationPermissionState.launchPermissionRequest()
             }
         } else {
-            // Permission permanently denied - show "Uh Oh" state with settings option
             LocationPermissionHandler(
                 onOpenSettings = { /* This is handled within the component */ },
                 modifier = modifier,
@@ -277,7 +265,6 @@ fun EnhancedLocationPermissionManager(
 ) {
     val locationEnabled by locationSettingsRepository.isLocationEnabled.collectAsStateWithLifecycle(initialValue = true)
     val context = LocalContext.current
-    // Check both permission and settings on screen load
     LaunchedEffect(locationPermissionState.status.isGranted, locationEnabled) {
         when {
             !locationPermissionState.status.isGranted -> {
@@ -294,14 +281,11 @@ fun EnhancedLocationPermissionManager(
 
     when {
         !locationPermissionState.status.isGranted -> {
-            // Permission denied - show appropriate error state
             if (locationPermissionState.status.shouldShowRationale) {
-                // Permission denied but not permanently - show rationale
                 PermissionRationaleCard {
                     locationPermissionState.launchPermissionRequest()
                 }
             } else {
-                // Permission permanently denied - show "Uh Oh" state with settings option
                 LocationPermissionHandler(
                     onOpenSettings = { /* This is handled within the component */ },
                     modifier = modifier,
@@ -309,10 +293,8 @@ fun EnhancedLocationPermissionManager(
             }
         }
         !locationEnabled -> {
-            // Permission granted but location disabled in settings - show settings prompt
             LocationDisabledState(
                 onOpenSettings = {
-                    // Open app settings
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = android.net.Uri.fromParts("package", context.packageName, null)
                     }
@@ -322,7 +304,6 @@ fun EnhancedLocationPermissionManager(
             )
         }
         else -> {
-            // Both permission granted and location enabled - show main content
             Box(modifier = Modifier.fillMaxSize()) {
                 content()
             }
@@ -354,7 +335,6 @@ fun LocationDisabledState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Settings icon
             Box(
                 modifier = Modifier
                     .size(80.dp),
@@ -368,7 +348,6 @@ fun LocationDisabledState(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Title
             Text(
                 text = "Location Services Disabled",
                 style = MaterialTheme.typography.headlineMedium,
@@ -379,7 +358,6 @@ fun LocationDisabledState(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Explanation text
             Text(
                 text = "Location permission is granted, but location services are disabled in your app settings. Enable them to see nearby events.",
                 style = MaterialTheme.typography.bodyLarge,
@@ -389,7 +367,6 @@ fun LocationDisabledState(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Instructions card
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -431,7 +408,6 @@ fun LocationDisabledState(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Action button
             Button(
                 onClick = onOpenSettings,
                 modifier = Modifier.fillMaxWidth(),

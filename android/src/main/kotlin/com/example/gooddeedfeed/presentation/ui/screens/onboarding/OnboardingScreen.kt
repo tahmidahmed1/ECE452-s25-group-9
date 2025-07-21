@@ -45,13 +45,11 @@ fun OnboardingScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val isSuccess by viewModel.isSuccess.collectAsStateWithLifecycle()
 
-    // Calculate total steps based on user type
     val totalSteps = when (selectedUserType) {
         DomainUserType.VOLUNTEER -> 3 // Step 1: User type, Step 2: Basic info, Step 3: Detailed volunteer profile
         else -> 2 // Step 1: User type, Step 2: Basic info
     }
 
-    // Show loading indicator with consistent theme
     if (isLoading) {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -62,7 +60,6 @@ fun OnboardingScreen(
         return
     }
 
-    // Show error message if any
     error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
             ToastUtils.showErrorToast(context, errorMessage)
@@ -70,20 +67,17 @@ fun OnboardingScreen(
         }
     }
 
-    // Handle onboarding completion
     LaunchedEffect(isSuccess) {
         if (isSuccess) {
             onOnboardingComplete()
         }
     }
 
-    // Main content with consistent theme
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
         Column {
-            // Dot indicators at the top
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -96,7 +90,6 @@ fun OnboardingScreen(
                 )
             }
 
-            // Screen content
             Box(modifier = Modifier.weight(1f)) {
                 when (currentStep) {
                     1 -> {
@@ -150,12 +143,10 @@ fun OnboardingScreen(
                         }
                     }
                     3 -> {
-                        // Detailed volunteer profile (only for volunteers)
                         OnboardingStepThreeVolunteerScreen(
                             fullName = basicFullName,
                             phone = basicPhone,
                             onComplete = { volunteerProfile, profilePictureFile ->
-                                // Merge optional profile picture from step 2 if step 3 didn't override
                                 val picture = profilePictureFile ?: basicProfilePicture
                                 viewModel.completeVolunteerOnboarding(
                                     volunteerProfile = volunteerProfile,

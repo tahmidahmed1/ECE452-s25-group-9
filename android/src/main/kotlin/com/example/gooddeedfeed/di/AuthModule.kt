@@ -82,8 +82,6 @@ object AuthModule {
                         }
                     }
 
-                    // No refreshTokens block since server doesn't support token refresh
-                    // If token expires, user will need to sign in again
                 }
             }
 

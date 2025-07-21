@@ -76,7 +76,6 @@ fun EditVolunteerProfileScreen(
 ) {
     val context = LocalContext.current
 
-    // Initialize form fields with current user data
     var fullName by remember(user) { mutableStateOf(user.fullName ?: "") }
     var phone by remember(user) { mutableStateOf(user.phone ?: "") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -105,7 +104,6 @@ fun EditVolunteerProfileScreen(
         }
     }
 
-    // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
     ) { bitmap: Bitmap? ->
@@ -118,7 +116,6 @@ fun EditVolunteerProfileScreen(
         }
     }
 
-    // Gallery launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -131,7 +128,6 @@ fun EditVolunteerProfileScreen(
         }
     }
 
-    // Form validation
     val validationErrors by remember(selectedSex, description, age, emergencyContactName, emergencyContactPhone, locationArea, fullName, phone) {
         derivedStateOf {
             val emergencyValidation = ImageUtils.FormValidation.validateEmergencyContact(emergencyContactName, emergencyContactPhone)
@@ -163,7 +159,6 @@ fun EditVolunteerProfileScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Header with back button and title (matching Profile Preview style)
             Row(
                 modifier = Modifier
                     .statusBarsPadding()
@@ -189,7 +184,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Profile Picture Section
             ProfileImagePicker(
                 currentImageUrl = selectedImageUri?.toString() ?: user.profilePictureUrl,
                 onImageSelected = { file ->
@@ -204,7 +198,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Basic Information Section
             ProfileSectionHeader(
                 title = "Basic Information",
                 modifier = Modifier.fillMaxWidth(),
@@ -212,7 +205,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Full Name Field
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
@@ -239,7 +231,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Phone Field
             OutlinedTextField(
                 value = phone,
                 onValueChange = { input ->
@@ -278,7 +269,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Sex Field
             ExposedDropdownMenuBox(
                 expanded = sexDropdownExpanded,
                 onExpandedChange = { sexDropdownExpanded = !sexDropdownExpanded },
@@ -343,7 +333,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Age Field
             OutlinedTextField(
                 value = age,
                 onValueChange = { if (it.all { char -> char.isDigit() } && it.length <= 3) age = it },
@@ -371,7 +360,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Description Field
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
@@ -400,7 +388,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Skills Section
             ProfileSectionHeader(
                 title = "Skills & Interests",
                 modifier = Modifier.fillMaxWidth(),
@@ -408,7 +395,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Custom skill input
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -466,7 +452,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Skills chips
             LazyRow(
                 state = skillsScrollState,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -489,7 +474,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Emergency Contact Section
             ProfileSectionHeader(
                 title = "Emergency Contact",
                 modifier = Modifier.fillMaxWidth(),
@@ -497,7 +481,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Emergency Contact Name
             OutlinedTextField(
                 value = emergencyContactName,
                 onValueChange = { emergencyContactName = it },
@@ -524,7 +507,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Emergency Contact Phone
             OutlinedTextField(
                 value = emergencyContactPhone,
                 onValueChange = { input ->
@@ -555,7 +537,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Location & Accessibility Section
             ProfileSectionHeader(
                 title = "Location & Accessibility",
                 modifier = Modifier.fillMaxWidth(),
@@ -563,7 +544,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Location Area
             OutlinedTextField(
                 value = locationArea,
                 onValueChange = { locationArea = it },
@@ -591,7 +571,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Driver's License Checkbox
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -610,7 +589,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Accessibility Needs
             OutlinedTextField(
                 value = disabilities,
                 onValueChange = { disabilities = it },
@@ -628,7 +606,6 @@ fun EditVolunteerProfileScreen(
 
             VerticalSpacer(SpacingSize.ExtraLarge)
 
-            // Save Button
             PrimaryButton(
                 text = "Save Changes",
                 onClick = {

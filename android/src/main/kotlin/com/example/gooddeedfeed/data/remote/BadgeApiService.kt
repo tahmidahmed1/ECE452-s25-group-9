@@ -59,7 +59,6 @@ class BadgeApiService @Inject constructor(
     suspend fun getUserBadges(): Flow<Result<List<UserBadgeDto>>> = flow {
         Log.d(TAG, "🚀 Starting getUserBadges request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for getUserBadges")
@@ -95,7 +94,6 @@ class BadgeApiService @Inject constructor(
     suspend fun checkBadgeAchievements(): Flow<Result<BadgeCheckResponseDto>> = flow {
         Log.d(TAG, "🚀 Starting checkBadgeAchievements request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for checkBadgeAchievements")

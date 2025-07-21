@@ -39,12 +39,7 @@ class LocationService @Inject constructor(
         val locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 result.lastLocation?.let { location ->
-                    // Filter out obviously fake/test locations (like Google Plex HQ)
-                    val isValidLocation = !(location.latitude == 37.4220 && location.longitude == -122.0841)
-                    if (isValidLocation) {
-                        trySend(location)
-                    }
-                    // If it's a fake location, we don't send it and let the system try again
+                    trySend(location)
                 }
             }
         }
@@ -56,7 +51,6 @@ class LocationService @Inject constructor(
                 Looper.getMainLooper(),
             )
         } catch (e: SecurityException) {
-            // Handle permission denied
             trySend(null)
         }
 
@@ -67,17 +61,7 @@ class LocationService @Inject constructor(
 
     @SuppressLint("MissingPermission")
     suspend fun getCurrentLocation(): Location? = try {
-        val location = fusedLocationClient.lastLocation.await()
-        // Filter out obviously fake/test locations (like Google Plex HQ)
-        location?.let {
-            // Google Plex HQ coordinates: 37.4220, -122.0841
-            // If location is exactly at Google Plex, it's likely a mock location
-            if (it.latitude == 37.4220 && it.longitude == -122.0841) {
-                null // Return null to force a fresh location request
-            } else {
-                it
-            }
-        }
+        fusedLocationClient.lastLocation.await()
     } catch (e: Exception) {
         null
     }

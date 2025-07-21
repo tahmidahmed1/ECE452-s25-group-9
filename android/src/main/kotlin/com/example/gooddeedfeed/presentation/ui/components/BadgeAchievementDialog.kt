@@ -83,7 +83,6 @@ fun BadgeAchievementDialog(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Celebration header
                 Text(
                     text = "🎉 Badge${if (badges.size > 1) "s" else ""} Earned! 🎉",
                     style = MaterialTheme.typography.headlineSmall,
@@ -107,7 +106,6 @@ fun BadgeAchievementDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Scrollable badges section
                 Column(
                     modifier = Modifier
                         .weight(1f, fill = false)
@@ -127,6 +125,7 @@ fun BadgeAchievementDialog(
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Text("Awesome!")
                 }
@@ -154,7 +153,6 @@ private fun BadgeItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Badge icon
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -175,7 +173,6 @@ private fun BadgeItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Badge info
             Column(
                 modifier = Modifier.weight(1f),
             ) {

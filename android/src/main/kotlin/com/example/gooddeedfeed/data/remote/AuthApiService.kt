@@ -49,7 +49,6 @@ class AuthApiService @Inject constructor(
         private val SESSION_ID_KEY = stringPreferencesKey("session_id")
     }
 
-    // Override the base URLs to use the correct server port (9000)
     override val possibleUrls: List<String> = listOf(
         "http://10.0.2.2:9000/api", // Android emulator → Windows host
         "http://172.28.7.154:9000/api", // Current WSL IP
@@ -88,13 +87,11 @@ class AuthApiService @Inject constructor(
             Log.d(TAG, "📥 SignUp response status: ${response.status}")
             Log.d(TAG, "📥 SignUp response headers: ${response.headers}")
 
-            // Check for success status before trying to parse token response
             if (!response.status.isSuccess()) {
                 val errorBody = response.bodyAsText()
                 Log.e(TAG, "❌ SignUp failed with status ${response.status}")
                 Log.e(TAG, "❌ Error response body: $errorBody")
 
-                // Handle specific error cases
                 when (response.status.value) {
                     409 -> throw Exception("Username or email already exists")
                     400 -> throw Exception("Invalid signup data provided")
@@ -134,13 +131,11 @@ class AuthApiService @Inject constructor(
             Log.d(TAG, "📥 SignIn response status: ${response.status}")
             Log.d(TAG, "📥 SignIn response headers: ${response.headers}")
 
-            // Check for success status before trying to parse token response
             if (!response.status.isSuccess()) {
                 val errorBody = response.bodyAsText()
                 Log.e(TAG, "❌ SignIn failed with status ${response.status}")
                 Log.e(TAG, "❌ Error response body: $errorBody")
 
-                // Handle specific error cases
                 when (response.status.value) {
                     401 -> throw Exception("Invalid username or password")
                     400 -> throw Exception("Invalid signin data provided")
@@ -166,7 +161,6 @@ class AuthApiService @Inject constructor(
     suspend fun getCurrentUser(): UserDto {
         Log.d(TAG, "🚀 Starting getCurrentUser request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore")
@@ -207,7 +201,6 @@ class AuthApiService @Inject constructor(
         Log.d(TAG, "🚀 Starting setUserType request")
         Log.d(TAG, "📝 UserType: $userType")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for setUserType")
@@ -238,7 +231,6 @@ class AuthApiService @Inject constructor(
     suspend fun uploadProfilePicture(file: File): ProfilePictureUploadResponse {
         Log.d(TAG, "🚀 Starting uploadProfilePicture request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for uploadProfilePicture")
@@ -270,7 +262,6 @@ class AuthApiService @Inject constructor(
     suspend fun removeProfilePicture(): Boolean {
         Log.d(TAG, "🚀 Starting removeProfilePicture request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for removeProfilePicture")
@@ -298,7 +289,6 @@ class AuthApiService @Inject constructor(
     suspend fun uploadBannerImage(file: File): BannerUploadResponse {
         Log.d(TAG, "🚀 Starting uploadBannerImage request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for uploadBannerImage")
@@ -330,7 +320,6 @@ class AuthApiService @Inject constructor(
     suspend fun uploadOrganizationImages(files: List<File>): OrganizationImagesResponseDto {
         Log.d(TAG, "🚀 Starting uploadOrganizationImages request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for uploadOrganizationImages")
@@ -368,7 +357,6 @@ class AuthApiService @Inject constructor(
         Log.d(TAG, "🚀 Starting completeOrganizerOnboarding")
         Log.d(TAG, "📝 Profile: $profile")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for completeOrganizerOnboarding")
@@ -376,7 +364,6 @@ class AuthApiService @Inject constructor(
         }
 
         return try {
-            // First upload profile picture if provided
             var profilePictureUrl: String? = null
             profilePictureFile?.let {
                 Log.d(TAG, "📤 Uploading profile picture...")
@@ -384,7 +371,6 @@ class AuthApiService @Inject constructor(
                 Log.d(TAG, "✅ Profile picture uploaded: $profilePictureUrl")
             }
 
-            // Then complete onboarding
             Log.d(TAG, "📤 Sending organizer onboarding request...")
             withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying URL: $baseUrl/complete-organizer-onboarding")
@@ -421,7 +407,6 @@ class AuthApiService @Inject constructor(
         Log.d(TAG, "🚀 Starting completeVolunteerOnboarding")
         Log.d(TAG, "📝 Profile: $profile")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for completeVolunteerOnboarding")
@@ -429,7 +414,6 @@ class AuthApiService @Inject constructor(
         }
 
         return try {
-            // First upload profile picture if provided
             var profilePictureUrl: String? = null
             profilePictureFile?.let {
                 Log.d(TAG, "📤 Uploading profile picture...")
@@ -437,10 +421,8 @@ class AuthApiService @Inject constructor(
                 Log.d(TAG, "✅ Profile picture uploaded: $profilePictureUrl")
             }
 
-            // Then complete onboarding
             Log.d(TAG, "📤 Sending volunteer onboarding request...")
             withFallbackUrls { baseUrl ->
-                // Use the correct backend endpoint for volunteer onboarding completion
                 val endpoint = "$baseUrl/onboarding/volunteer-complete"
                 Log.d(TAG, "🌐 Trying URL: $endpoint")
                 client.post(endpoint) {
@@ -476,7 +458,6 @@ class AuthApiService @Inject constructor(
     suspend fun updateProfile(updates: UserUpdateDto): UserDto {
         Log.d(TAG, "🚀 Starting updateProfile request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for updateProfile")
@@ -511,7 +492,6 @@ class AuthApiService @Inject constructor(
     suspend fun signOut(): Boolean {
         Log.d(TAG, "🚀 Starting signOut request")
 
-        // Get session ID for authenticated logout call
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.w(TAG, "⚠️ No session ID found for logout - proceeding with client-side logout only")
@@ -548,7 +528,6 @@ class AuthApiService @Inject constructor(
     suspend fun increaseKarmaPointsDevOnly(): UserDto {
         Log.d(TAG, "🚀 Starting increaseKarmaPointsDevOnly request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for increaseKarmaPointsDevOnly")

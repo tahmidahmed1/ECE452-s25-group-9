@@ -93,7 +93,6 @@ fun NotificationPermissionCard(
             }
         }
     } else if (notificationPermissionState?.status?.isGranted == true || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        // Permission granted or not needed, call the callback
         LaunchedEffect(Unit) {
             onPermissionGranted()
         }

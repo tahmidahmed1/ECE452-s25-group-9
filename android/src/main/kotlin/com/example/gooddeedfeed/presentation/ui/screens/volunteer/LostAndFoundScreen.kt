@@ -45,12 +45,10 @@ fun LostAndFoundScreen(
     var showCreateForm by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf<LostFoundType?>(null) }
 
-    // Load items when screen opens
     LaunchedEffect(Unit) {
         viewModel.loadItems()
     }
 
-    // Load items when filter changes
     LaunchedEffect(selectedFilter) {
         viewModel.loadItems(selectedFilter)
     }
@@ -76,7 +74,6 @@ fun LostAndFoundScreen(
             .fillMaxSize()
             .padding(16.dp),
     ) {
-        // Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -119,7 +116,6 @@ fun LostAndFoundScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Filter chips
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
@@ -143,7 +139,6 @@ fun LostAndFoundScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Items list
         when (val currentState = uiState) {
             is UiState.Loading -> {
                 Box(
@@ -216,7 +211,6 @@ fun LostAndFoundScreen(
                 }
             }
             else -> {
-                // Idle state
             }
         }
     }
@@ -422,7 +416,6 @@ private fun LostFoundDetailScreen(
             }
         }
 
-        // Reward section
         item.reward?.let { reward ->
             if (reward.isNotBlank()) {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -439,7 +432,6 @@ private fun LostFoundDetailScreen(
             }
         }
 
-        // Tags section
         if (item.tags.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
@@ -467,7 +459,6 @@ private fun LostFoundDetailScreen(
             }
         }
 
-        // Expiry information
         item.daysRemaining?.let { days ->
             Spacer(modifier = Modifier.height(16.dp))
             Surface(
@@ -556,7 +547,6 @@ private fun CreateLostFoundScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Type selection
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -574,7 +564,6 @@ private fun CreateLostFoundScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Validation state
         val titleError = title.isBlank()
         val descriptionError = description.isBlank()
         val locationError = location.isBlank()
@@ -631,7 +620,6 @@ private fun CreateLostFoundScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Expiry slider
         var expiryDays by remember { mutableStateOf(7) }
         Text(
             text = "Expiry: $expiryDays days",
@@ -650,7 +638,6 @@ private fun CreateLostFoundScreen(
 
         var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
 
-        // Gallery launcher for multiple images
         val galleryLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.GetMultipleContents(),
         ) { uris: List<Uri> ->
@@ -678,7 +665,6 @@ private fun CreateLostFoundScreen(
             Text("Add Images (${selectedImages.size}/10)")
         }
 
-        // Show selected images
         if (selectedImages.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             LazyRow(
@@ -711,7 +697,6 @@ private fun CreateLostFoundScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Validation errors
         val hasValidation = title.isBlank() || description.isBlank() || location.isBlank() || selectedImages.isEmpty()
         if (hasValidation) {
             Text(

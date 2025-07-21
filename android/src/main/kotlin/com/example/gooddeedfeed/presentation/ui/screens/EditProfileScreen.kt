@@ -79,11 +79,9 @@ fun EditProfileScreen(
 ) {
     val context = LocalContext.current
 
-    // Editable fields
     var fullName by remember { mutableStateOf(TextFieldValue(user.fullName ?: "")) }
     var phone by remember { mutableStateOf(TextFieldValue(user.phone ?: "")) }
 
-    // Volunteer-specific fields
     var sex by remember { mutableStateOf(user.sex ?: DomainSex.PREFER_NOT_TO_SAY) }
     var sexDropdownExpanded by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf(TextFieldValue(user.description ?: "")) }
@@ -95,25 +93,20 @@ fun EditProfileScreen(
     var hasDriversLicense by remember { mutableStateOf(user.hasDriversLicense ?: false) }
     var disabilities by remember { mutableStateOf(TextFieldValue(user.disabilities ?: "")) }
 
-    // Organizer-specific fields
     var organizationName by remember { mutableStateOf(TextFieldValue(user.organizationName ?: "")) }
     var organizationDescription by remember { mutableStateOf(TextFieldValue(user.organizationDescription ?: "")) }
     var organizationWebsite by remember { mutableStateOf(TextFieldValue(user.organizationWebsite ?: "")) }
 
-    // Social media fields
     var instagramHandle by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "INSTAGRAM" }?.url ?: "") }
     var twitterHandle by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "TWITTER" }?.url ?: "") }
     var facebookPage by remember { mutableStateOf(user.organizationSocialMedia?.find { it.platform.name == "FACEBOOK" }?.url ?: "") }
 
-    // Organization images
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var organizationImageUrls by remember { mutableStateOf(user.organizationImages ?: emptyList()) }
 
-    // Banner image
     var bannerImageFile by remember { mutableStateOf<File?>(null) }
     var bannerImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Image launchers
     val orgImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -205,7 +198,6 @@ fun EditProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
 
-                        // User type specific fields
                         if (user.userType?.name == "ORGANIZER") {
                             VerticalSpacer(SpacingSize.Medium)
                             ProfileSectionHeader("Organization Information")
@@ -244,7 +236,6 @@ fun EditProfileScreen(
 
                             VerticalSpacer(SpacingSize.Medium)
 
-                            // Social media section
                             ProfileSectionHeader("Social Media (Optional)")
                             VerticalSpacer(SpacingSize.Small)
 
@@ -281,7 +272,6 @@ fun EditProfileScreen(
 
                             VerticalSpacer(SpacingSize.Medium)
 
-                            // Banner image section
                             ProfileSectionHeader("Banner Image (Optional)")
                             VerticalSpacer(SpacingSize.Small)
 
@@ -336,7 +326,6 @@ fun EditProfileScreen(
 
                             VerticalSpacer(SpacingSize.Medium)
 
-                            // Organization images section
                             ProfileSectionHeader("Organization Images (Optional)")
                             VerticalSpacer(SpacingSize.Small)
 
@@ -485,7 +474,6 @@ fun EditProfileScreen(
 
                     Button(
                         onClick = {
-                            // Build social media links for organizers
                             val socialMedia = if (user.userType?.name == "ORGANIZER") {
                                 mutableListOf<SocialMediaLink>().apply {
                                     if (instagramHandle.isNotBlank()) {
@@ -502,14 +490,12 @@ fun EditProfileScreen(
                                 null
                             }
 
-                            // Build organization images list
                             val orgImages = if (user.userType?.name == "ORGANIZER") {
                                 (organizationImageUrls + organizationImageFiles.map { it.absolutePath }).takeIf { it.isNotEmpty() }
                             } else {
                                 null
                             }
 
-                            // Save changes
                             val update = ImageUtils.buildProfileUpdate(
                                 user = user,
                                 fullName = fullName,
@@ -530,16 +516,10 @@ fun EditProfileScreen(
                                 organizationImages = orgImages,
                             )
 
-                            // Upload banner image if changed
                             bannerImageFile?.let {
-                                // TODO: Implement banner image upload in AuthViewModel
-                                // viewModel.uploadBannerImage(it)
                             }
 
-                            // Upload organization images if any
                             if (organizationImageFiles.isNotEmpty()) {
-                                // TODO: Implement organization images upload in AuthViewModel
-                                // viewModel.uploadOrganizationImages(organizationImageFiles)
                             }
 
                             viewModel.updateUserProfile(update)

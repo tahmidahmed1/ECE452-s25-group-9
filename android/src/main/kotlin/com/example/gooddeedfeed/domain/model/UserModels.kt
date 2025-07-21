@@ -107,4 +107,3 @@ data class DomainOrganizationImagesResponse(
     val totalImages: Int,
 )
 
-// Enumerations are defined in DomainEnums.kt to avoid leaking DTO types into the domain layer.

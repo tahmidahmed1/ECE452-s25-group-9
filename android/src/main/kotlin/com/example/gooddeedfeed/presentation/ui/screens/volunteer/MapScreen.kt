@@ -34,16 +34,13 @@ fun MapScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
 
-    // Calculate initial zoom level based on current radius
     val initialZoomLevel = calculateZoomForRadius(uiState.radiusKm)
     var zoomLevel by remember { mutableStateOf(initialZoomLevel) }
 
-    // Permission handling
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted() else viewModel.onLocationPermissionDenied()
     }
 
-    // Use enhanced location permission manager
     EnhancedLocationPermissionManager(
         locationPermissionState = locationPermissionState,
         locationSettingsRepository = viewModel.locationSettingsRepository,
@@ -51,7 +48,6 @@ fun MapScreen(
         onPermissionDenied = { viewModel.onLocationPermissionDenied() },
         onLocationDisabled = { viewModel.onLocationPermissionDenied() },
         content = {
-            // Main content when location is properly configured
             Column(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     MapView(
@@ -76,7 +72,6 @@ fun MapScreen(
                 )
             }
 
-            // Event detail dialog
             selectedEvent?.let { event ->
                 EventDetailDialog(event, uiState.currentLocation) { selectedEvent = null }
             }
@@ -90,27 +85,17 @@ fun MapScreen(
  * This uses the approximate relationship between Google Maps zoom levels and visible distance
  */
 private fun calculateZoomForRadius(radiusKm: Float): Float {
-    // We want the radius circle to fit within the screen with some padding
-    // Assume we want the circle to take up about 60% of the screen width
-    // This means the total diameter should be about 60% of visible distance
 
-    // Convert radius to meters and add padding factor
     val radiusMeters = radiusKm * 1000.0
     val paddingFactor = 1.8 // This ensures the circle fits comfortably with some padding
     val requiredViewDistance = radiusMeters * paddingFactor
 
-    // Google Maps zoom formula approximation at latitude ~45 degrees (reasonable global average)
-    // meters_per_pixel = 156543.03392 * cos(latitude) / 2^zoom_level
-    // For latitude ~45°, cos(45°) ≈ 0.7071
-    // Assume screen width is ~400dp ≈ 1000 pixels (rough mobile screen approximation)
 
     val metersPerPixelAtZoom0 = 156543.03392 * 0.7071
     val screenWidthPixels = 1000.0
     val requiredMetersPerPixel = requiredViewDistance / screenWidthPixels
 
-    // Calculate zoom level: zoom = log2(metersPerPixelAtZoom0 / requiredMetersPerPixel)
     val zoomLevel = ln(metersPerPixelAtZoom0 / requiredMetersPerPixel) / ln(2.0)
 
-    // Clamp zoom level to reasonable bounds (Google Maps supports 1-20)
     return zoomLevel.toFloat().coerceIn(8f, 18f)
 } 

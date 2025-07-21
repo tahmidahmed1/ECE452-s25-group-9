@@ -67,7 +67,6 @@ fun VolunteerOpportunityDetailScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Title and category
             Column {
                 Text(
                     text = opportunity.title,
@@ -81,7 +80,6 @@ fun VolunteerOpportunityDetailScreen(
                 CategoryChip(category = opportunity.category)
             }
 
-            // Organization info
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -119,7 +117,6 @@ fun VolunteerOpportunityDetailScreen(
                 }
             }
 
-            // Details
             Card(
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -153,7 +150,6 @@ fun VolunteerOpportunityDetailScreen(
                 }
             }
 
-            // Description
             Card(
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -175,7 +171,6 @@ fun VolunteerOpportunityDetailScreen(
                 }
             }
 
-            // Join button
             Button(
                 onClick = { /* TODO: Implement join functionality */ },
                 modifier = Modifier.fillMaxWidth(),

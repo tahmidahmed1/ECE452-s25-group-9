@@ -44,7 +44,6 @@ class NotificationService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d(TAG, "New FCM token: $token")
 
-        // Send token to server
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 notificationRepository.updateFcmToken(token)
@@ -60,13 +59,11 @@ class NotificationService : FirebaseMessagingService() {
 
         Log.d(TAG, "Message received from: ${remoteMessage.from}")
 
-        // Handle data payload
         remoteMessage.data.isNotEmpty().let {
             Log.d(TAG, "Message data payload: ${remoteMessage.data}")
             handleDataMessage(remoteMessage.data)
         }
 
-        // Handle notification payload
         remoteMessage.notification?.let {
             Log.d(TAG, "Message notification: ${it.title}, ${it.body}")
             showNotification(
@@ -112,7 +109,6 @@ class NotificationService : FirebaseMessagingService() {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
 
-            // Add extra data to navigate to specific screen
             data["eventId"]?.let { putExtra("eventId", it) }
             data["type"]?.let { putExtra("notificationType", it) }
         }

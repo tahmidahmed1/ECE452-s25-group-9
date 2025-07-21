@@ -46,7 +46,6 @@ class AuthRepositoryImpl @Inject constructor(
 
         Log.d(TAG, "✅ Auth data saved successfully")
 
-        // Verify the data was saved correctly
         val savedSessionId = dataStore.data.first()[SESSION_ID_KEY]
         val savedUserId = dataStore.data.first()[USER_ID_KEY]
         val savedUsername = dataStore.data.first()[USERNAME_KEY]
@@ -76,7 +75,6 @@ class AuthRepositoryImpl @Inject constructor(
         Log.d(TAG, "📝 SignUp params - Username: $username, Email: $email")
 
         return try {
-            // Clear any existing auth data before signing up new user
             Log.d(TAG, "🧹 Clearing any existing auth data before signUp...")
             clearAuthData()
 
@@ -110,7 +108,6 @@ class AuthRepositoryImpl @Inject constructor(
         Log.d(TAG, "📝 SignIn params - Username: $username")
 
         return try {
-            // Clear any existing auth data before signing in new user
             Log.d(TAG, "🧹 Clearing any existing auth data before signIn...")
             clearAuthData()
 
@@ -143,7 +140,6 @@ class AuthRepositoryImpl @Inject constructor(
         Log.d(TAG, "🔄 Repository signOut called")
 
         try {
-            // First try to call server logout while we still have the token
             Log.d(TAG, "📞 Calling AuthApiService.signOut...")
             api.signOut()
             Log.d(TAG, "✅ Server signOut successful")
@@ -153,7 +149,6 @@ class AuthRepositoryImpl @Inject constructor(
             Log.e(TAG, "❌ Exception message: ${e.message}")
             Log.w(TAG, "⚠️ Server signOut failed, but continuing with local cleanup...")
         } finally {
-            // ALWAYS clear local data regardless of server response
             Log.d(TAG, "🧹 Clearing stored authentication data...")
             clearAuthData()
             Log.d(TAG, "✅ Local authentication data cleared")
@@ -187,7 +182,6 @@ class AuthRepositoryImpl @Inject constructor(
             Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
             Log.e(TAG, "❌ Exception message: ${e.message}")
 
-            // If getCurrentUser fails, it might be due to invalid/expired token
             if (e.message?.contains("401") == true ||
                 e.message?.contains("unauthorized") == true ||
                 e.message?.contains("Authentication failed") == true ||

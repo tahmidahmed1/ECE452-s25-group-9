@@ -22,7 +22,6 @@ fun CreateDeedScreen(user: DomainUser) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
-    // Optimization 8: Use derivedStateOf for computed values to reduce recompositions
     val isButtonEnabled by remember {
         derivedStateOf { title.isNotBlank() && description.isNotBlank() }
     }

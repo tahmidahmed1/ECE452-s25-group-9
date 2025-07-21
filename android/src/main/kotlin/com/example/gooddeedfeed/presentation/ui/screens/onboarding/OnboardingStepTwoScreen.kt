@@ -79,28 +79,23 @@ fun OnboardingStepTwoScreen(
 ) {
     val context = LocalContext.current
 
-    // Common form fields
     var fullName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var profilePictureFile by remember { mutableStateOf<File?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
 
-    // Organizer-specific fields
     var organizationName by remember { mutableStateOf("") }
     var organizationDescription by remember { mutableStateOf("") }
     var organizationWebsite by remember { mutableStateOf("") }
 
-    // Social media fields
     var instagramHandle by remember { mutableStateOf("") }
     var twitterHandle by remember { mutableStateOf("") }
     var facebookPage by remember { mutableStateOf("") }
 
-    // Organization images
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var mainOrgImageIndex by remember { mutableStateOf(0) }
 
-    // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
     ) { bitmap: Bitmap? ->
@@ -113,7 +108,6 @@ fun OnboardingStepTwoScreen(
         }
     }
 
-    // Gallery launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -126,7 +120,6 @@ fun OnboardingStepTwoScreen(
         }
     }
 
-    // Organization image launcher
     val orgImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -139,7 +132,6 @@ fun OnboardingStepTwoScreen(
         }
     }
 
-    // Form validation
     val fullNameError: String? by remember(fullName) {
         derivedStateOf { ImageUtils.FormValidation.validateFullName(fullName) }
     }
@@ -165,7 +157,6 @@ fun OnboardingStepTwoScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Back button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Start,
@@ -201,7 +192,6 @@ fun OnboardingStepTwoScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Profile Picture Section
             ProfileImagePicker(
                 currentImageUrl = selectedImageUri?.toString(),
                 onImageSelected = { file ->
@@ -216,7 +206,6 @@ fun OnboardingStepTwoScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Full Name Field
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
@@ -243,7 +232,6 @@ fun OnboardingStepTwoScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Phone Field
             OutlinedTextField(
                 value = phone,
                 onValueChange = { input ->
@@ -280,7 +268,6 @@ fun OnboardingStepTwoScreen(
                 textAlign = TextAlign.Start,
             )
 
-            // User type specific fields
             when (userType) {
                 DomainUserType.ORGANIZER -> {
                     VerticalSpacer(SpacingSize.Medium)
@@ -433,7 +420,6 @@ fun OnboardingStepTwoScreen(
                     )
                 }
                 else -> {
-                    // For volunteers, we'll handle detailed profile in a separate step
                 }
             }
 
@@ -482,7 +468,6 @@ fun OnboardingStepTwoScreen(
         }
     }
 
-    // Image source selection dialog
     if (showImageSourceDialog) {
         AlertDialog(
             onDismissRequest = { showImageSourceDialog = false },
@@ -530,7 +515,6 @@ private fun OrganizerImageCarousel(
         ),
     ) {
         if (selectedImages.isEmpty()) {
-            // Empty state - entire tile clickable
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -564,9 +548,7 @@ private fun OrganizerImageCarousel(
                 }
             }
         } else {
-            // Show carousel with images
             Column(modifier = Modifier.fillMaxSize()) {
-                // Main image display
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -582,7 +564,6 @@ private fun OrganizerImageCarousel(
                         contentScale = ContentScale.Crop,
                     )
 
-                    // Main image badge
                     androidx.compose.material3.Surface(
                         modifier = Modifier
                             .align(Alignment.TopStart)
@@ -598,7 +579,6 @@ private fun OrganizerImageCarousel(
                         )
                     }
 
-                    // Remove button
                     androidx.compose.material3.IconButton(
                         onClick = { onRemoveImage(mainImageIndex) },
                         modifier = Modifier
@@ -619,7 +599,6 @@ private fun OrganizerImageCarousel(
                     }
                 }
 
-                // Thumbnail row
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -654,7 +633,6 @@ private fun OrganizerImageCarousel(
                         }
                     }
 
-                    // Add more button
                     if (selectedImages.size < 10) {
                         item {
                             Box(
@@ -682,7 +660,6 @@ private fun OrganizerImageCarousel(
     }
 }
 
-// Helper function for social media icons
 @Composable
 private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {
     return when (platform) {

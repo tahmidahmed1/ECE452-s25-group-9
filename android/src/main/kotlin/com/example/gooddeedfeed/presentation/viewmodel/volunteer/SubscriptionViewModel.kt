@@ -59,7 +59,6 @@ class SubscriptionViewModel @Inject constructor(
                     Log.d(TAG, "✅ Successfully subscribed to organizer: $organizerId")
                     _subscriptionActionState.value = UiState.Success(response.message)
 
-                    // Update the current organizer list to reflect the subscription change
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
                         val updatedOrganizers = currentState.data.map { organizer ->
@@ -92,7 +91,6 @@ class SubscriptionViewModel @Inject constructor(
                     Log.d(TAG, "✅ Successfully unsubscribed from organizer: $organizerId")
                     _subscriptionActionState.value = UiState.Success(response.message)
 
-                    // Update the current organizer list to reflect the subscription change
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
                         val updatedOrganizers = currentState.data.map { organizer ->
@@ -108,7 +106,6 @@ class SubscriptionViewModel @Inject constructor(
                         _uiState.value = UiState.Success(updatedOrganizers)
                     }
 
-                    // Update the subscriptions list by removing the unsubscribed organizer
                     val currentSubscriptionsState = _subscriptionsState.value
                     if (currentSubscriptionsState is UiState.Success) {
                         val updatedSubscriptions = currentSubscriptionsState.data.filter { it.id != organizerId }

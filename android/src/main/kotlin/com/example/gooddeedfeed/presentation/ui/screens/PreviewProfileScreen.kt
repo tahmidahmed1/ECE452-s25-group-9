@@ -45,7 +45,6 @@ fun PreviewProfileScreen(
         "VOLUNTEER" -> VolunteerPreviewProfileScreen(user, onBack, modifier)
         "ORGANIZER" -> OrganizerPreviewProfileScreen(user, onBack, modifier)
         else -> {
-            // Fallback for users without userType
             VolunteerPreviewProfileScreen(user, onBack, modifier)
         }
     }
@@ -151,7 +150,6 @@ fun OrganizerPreviewProfileScreen(
             if (!user.organizationImages.isNullOrEmpty()) {
                 OrganizationImagesCard(user)
             }
-            // Events section for organizer preview
             OrganizerEventsPreviewCard(uiState)
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -169,7 +167,6 @@ private fun BasicInfoCard(user: DomainUser) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Banner image for organizers
             if (user.userType?.name == "ORGANIZER" && !user.bannerUrl.isNullOrEmpty()) {
                 AsyncImage(
                     model = user.bannerUrl,
@@ -264,7 +261,6 @@ private fun ContactInfoCard(user: DomainUser) {
             InfoRow("Email", user.email)
             user.phone?.let { InfoRow("Phone", it) }
             user.organizationName?.let { InfoRow("Organization", it) }
-            // Only show location for organizers in contact info
             if (user.userType?.name == "ORGANIZER") {
                 user.locationArea?.let { InfoRow("Location", it) }
             }
@@ -282,11 +278,9 @@ private fun VolunteerInfoCard(user: DomainUser) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Volunteer Information")
 
-            // Personal Details
             user.age?.let { InfoRow("Age", it.toString()) }
             user.sex?.let { InfoRow("Gender", it.toDisplayString()) }
 
-            // About/Description
             user.description?.let { description ->
                 if (description.isNotBlank()) {
                     Text(
@@ -308,7 +302,6 @@ private fun VolunteerInfoCard(user: DomainUser) {
                 }
             }
 
-            // Skills
             user.skills?.let { skills ->
                 if (skills.isNotEmpty()) {
                     Text(
@@ -330,18 +323,15 @@ private fun VolunteerInfoCard(user: DomainUser) {
                 }
             }
 
-            // Location & Transportation
             user.locationArea?.let { InfoRow("Preferred Area", it) }
             user.hasDriversLicense?.let { InfoRow("Driver's License", if (it) "Yes" else "No") }
 
-            // Accessibility
             user.disabilities?.let { disabilities ->
                 if (disabilities.isNotBlank()) {
                     InfoRow("Accessibility Needs", disabilities)
                 }
             }
 
-            // Stats
             InfoRow("Karma Points", user.karmaPoints.toString())
         }
     }
@@ -410,10 +400,8 @@ private fun OrganizationInfoCard(user: DomainUser) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Organization Information")
 
-            // Organization Basic Info
             user.organizationName?.let { InfoRow("Organization Name", it) }
 
-            // Organization Description
             user.organizationDescription?.let { description ->
                 if (description.isNotBlank()) {
                     Text(
@@ -435,14 +423,12 @@ private fun OrganizationInfoCard(user: DomainUser) {
                 }
             }
 
-            // Website
             user.organizationWebsite?.let { website ->
                 if (website.isNotBlank()) {
                     InfoRow("Website", website)
                 }
             }
 
-            // Location
             user.locationArea?.let { InfoRow("Location", it) }
         }
     }
@@ -458,10 +444,8 @@ private fun OrganizerInfoCard(user: DomainUser) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Organization Information")
 
-            // Organization Basic Info
             user.organizationName?.let { InfoRow("Organization Name", it) }
 
-            // Organization Description
             user.organizationDescription?.let { description ->
                 if (description.isNotBlank()) {
                     Text(
@@ -483,14 +467,12 @@ private fun OrganizerInfoCard(user: DomainUser) {
                 }
             }
 
-            // Website
             user.organizationWebsite?.let { website ->
                 if (website.isNotBlank()) {
                     InfoRow("Website", website)
                 }
             }
 
-            // Location
             user.locationArea?.let { InfoRow("Location", it) }
         }
     }
@@ -665,7 +647,6 @@ private fun EventPreviewCard(event: VolunteerEvent) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Event image with main image selection logic
             val mainImage = event.images.firstOrNull { it.is_main }
             val fallbackImage = if (mainImage == null && event.images.isNotEmpty()) {
                 event.images.first()

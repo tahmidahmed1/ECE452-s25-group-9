@@ -46,8 +46,6 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun toggleEventStatus(eventId: Int, isPublished: Boolean): Result<Unit> {
-        // For simplicity, call updateEvent with status change
-        // This assumes backend will accept status field but CreateEventData lacks status; skipping.
         return Result.failure(Exception("Not implemented"))
     }
 

@@ -81,7 +81,6 @@ fun EditOrganizerProfileScreen(
 ) {
     val context = LocalContext.current
 
-    // Initialize form fields with current user data
     var fullName by remember(user) { mutableStateOf(user.fullName ?: "") }
     var phone by remember(user) { mutableStateOf(user.phone ?: "") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -90,7 +89,6 @@ fun EditOrganizerProfileScreen(
     var organizationDescription by remember(user) { mutableStateOf(user.organizationDescription ?: "") }
     var organizationWebsite by remember(user) { mutableStateOf(user.organizationWebsite ?: "") }
 
-    // Initialize social media fields from existing data
     val existingSocialMedia = user.organizationSocialMedia ?: emptyList()
     var instagramHandle by remember(user) {
         mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.INSTAGRAM }?.url ?: "")
@@ -102,12 +100,10 @@ fun EditOrganizerProfileScreen(
         mutableStateOf(existingSocialMedia.find { it.platform == SocialMediaPlatform.FACEBOOK }?.url ?: "")
     }
 
-    // Organization images - initialize with existing URLs converted to display state
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var organizationImageUrls by remember(user) { mutableStateOf(user.organizationImages ?: emptyList()) }
     var mainOrgImageIndex by remember { mutableStateOf(0) }
 
-    // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
     ) { bitmap: Bitmap? ->
@@ -120,7 +116,6 @@ fun EditOrganizerProfileScreen(
         }
     }
 
-    // Gallery launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -133,7 +128,6 @@ fun EditOrganizerProfileScreen(
         }
     }
 
-    // Organization image launcher
     val orgImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -146,7 +140,6 @@ fun EditOrganizerProfileScreen(
         }
     }
 
-    // Form validation
     val fullNameError: String? by remember(fullName) {
         derivedStateOf { ImageUtils.FormValidation.validateFullName(fullName) }
     }
@@ -174,7 +167,6 @@ fun EditOrganizerProfileScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Header with back button and title (matching Profile Preview style)
             Row(
                 modifier = Modifier
                     .statusBarsPadding()
@@ -200,7 +192,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Profile Picture Section
             ProfileImagePicker(
                 currentImageUrl = selectedImageUri?.toString() ?: user.profilePictureUrl,
                 onImageSelected = { file ->
@@ -215,7 +206,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Basic Information Section
             ProfileSectionHeader(
                 title = "Basic Information",
                 modifier = Modifier.fillMaxWidth(),
@@ -223,7 +213,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Full Name Field
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
@@ -250,7 +239,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Phone Field
             OutlinedTextField(
                 value = phone,
                 onValueChange = { input ->
@@ -289,7 +277,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Organization Information Section
             ProfileSectionHeader(
                 title = "Organization Information",
                 modifier = Modifier.fillMaxWidth(),
@@ -297,7 +284,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Organization Name
             OutlinedTextField(
                 value = organizationName,
                 onValueChange = { organizationName = it },
@@ -323,7 +309,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Organization Description
             OutlinedTextField(
                 value = organizationDescription,
                 onValueChange = { organizationDescription = it },
@@ -341,7 +326,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Organization Website
             OutlinedTextField(
                 value = organizationWebsite,
                 onValueChange = { organizationWebsite = it },
@@ -358,7 +342,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Social Media Section
             ProfileSectionHeader(
                 title = "Social Media",
                 modifier = Modifier.fillMaxWidth(),
@@ -366,7 +349,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Instagram Handle
             OutlinedTextField(
                 value = instagramHandle,
                 onValueChange = { instagramHandle = it },
@@ -390,7 +372,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Twitter Handle
             OutlinedTextField(
                 value = twitterHandle,
                 onValueChange = { twitterHandle = it },
@@ -414,7 +395,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Facebook Page
             OutlinedTextField(
                 value = facebookPage,
                 onValueChange = { facebookPage = it },
@@ -438,7 +418,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Organization Images Section
             ProfileSectionHeader(
                 title = "Organization Images",
                 modifier = Modifier.fillMaxWidth(),
@@ -470,7 +449,6 @@ fun EditOrganizerProfileScreen(
 
             VerticalSpacer(SpacingSize.ExtraLarge)
 
-            // Save Button
             PrimaryButton(
                 text = "Save Changes",
                 onClick = {
@@ -525,7 +503,6 @@ private fun OrganizerImageCarousel(
         ),
     ) {
         if (selectedImages.isEmpty()) {
-            // Empty state - entire tile clickable
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -559,9 +536,7 @@ private fun OrganizerImageCarousel(
                 }
             }
         } else {
-            // Show carousel with images
             Column(modifier = Modifier.fillMaxSize()) {
-                // Main image display
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -577,7 +552,6 @@ private fun OrganizerImageCarousel(
                         contentScale = ContentScale.Crop,
                     )
 
-                    // Main image badge
                     androidx.compose.material3.Surface(
                         modifier = Modifier
                             .align(Alignment.TopStart)
@@ -593,7 +567,6 @@ private fun OrganizerImageCarousel(
                         )
                     }
 
-                    // Remove button
                     IconButton(
                         onClick = { onRemoveImage(mainImageIndex) },
                         modifier = Modifier
@@ -614,7 +587,6 @@ private fun OrganizerImageCarousel(
                     }
                 }
 
-                // Thumbnail row
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -649,7 +621,6 @@ private fun OrganizerImageCarousel(
                         }
                     }
 
-                    // Add more button
                     if (selectedImages.size < 10) {
                         item {
                             Box(
@@ -677,7 +648,6 @@ private fun OrganizerImageCarousel(
     }
 }
 
-// Helper function for social media icons
 @Composable
 private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {
     return when (platform) {

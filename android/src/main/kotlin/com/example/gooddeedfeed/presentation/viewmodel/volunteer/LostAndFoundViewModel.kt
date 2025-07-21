@@ -72,7 +72,6 @@ class LostAndFoundViewModel @Inject constructor(
                 // TODO: Replace with real API call
                 _createItemState.value = UiState.Success(Unit)
 
-                // Refresh items list
                 loadItems()
             } catch (e: Exception) {
                 _createItemState.value = UiState.Error(e.message ?: "Failed to create item")

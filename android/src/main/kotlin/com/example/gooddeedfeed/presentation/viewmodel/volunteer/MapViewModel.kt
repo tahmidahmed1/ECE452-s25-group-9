@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Simple contract interface for Map UI state */
 interface MapUiContract {
     val currentLocation: Location?
     val filteredEvents: List<VolunteerEvent>
@@ -72,7 +71,6 @@ class MapViewModel @Inject constructor(
                             )
                             val resState = filterEventsByRadius(newState)
 
-                            // Refresh events from backend with current location
                             location?.let { loc ->
                                 loadEvents(loc.latitude, loc.longitude)
                             }
@@ -95,7 +93,6 @@ class MapViewModel @Inject constructor(
             val newState = currentState.copy(radiusKm = radiusKm)
             val resState = filterEventsByRadius(newState)
 
-            // Re-fetch events with updated radius and location
             val loc = resState.currentLocation
             loadEvents(loc?.latitude, loc?.longitude)
 
@@ -108,9 +105,7 @@ class MapViewModel @Inject constructor(
             val locationEnabled = locationSettingsRepository.isLocationEnabled.first()
             if (locationEnabled) {
                 _uiState.update { it.copy(isLocationPermissionGranted = true, errorMessage = null) }
-                // First try to get last known location for immediate feedback
                 getCurrentLocation()
-                // Then start continuous location updates
                 startLocationUpdates()
             } else {
                 _uiState.update {
@@ -123,31 +118,6 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    private fun getCurrentLocation() {
-        viewModelScope.launch {
-            try {
-                val location = locationService.getCurrentLocation()
-                location?.let { loc ->
-                    _uiState.update { currentState ->
-                        val newState = currentState.copy(
-                            currentLocation = loc,
-                            isLocationPermissionGranted = true,
-                            errorMessage = null,
-                        )
-                        val resState = filterEventsByRadius(newState)
-
-                        // Load events with current location
-                        loadEvents(loc.latitude, loc.longitude)
-                        resState
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(errorMessage = "Failed to get current location: ${e.message}")
-                }
-            }
-        }
-    }
 
     fun onLocationPermissionDenied() {
         _uiState.update {
@@ -172,9 +142,7 @@ class MapViewModel @Inject constructor(
     }
 
     private fun filterEventsByRadius(state: MapUiState): MapUiState {
-        // Reference point for distance calculations
         val referenceLocation = state.currentLocation ?: run {
-            // Fallback: geometric center of all events (if any) so radius slider still works in demo
             if (state.allEvents.isEmpty()) return state.copy(filteredEvents = emptyList())
 
             val avgLat = state.allEvents.map { it.latitude }.average()
@@ -196,7 +164,6 @@ class MapViewModel @Inject constructor(
                 distance <= state.radiusKm
             }
 
-            // If nothing matched (e.g., user GPS far away), keep showing all events
             if (filteredEvents.isEmpty()) filteredEvents = state.allEvents
 
             state.copy(filteredEvents = filteredEvents)
@@ -208,5 +175,4 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    // Mock generation removed – relies solely on backend data now.
 } 

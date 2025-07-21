@@ -97,7 +97,6 @@ class EventApiService @Inject constructor(
     suspend fun createEvent(data: CreateEventData): EventDto {
         Log.d(TAG, "🚀 Starting createEvent request")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for createEvent")
@@ -134,7 +133,6 @@ class EventApiService @Inject constructor(
     suspend fun updateEvent(id: Int, data: CreateEventData): EventDto {
         Log.d(TAG, "🚀 Starting updateEvent request for event ID: $id")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for updateEvent")
@@ -171,7 +169,6 @@ class EventApiService @Inject constructor(
     suspend fun deleteEvent(id: Int) {
         Log.d(TAG, "🚀 Starting deleteEvent request for event ID: $id")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for deleteEvent")
@@ -196,7 +193,6 @@ class EventApiService @Inject constructor(
     suspend fun uploadEventImage(eventId: Int, file: java.io.File) {
         Log.d(TAG, "🚀 Starting uploadEventImage request for event ID: $eventId")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for uploadEventImage")
@@ -233,7 +229,6 @@ class EventApiService @Inject constructor(
     suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean) {
         Log.d(TAG, "🚀 Starting uploadEventImageToCarousel request for event ID: $eventId")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for uploadEventImageToCarousel")
@@ -274,7 +269,6 @@ class EventApiService @Inject constructor(
     suspend fun setMainEventImage(eventId: Int, imageId: Int) {
         Log.d(TAG, "🚀 Starting setMainEventImage request for event ID: $eventId, image ID: $imageId")
 
-        // Get session ID from DataStore
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found in DataStore for setMainEventImage")

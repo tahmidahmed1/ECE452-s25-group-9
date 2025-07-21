@@ -45,7 +45,6 @@ import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SecondaryButton
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 
-// Validation functions for sign in
 private fun validateSignInInput(username: String, password: String): String? {
     if (username.isBlank()) return "Username is required"
     if (password.isBlank()) return "Password is required"
@@ -68,7 +67,6 @@ fun SignInScreen(
     val isLoading = uiState is AuthUiState.Loading
     val context = LocalContext.current
 
-    // Handle success and error states with toasts and navigation
     LaunchedEffect(uiState) {
         when (uiState) {
             is AuthUiState.Success -> {
@@ -87,7 +85,6 @@ fun SignInScreen(
         }
     }
 
-    // Handle sign in with validation
     val handleSignIn = {
         val validationError = validateSignInInput(username, password)
         if (validationError != null) {
@@ -116,7 +113,6 @@ fun SignInScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Logo or App Icon placeholder
             Surface(
                 modifier = Modifier
                     .size(80.dp)
@@ -200,7 +196,6 @@ fun SignInScreen(
                 enabled = !isLoading,
             )
 
-            // Development Mode - Only show in debug builds
             if (BuildConfig.DEV_MODE) {
                 Spacer(modifier = Modifier.height(24.dp))
 

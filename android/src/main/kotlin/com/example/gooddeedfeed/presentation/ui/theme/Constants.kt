@@ -110,7 +110,6 @@ object AppConstants {
         val events: List<VolunteerOpportunity> = emptyList(),
     )
 
-    // Simple event data class for mock events
     data class SimpleEvent(val title: String, val date: String)
 
     val MOCK_ORGANIZERS = listOf(

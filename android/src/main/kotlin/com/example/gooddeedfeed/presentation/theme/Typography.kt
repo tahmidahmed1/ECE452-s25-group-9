@@ -8,7 +8,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.gooddeedfeed.R
 
-// DM Sans FontFamily using local TTF files
 val dmSansFontFamily = FontFamily(
     Font(R.font.dm_sans_light, FontWeight.Light),
     Font(R.font.dm_sans_regular, FontWeight.Normal),
@@ -16,9 +15,7 @@ val dmSansFontFamily = FontFamily(
     Font(R.font.dm_sans_bold, FontWeight.Bold),
 )
 
-// Modern Typography System
 val AppTypography = Typography(
-    // Display styles - for hero text and major headers
     displayLarge = TextStyle(
         fontFamily = dmSansFontFamily,
         fontWeight = FontWeight.Bold,
@@ -41,7 +38,6 @@ val AppTypography = Typography(
         letterSpacing = 0.sp,
     ),
 
-    // Headline styles - for section headers
     headlineLarge = TextStyle(
         fontFamily = dmSansFontFamily,
         fontWeight = FontWeight.Bold,
@@ -64,7 +60,6 @@ val AppTypography = Typography(
         letterSpacing = 0.sp,
     ),
 
-    // Title styles - for card titles and prominent text
     titleLarge = TextStyle(
         fontFamily = dmSansFontFamily,
         fontWeight = FontWeight.Medium,
@@ -87,7 +82,6 @@ val AppTypography = Typography(
         letterSpacing = 0.1.sp,
     ),
 
-    // Body styles - for main content
     bodyLarge = TextStyle(
         fontFamily = dmSansFontFamily,
         fontWeight = FontWeight.Normal,
@@ -110,7 +104,6 @@ val AppTypography = Typography(
         letterSpacing = 0.4.sp,
     ),
 
-    // Label styles - for buttons and small text
     labelLarge = TextStyle(
         fontFamily = dmSansFontFamily,
         fontWeight = FontWeight.Medium,

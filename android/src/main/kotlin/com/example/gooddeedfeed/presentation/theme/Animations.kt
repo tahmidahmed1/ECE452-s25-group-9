@@ -35,9 +35,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.debugInspectorInfo
 import kotlin.math.sin
 
-// Animation presets
 object AppAnimations {
-    // Fade animations
     val fadeIn = fadeIn(
         animationSpec = tween(
             durationMillis = AnimationDurations.normal,
@@ -52,7 +50,6 @@ object AppAnimations {
         ),
     )
 
-    // Scale animations
     val scaleIn = scaleIn(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -69,7 +66,6 @@ object AppAnimations {
         targetScale = 0.8f,
     )
 
-    // Slide animations
     val slideInFromBottom = slideInVertically(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -86,12 +82,10 @@ object AppAnimations {
         targetOffsetY = { it / 2 },
     )
 
-    // Combined animations
     val enterAnimation = fadeIn + scaleIn + slideInFromBottom
     val exitAnimation = fadeOut + scaleOut + slideOutToBottom
 }
 
-// Animated visibility with modern presets
 @Composable
 fun ModernAnimatedVisibility(
     visible: Boolean,
@@ -109,7 +103,6 @@ fun ModernAnimatedVisibility(
     )
 }
 
-// Bounce click effect
 fun Modifier.bounceClick(
     enabled: Boolean = true,
     onClick: () -> Unit,
@@ -140,7 +133,6 @@ fun Modifier.bounceClick(
         )
 }
 
-// Hover scale effect
 fun Modifier.hoverScale(
     scale: Float = 1.05f,
     enabled: Boolean = true,
@@ -168,7 +160,6 @@ fun Modifier.hoverScale(
         }
 }
 
-// Shimmer loading effect
 @Composable
 fun Modifier.shimmer(
     enabled: Boolean = true,
@@ -197,7 +188,6 @@ fun Modifier.shimmer(
     this.graphicsLayer { this.alpha = alpha }
 }
 
-// Pulse animation
 @Composable
 fun Modifier.pulse(
     enabled: Boolean = true,
@@ -233,7 +223,6 @@ fun Modifier.pulse(
     }
 }
 
-// Shake animation for errors
 @Composable
 fun Modifier.shake(
     enabled: Boolean = false,
@@ -257,7 +246,6 @@ fun Modifier.shake(
     }
 }
 
-// Smooth color transition
 @Composable
 fun animateColorAsState(
     targetValue: androidx.compose.ui.graphics.Color,

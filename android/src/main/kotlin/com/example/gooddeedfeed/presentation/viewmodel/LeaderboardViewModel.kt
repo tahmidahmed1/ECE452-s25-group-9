@@ -51,13 +51,10 @@ class LeaderboardViewModel @Inject constructor(
             leaderboardRepository.getLeaderboard(1, pageSize).collect { result ->
                 result.fold(
                     onSuccess = { response ->
-                        // Determine current user entry (may or may not be in first page)
                         val currentUserId = authRepository.getCurrentUser().getOrNull()?.id
                         var foundEntry: DomainLeaderboardEntry? = response.entries.firstOrNull { it.id == currentUserId }
 
-                        // If not found, try to locate by iterating further pages until found or no next
                         if (foundEntry == null && response.hasNext) {
-                            // simple loop (could be optimized)
                             var page = 2
                             var hasNext = response.hasNext
                             while (foundEntry == null && hasNext) {
@@ -129,7 +126,6 @@ class LeaderboardViewModel @Inject constructor(
             try {
                 authRepository.increaseKarmaPointsDevOnly().fold(
                     onSuccess = { updatedUser ->
-                        // Reload the leaderboard to show updated karma points
                         loadLeaderboard()
                         onSuccess(updatedUser)
                     },

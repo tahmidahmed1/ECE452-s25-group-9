@@ -102,24 +102,20 @@ fun ListScreen(
     var messageText by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    // Search organizers when query changes
     LaunchedEffect(organizerSearch) {
         if (organizerSearch.isNotBlank()) {
             subscriptionViewModel.searchOrganizers(organizerSearch)
         }
     }
 
-    // Apply filters when they change
     LaunchedEffect(filters) {
         viewModel.applyFilters(filters)
     }
 
-    // Location permission handling
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted() else viewModel.onLocationPermissionDenied()
     }
 
-    // Use enhanced location permission manager
     EnhancedLocationPermissionManager(
         locationPermissionState = locationPermissionState,
         locationSettingsRepository = viewModel.locationSettingsRepository,
@@ -127,7 +123,6 @@ fun ListScreen(
         onPermissionDenied = { viewModel.onLocationPermissionDenied() },
         onLocationDisabled = { viewModel.onLocationPermissionDenied() },
         content = {
-            // Main content when location is properly configured
             if (selectedOrganizer != null) {
                 OrganizerProfileScreen(
                     organizer = selectedOrganizer!!,
@@ -157,9 +152,7 @@ fun ListScreen(
             } else if (selectedOpportunity != null) {
                 VolunteerOpportunityDetailScreen(opportunity = selectedOpportunity!!, onBack = { selectedOpportunity = null })
             } else {
-                // Main list screen content
                 Column(modifier = modifier.fillMaxSize()) {
-                    // Header with search and filters
                     HeaderSection(
                         organizerSearch = organizerSearch,
                         onOrganizerSearchChange = { organizerSearch = it },
@@ -168,7 +161,6 @@ fun ListScreen(
                         onFiltersClick = { filtersExpanded = true },
                     )
 
-                    // Show organizer search results if search is active
                     if (organizerSearch.isNotBlank()) {
                         when (val searchState = subscriptionUiState) {
                             is UiState.Loading -> {
@@ -220,7 +212,6 @@ fun ListScreen(
                             }
                         }
                     } else {
-                        // Main content - show opportunities when not searching
                         when (val state = uiState) {
                             is UiState.Loading -> {
                                 Box(
@@ -250,7 +241,6 @@ fun ListScreen(
                                 }
                             }
                             else -> {
-                                // Handle any other states
                                 Box(
                                     modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center,
@@ -266,7 +256,6 @@ fun ListScreen(
                     }
                 }
 
-                // Filters drawer
                 if (filtersExpanded) {
                     FiltersDrawer(
                         isExpanded = filtersExpanded,
@@ -278,7 +267,6 @@ fun ListScreen(
                 }
             }
 
-            // Message dialog
             if (showMessageDialog && selectedOrganizer != null) {
                 MessageDialog(
                     organizerName = selectedOrganizer!!.organizationName ?: selectedOrganizer!!.fullName ?: selectedOrganizer!!.username,
@@ -313,7 +301,6 @@ private fun HeaderSection(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(16.dp)) {
-        // Header row with icon and title
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start,
@@ -334,7 +321,6 @@ private fun HeaderSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Search and filters row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -388,7 +374,6 @@ private fun OrganizerCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            // Profile image
             if (organizer.profilePictureUrl != null && organizer.profilePictureUrl.isNotEmpty()) {
                 AsyncImage(
                     model = organizer.profilePictureUrl,
@@ -492,7 +477,6 @@ private fun OpportunityCard(
         Column(
             modifier = Modifier.padding(16.dp),
         ) {
-            // Header row with title and volunteer count
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     text = opportunity.title,
@@ -586,12 +570,10 @@ private fun OrganizerProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Centered profile section
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            // Profile picture
             if (organizer.profilePictureUrl != null && organizer.profilePictureUrl.isNotEmpty()) {
                 AsyncImage(
                     model = organizer.profilePictureUrl,
@@ -620,7 +602,6 @@ private fun OrganizerProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Organization/Full name
             organizer.organizationName?.let { orgName ->
                 Text(
                     text = orgName,
@@ -639,7 +620,6 @@ private fun OrganizerProfileScreen(
                 )
             }
 
-            // Username
             Text(
                 text = "@${organizer.username}",
                 style = MaterialTheme.typography.titleMedium,
@@ -649,7 +629,6 @@ private fun OrganizerProfileScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Email
             Text(
                 text = organizer.email,
                 style = MaterialTheme.typography.bodyMedium,
@@ -663,7 +642,6 @@ private fun OrganizerProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Action buttons row
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -728,7 +706,6 @@ private fun OrganizerProfileScreen(
         Spacer(modifier = Modifier.height(24.dp))
         Text("Events", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         VerticalSpacer()
-        // TODO: Implement events loading from backend
         Card(
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -745,7 +722,6 @@ private fun OrganizerProfileScreen(
 
 @Composable
 private fun VolunteerOpportunityDetailScreen(opportunity: VolunteerOpportunity, onBack: () -> Unit) {
-    // Mock images list (replace with real once available)
     val images = listOf(
         "https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&w=600&q=60",
         "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60",

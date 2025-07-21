@@ -4,7 +4,6 @@ package com.example.gooddeedfeed.domain.model
  * Domain models shared across multiple user types
  */
 
-// Badge domain models
 data class DomainBadge(
     val id: Int,
     val name: String,

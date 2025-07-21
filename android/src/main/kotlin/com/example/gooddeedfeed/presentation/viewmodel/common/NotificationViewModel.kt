@@ -54,7 +54,6 @@ class NotificationViewModel @Inject constructor(
         viewModelScope.launch {
             notificationRepository.updateNotification(notificationId, true)
                 .onSuccess {
-                    // Update local state
                     _notifications.value = _notifications.value.map { notification ->
                         if (notification.id == notificationId) {
                             notification.copy(isRead = true)
@@ -62,7 +61,6 @@ class NotificationViewModel @Inject constructor(
                             notification
                         }
                     }
-                    // Update unread count
                     _unreadCount.value = _notifications.value.count { !it.isRead }
                 }
                 .onFailure { exception ->
@@ -75,7 +73,6 @@ class NotificationViewModel @Inject constructor(
         viewModelScope.launch {
             notificationRepository.markAllNotificationsRead()
                 .onSuccess {
-                    // Update local state
                     _notifications.value = _notifications.value.map { notification ->
                         notification.copy(isRead = true)
                     }
@@ -104,7 +101,6 @@ class NotificationViewModel @Inject constructor(
         viewModelScope.launch {
             notificationRepository.deleteNotification(notificationId)
                 .onSuccess {
-                    // Update local state
                     val updatedNotifications = _notifications.value.filterNot { it.id == notificationId }
                     _notifications.value = updatedNotifications
                     _unreadCount.value = updatedNotifications.count { !it.isRead }

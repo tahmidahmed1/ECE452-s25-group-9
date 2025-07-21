@@ -22,21 +22,17 @@ fun BadgeManager(
 
     val badgeCheckState by badgeViewModel.badgeCheckState.collectAsStateWithLifecycle()
 
-    // Always check once on composition to handle scenario where user already exceeds thresholds
     LaunchedEffect(Unit) {
         badgeViewModel.checkBadgeAchievements()
     }
 
-    // Check for new badges when karma points change
     LaunchedEffect(userKarmaPoints) {
         if (userKarmaPoints != null && userKarmaPoints > 0) {
-            // Add a small delay to avoid checking too frequently
             delay(1000)
             badgeViewModel.checkBadgeAchievements()
         }
     }
 
-    // Handle badge check results
     LaunchedEffect(badgeCheckState) {
         when (val currentState = badgeCheckState) {
             is UiState.Success -> {
@@ -47,12 +43,10 @@ fun BadgeManager(
                 }
             }
             else -> {
-                // Handle other states if needed
             }
         }
     }
 
-    // Show achievement dialog
     if (showAchievementDialog && achievedBadges.isNotEmpty()) {
         BadgeAchievementDialog(
             badges = achievedBadges,

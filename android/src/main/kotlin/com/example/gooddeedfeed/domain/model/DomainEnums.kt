@@ -1,6 +1,5 @@
 package com.example.gooddeedfeed.domain.model
 
-// Domain enums to avoid leaking DTO types into the domain layer
 
 enum class DomainUserType {
     VOLUNTEER,
@@ -14,7 +13,6 @@ enum class DomainSex {
     PREFER_NOT_TO_SAY,
 }
 
-// Extension helpers
 fun DomainSex.toDisplayString(): String = when (this) {
     DomainSex.MALE -> "Male"
     DomainSex.FEMALE -> "Female"
