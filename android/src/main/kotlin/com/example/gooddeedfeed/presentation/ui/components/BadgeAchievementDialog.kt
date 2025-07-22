@@ -70,7 +70,7 @@ fun BadgeAchievementDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = modifier
-                .fillMaxWidth(0.95f)
+                .fillMaxWidth(0.98f)
                 .heightIn(max = 600.dp)
                 .scale(scale.value),
             shape = RoundedCornerShape(24.dp),

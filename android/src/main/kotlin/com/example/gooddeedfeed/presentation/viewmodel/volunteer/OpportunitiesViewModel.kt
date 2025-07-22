@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import android.util.Log
 
 data class OpportunitiesData(
     val opportunities: List<VolunteerOpportunity>,
@@ -32,6 +33,7 @@ data class OpportunitiesData(
     val radiusKm: Float = 10f,
     val currentLocation: Location? = null,
     val isLocationPermissionGranted: Boolean = false,
+    val useDistanceFilter: Boolean = false,
 )
 
 @HiltViewModel
@@ -49,17 +51,21 @@ class OpportunitiesViewModel @Inject constructor(
     private var allOpportunities: List<VolunteerOpportunity> = emptyList()
 
     init {
+        Log.d("OpportunitiesViewModel", "🚀 ViewModel initialized, loading opportunities...")
         loadOpportunities()
     }
 
     fun loadOpportunities() {
         viewModelScope.launch {
+            Log.d("OpportunitiesViewModel", "📥 Loading opportunities...")
             _uiState.value = UiState.Loading
             getOpportunitiesUseCase()
                 .catch { e ->
+                    Log.e("OpportunitiesViewModel", "❌ Failed to load opportunities: ${e.message}", e)
                     _uiState.value = UiState.Error("Failed to load opportunities: ${e.message}")
                 }
                 .collect { opportunities ->
+                    Log.d("OpportunitiesViewModel", "✅ Loaded ${opportunities.size} opportunities")
                     val categories = OpportunityCategory.values().toList()
                     allOpportunities = opportunities
                     _uiState.value = UiState.Success(
@@ -71,6 +77,7 @@ class OpportunitiesViewModel @Inject constructor(
                             radiusKm = 10f,
                             currentLocation = null,
                             isLocationPermissionGranted = false,
+                            useDistanceFilter = false,
                         ),
                     )
                 }
@@ -172,10 +179,15 @@ class OpportunitiesViewModel @Inject constructor(
     fun updateRadius(newRadius: Float) {
         val currentState = _uiState.value
         if (currentState is UiState.Success) {
+            val filtered = if (currentState.data.useDistanceFilter) {
+                filterByRadius(allOpportunities, currentState.data.currentLocation, newRadius, true)
+            } else {
+                allOpportunities
+            }
             _uiState.value = currentState.copy(
                 data = currentState.data.copy(
                     radiusKm = newRadius,
-                    opportunities = filterByRadius(allOpportunities, currentState.data.currentLocation, newRadius, true),
+                    opportunities = filtered,
                 ),
             )
         }
@@ -211,21 +223,29 @@ class OpportunitiesViewModel @Inject constructor(
 
     fun applyFilters(filters: OpportunityFilters) {
         viewModelScope.launch {
+            Log.d("OpportunitiesViewModel", "🎯 Applying filters: $filters")
             val currentState = _uiState.value
+            Log.d("OpportunitiesViewModel", "Current state: ${currentState.javaClass.simpleName}")
+            
             if (currentState is UiState.Success) {
+                Log.d("OpportunitiesViewModel", "Setting state to Loading...")
                 _uiState.value = UiState.Loading
                 val location = currentState.data.currentLocation
                 val lat = location?.latitude
                 val lon = location?.longitude
                 val radiusKm = currentState.data.radiusKm
 
+                Log.d("OpportunitiesViewModel", "Location: lat=$lat, lon=$lon, radiusKm=$radiusKm")
                 try {
                     val effectiveRadiusKm = if (filters.useDistanceFilter) radiusKm else null
+                    Log.d("OpportunitiesViewModel", "Effective radius: $effectiveRadiusKm")
                     getOpportunitiesUseCase.getOpportunitiesWithFilters(lat, lon, effectiveRadiusKm, filters)
                         .catch { e ->
+                            Log.e("OpportunitiesViewModel", "❌ Filter error: ${e.message}", e)
                             _uiState.value = UiState.Error("Failed to apply filters: ${e.message}")
                         }
                         .collect { opportunities ->
+                            Log.d("OpportunitiesViewModel", "✅ Filtered to ${opportunities.size} opportunities")
                             _uiState.value = UiState.Success(
                                 currentState.data.copy(
                                     opportunities = opportunities,
@@ -233,8 +253,11 @@ class OpportunitiesViewModel @Inject constructor(
                             )
                         }
                 } catch (e: Exception) {
+                    Log.e("OpportunitiesViewModel", "❌ Filter exception: ${e.message}", e)
                     _uiState.value = UiState.Error("Failed to apply filters: ${e.message}")
                 }
+            } else {
+                Log.w("OpportunitiesViewModel", "⚠️ Cannot apply filters - current state is not Success: $currentState")
             }
         }
     }
@@ -298,12 +321,26 @@ class OpportunitiesViewModel @Inject constructor(
 
     private fun startLocationUpdates() {
         viewModelScope.launch {
+            Log.d("OpportunitiesViewModel", "🌍 Starting location updates...")
             locationService.getLocationUpdates()
                 .catch { /* ignore */ }
                 .collect { loc ->
+                    Log.d("OpportunitiesViewModel", "🌍 Location update received: lat=${loc?.latitude}, lon=${loc?.longitude}")
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
-                        val filtered = filterByRadius(allOpportunities, loc, currentState.data.radiusKm, true)
+                        val useDistanceFilter = currentState.data.useDistanceFilter
+                        Log.d("OpportunitiesViewModel", "🌍 Distance filtering enabled: $useDistanceFilter")
+                        
+                        val filtered = if (useDistanceFilter) {
+                            Log.d("OpportunitiesViewModel", "🌍 Filtering ${allOpportunities.size} opportunities by radius ${currentState.data.radiusKm}km")
+                            val result = filterByRadius(allOpportunities, loc, currentState.data.radiusKm, true)
+                            Log.d("OpportunitiesViewModel", "🌍 Location filtering resulted in ${result.size} opportunities")
+                            result
+                        } else {
+                            Log.d("OpportunitiesViewModel", "🌍 Distance filtering disabled, using all ${allOpportunities.size} opportunities")
+                            allOpportunities
+                        }
+                        
                         _uiState.value = currentState.copy(
                             data = currentState.data.copy(
                                 currentLocation = loc,

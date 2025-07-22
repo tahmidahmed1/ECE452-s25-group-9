@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.data.repository
 
+import android.util.Log
 import com.example.gooddeedfeed.data.mapper.toEmulatorAccessibleUrl
 import com.example.gooddeedfeed.data.remote.EventApiService
 import com.example.gooddeedfeed.data.remote.dto.EventDto
@@ -34,6 +35,7 @@ private fun EventDto.toOpportunity(): VolunteerOpportunity = VolunteerOpportunit
     latitude = latitude ?: 0.0,
     longitude = longitude ?: 0.0,
     imageUrl = image_url?.toEmulatorAccessibleUrl(),
+    karmaPoints = karma_points,
 )
 
 @Singleton
@@ -43,14 +45,26 @@ class OpportunitiesRepositoryImpl @Inject constructor(
 
     private suspend fun fetchAll(): List<VolunteerOpportunity> {
         return try {
-            apiService.getAllEvents().map { it.toOpportunity() }
+            Log.d("OpportunitiesRepo", "📞 Calling apiService.getAllEvents()...")
+            val events = apiService.getAllEvents()
+            Log.d("OpportunitiesRepo", "📞 API returned ${events.size} events")
+            val opportunities = events.map { it.toOpportunity() }
+            Log.d("OpportunitiesRepo", "📞 Mapped to ${opportunities.size} opportunities")
+            opportunities
         } catch (e: Exception) {
+            Log.e("OpportunitiesRepo", "❌ Error in fetchAll()", e)
             emptyList()
         }
     }
 
     override suspend fun getOpportunities(): Flow<List<VolunteerOpportunity>> = flow {
-        emit(fetchAll())
+        Log.d("OpportunitiesRepo", "📥 getOpportunities() called")
+        val opportunities = fetchAll()
+        Log.d("OpportunitiesRepo", "📥 getOpportunities() - fetchAll() returned ${opportunities.size} opportunities")
+        opportunities.forEach { opp ->
+            Log.d("OpportunitiesRepo", "  - ${opp.title}: karmaPoints=${opp.karmaPoints}")
+        }
+        emit(opportunities)
     }
 
     override suspend fun getOpportunitiesByCategory(category: OpportunityCategory): Flow<List<VolunteerOpportunity>> = flow {
@@ -137,6 +151,10 @@ class OpportunitiesRepositoryImpl @Inject constructor(
         radiusKm: Float?,
         filters: OpportunityFilters,
     ): Flow<List<VolunteerOpportunity>> = flow {
+        Log.d("OpportunitiesRepo", "🎯 getOpportunitiesWithFilters called")
+        Log.d("OpportunitiesRepo", "  - lat: $lat, lon: $lon, radiusKm: $radiusKm")
+        Log.d("OpportunitiesRepo", "  - filters: $filters")
+        
         val opportunities = try {
             val categoryParam = if (filters.selectedCategories.isNotEmpty()) {
                 filters.selectedCategories.first().toApiValue()
@@ -151,7 +169,10 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 DateFilter.THIS_MONTH -> "this_month"
             }
 
-            apiService.getAllEvents(
+            Log.d("OpportunitiesRepo", "  - API params: category=$categoryParam, onlyAvailable=${filters.onlyAvailable}, almostFull=${filters.almostFull}")
+            Log.d("OpportunitiesRepo", "  - API params: minKarmaPoints=${filters.minKarmaPoints}, maxKarmaPoints=${filters.maxKarmaPoints}, dateFilter=$dateFilterParam")
+
+            val result = apiService.getAllEvents(
                 lat = lat,
                 lon = lon,
                 radiusKm = radiusKm ?: 50f,
@@ -162,7 +183,14 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 maxKarmaPoints = filters.maxKarmaPoints,
                 dateFilter = dateFilterParam,
             ).map { it.toOpportunity() }
+            
+            Log.d("OpportunitiesRepo", "🎯 API returned ${result.size} opportunities")
+            result.forEach { opp ->
+                Log.d("OpportunitiesRepo", "  - ${opp.title}: karmaPoints=${opp.karmaPoints}, available=${opp.requiredVolunteers - opp.currentVolunteers}")
+            }
+            result
         } catch (e: Exception) {
+            Log.e("OpportunitiesRepo", "❌ Error getting opportunities with filters", e)
             emptyList()
         }
         emit(opportunities)

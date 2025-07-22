@@ -9,7 +9,6 @@ plugins {
     id("com.diffplug.spotless")
     id("com.google.gms.google-services")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
-    id("com.google.gms.google-services")
 }
 
 android {

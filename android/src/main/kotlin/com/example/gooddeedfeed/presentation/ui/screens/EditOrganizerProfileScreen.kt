@@ -78,6 +78,7 @@ fun EditOrganizerProfileScreen(
     onSave: (DomainUserUpdate, File?) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    errorMessage: String? = null,
 ) {
     val context = LocalContext.current
 
@@ -103,6 +104,31 @@ fun EditOrganizerProfileScreen(
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var organizationImageUrls by remember(user) { mutableStateOf(user.organizationImages ?: emptyList()) }
     var mainOrgImageIndex by remember { mutableStateOf(0) }
+    
+    // Combined list for display: existing URLs + new Files
+    val allImages = remember(organizationImageUrls, organizationImageFiles) {
+        organizationImageUrls + organizationImageFiles.map { it.absolutePath }
+    }
+    
+    // URL validation function
+    fun isValidUrl(url: String): Boolean {
+        if (url.isBlank()) return true // Empty is okay
+        return try {
+            val validPrefixes = listOf("http://", "https://", "www.")
+            validPrefixes.any { url.startsWith(it, ignoreCase = true) } || 
+            url.contains(".", ignoreCase = true)
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    // Validation states
+    val isWebsiteValid = isValidUrl(organizationWebsite)
+    val isInstagramValid = isValidUrl(instagramHandle) 
+    val isTwitterValid = isValidUrl(twitterHandle)
+    val isFacebookValid = isValidUrl(facebookPage)
+    
+    val hasValidationErrors = !isWebsiteValid || !isInstagramValid || !isTwitterValid || !isFacebookValid
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
@@ -154,7 +180,7 @@ fun EditOrganizerProfileScreen(
         }
     }
 
-    val isFormValid = fullNameError == null && phoneError == null && organizationError == null
+    val isFormValid = fullNameError == null && phoneError == null && organizationError == null && !hasValidationErrors
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -334,11 +360,22 @@ fun EditOrganizerProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                isError = !isWebsiteValid,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
                 ),
             )
+
+            if (!isWebsiteValid) {
+                Text(
+                    text = "Please enter a valid website URL",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start),
+                )
+            }
 
             VerticalSpacer(SpacingSize.Large)
 
@@ -356,6 +393,7 @@ fun EditOrganizerProfileScreen(
                 placeholder = { Text("@username") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
+                isError = !isInstagramValid,
                 leadingIcon = {
                     Icon(
                         imageVector = getSocialMediaIcon(SocialMediaPlatform.INSTAGRAM),
@@ -367,8 +405,18 @@ fun EditOrganizerProfileScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
                 ),
             )
+
+            if (!isInstagramValid) {
+                Text(
+                    text = "Please enter a valid Instagram handle or URL",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start),
+                )
+            }
 
             VerticalSpacer(SpacingSize.Medium)
 
@@ -379,6 +427,7 @@ fun EditOrganizerProfileScreen(
                 placeholder = { Text("@username") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
+                isError = !isTwitterValid,
                 leadingIcon = {
                     Icon(
                         imageVector = getSocialMediaIcon(SocialMediaPlatform.TWITTER),
@@ -390,8 +439,18 @@ fun EditOrganizerProfileScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
                 ),
             )
+
+            if (!isTwitterValid) {
+                Text(
+                    text = "Please enter a valid Twitter handle or URL",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start),
+                )
+            }
 
             VerticalSpacer(SpacingSize.Medium)
 
@@ -402,6 +461,7 @@ fun EditOrganizerProfileScreen(
                 placeholder = { Text("Page name or URL") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
+                isError = !isFacebookValid,
                 leadingIcon = {
                     Icon(
                         imageVector = getSocialMediaIcon(SocialMediaPlatform.FACEBOOK),
@@ -413,8 +473,18 @@ fun EditOrganizerProfileScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    errorBorderColor = MaterialTheme.colorScheme.error,
                 ),
             )
+
+            if (!isFacebookValid) {
+                Text(
+                    text = "Please enter a valid Facebook page or URL",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start),
+                )
+            }
 
             VerticalSpacer(SpacingSize.Large)
 
@@ -426,18 +496,26 @@ fun EditOrganizerProfileScreen(
             VerticalSpacer(SpacingSize.Medium)
 
             OrganizerImageCarousel(
-                selectedImages = organizationImageFiles,
+                selectedImages = allImages,
                 mainImageIndex = mainOrgImageIndex,
                 onAddImage = {
-                    if (organizationImageFiles.size < 10) {
+                    if (allImages.size < 10) {
                         orgImageLauncher.launch("image/*")
                     }
                 },
                 onRemoveImage = { index ->
-                    organizationImageFiles = organizationImageFiles.filterIndexed { i, _ -> i != index }
-                    if (mainOrgImageIndex >= organizationImageFiles.size && organizationImageFiles.isNotEmpty()) {
-                        mainOrgImageIndex = organizationImageFiles.size - 1
-                    } else if (organizationImageFiles.isEmpty()) {
+                    if (index < organizationImageUrls.size) {
+                        // Removing an existing URL image
+                        organizationImageUrls = organizationImageUrls.filterIndexed { i, _ -> i != index }
+                    } else {
+                        // Removing a new File image
+                        val fileIndex = index - organizationImageUrls.size
+                        organizationImageFiles = organizationImageFiles.filterIndexed { i, _ -> i != fileIndex }
+                    }
+                    // Adjust main image index
+                    if (mainOrgImageIndex >= allImages.size && allImages.isNotEmpty()) {
+                        mainOrgImageIndex = allImages.size - 1
+                    } else if (allImages.isEmpty()) {
                         mainOrgImageIndex = 0
                     }
                 },
@@ -448,6 +526,30 @@ fun EditOrganizerProfileScreen(
             )
 
             VerticalSpacer(SpacingSize.ExtraLarge)
+
+            // Display validation errors
+            if (hasValidationErrors) {
+                Text(
+                    text = "❌ Please fix validation errors above",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+                VerticalSpacer(SpacingSize.Small)
+            }
+
+            // Display server error message
+            errorMessage?.let { error ->
+                Text(
+                    text = "❌ $error",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                )
+                VerticalSpacer(SpacingSize.Small)
+            }
 
             PrimaryButton(
                 text = "Save Changes",
@@ -464,6 +566,9 @@ fun EditOrganizerProfileScreen(
                         }
                     }.takeIf { it.isNotEmpty() }
 
+                    // Combine existing URLs with new file paths for organizationImages
+                    val combinedImages = organizationImageUrls + organizationImageFiles.map { it.absolutePath }
+                    
                     val userUpdate = DomainUserUpdate(
                         fullName = if (fullName != user.fullName) fullName.takeIf { it.isNotBlank() } else null,
                         phone = if (phone != user.phone) phone.takeIf { it.isNotBlank() } else null,
@@ -471,7 +576,7 @@ fun EditOrganizerProfileScreen(
                         organizationDescription = if (organizationDescription != user.organizationDescription) organizationDescription.takeIf { it.isNotBlank() } else null,
                         organizationWebsite = if (organizationWebsite != user.organizationWebsite) organizationWebsite.takeIf { it.isNotBlank() } else null,
                         organizationSocialMedia = if (socialMedia != user.organizationSocialMedia) socialMedia else null,
-                        organizationImages = if (organizationImageFiles.isNotEmpty()) organizationImageFiles.map { it.absolutePath } else null,
+                        organizationImages = if (combinedImages != user.organizationImages) combinedImages else null,
                     )
                     Log.d("EditOrganizerProfileScreen", "Save clicked: update=$userUpdate, file=$profilePictureFile")
 
@@ -488,7 +593,7 @@ fun EditOrganizerProfileScreen(
 
 @Composable
 private fun OrganizerImageCarousel(
-    selectedImages: List<File>,
+    selectedImages: List<String>,
     mainImageIndex: Int,
     onAddImage: () -> Unit,
     onRemoveImage: (Int) -> Unit,

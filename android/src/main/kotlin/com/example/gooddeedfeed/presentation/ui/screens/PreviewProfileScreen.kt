@@ -24,10 +24,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.gooddeedfeed.R
 import com.example.gooddeedfeed.data.mapper.toEmulatorAccessibleUrl
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.model.toDisplayString
 import com.example.gooddeedfeed.presentation.common.UiState
@@ -141,7 +145,6 @@ fun OrganizerPreviewProfileScreen(
                 )
             }
             BasicInfoCard(user)
-            AccountInfoCard(user)
             ContactInfoCard(user)
             OrganizerInfoCard(user)
             if (!user.organizationSocialMedia.isNullOrEmpty()) {
@@ -234,20 +237,6 @@ private fun BasicInfoCard(user: DomainUser) {
     }
 }
 
-@Composable
-private fun AccountInfoCard(user: DomainUser) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            SectionHeader("Account Information")
-            user.createdAt?.let { InfoRow("Member Since", it) }
-            user.updatedAt?.let { InfoRow("Last Updated", it) }
-        }
-    }
-}
 
 @Composable
 private fun ContactInfoCard(user: DomainUser) {
@@ -446,14 +435,49 @@ private fun SocialMediaCard(user: DomainUser) {
                 Column(Modifier.padding(16.dp)) {
                     SectionHeader("Social Media")
                     socialMedia.forEach { link ->
-                        InfoRow(
-                            label = link.platform.displayName,
-                            value = link.url,
+                        SocialMediaRow(
+                            platform = link.platform,
+                            url = link.url,
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SocialMediaRow(platform: SocialMediaPlatform, url: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = getSocialMediaIcon(platform),
+                contentDescription = platform.displayName,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = platform.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = url,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f, fill = false),
+            textAlign = TextAlign.End,
+        )
     }
 }
 
@@ -664,5 +688,15 @@ private fun EventPreviewCard(event: VolunteerEvent) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {
+    return when (platform) {
+        SocialMediaPlatform.INSTAGRAM -> ImageVector.vectorResource(R.drawable.ic_instagram)
+        SocialMediaPlatform.FACEBOOK -> ImageVector.vectorResource(R.drawable.ic_facebook)
+        SocialMediaPlatform.TWITTER -> ImageVector.vectorResource(R.drawable.ic_twitter)
+        SocialMediaPlatform.LINKEDIN -> ImageVector.vectorResource(R.drawable.ic_linkedin)
     }
 } 

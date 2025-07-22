@@ -15,13 +15,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FilterList
@@ -41,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,11 +62,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import android.util.Log
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.example.gooddeedfeed.R
 import com.example.gooddeedfeed.domain.model.DomainOrganizerWithSubscriptionStatus
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.presentation.common.UiState
@@ -89,11 +99,32 @@ fun ListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val subscriptionUiState by subscriptionViewModel.uiState.collectAsStateWithLifecycle()
+    
+    // Log state changes for debugging
+    LaunchedEffect(uiState) {
+        Log.d("ListScreen", "🔄 UI State changed: ${uiState.javaClass.simpleName}")
+        when (val state = uiState) {
+            is UiState.Success -> {
+                Log.d("ListScreen", "✅ Success: ${state.data.opportunities.size} opportunities loaded")
+                state.data.opportunities.forEachIndexed { index, opportunity ->
+                    Log.d("ListScreen", "  [$index] ${opportunity.title} (ID: ${opportunity.id})")
+                }
+            }
+            is UiState.Loading -> Log.d("ListScreen", "⏳ Loading opportunities...")
+            is UiState.Error -> Log.d("ListScreen", "❌ Error: ${state.message}")
+            else -> Log.d("ListScreen", "🤷 Unknown state: $state")
+        }
+    }
     var organizerSearch by remember { mutableStateOf("") }
     var selectedOrganizer by remember { mutableStateOf<DomainOrganizerWithSubscriptionStatus?>(null) }
     var selectedOpportunity by remember { mutableStateOf<VolunteerOpportunity?>(null) }
     var filtersExpanded by remember { mutableStateOf(false) }
-    var filters by remember { mutableStateOf(OpportunityFilters()) }
+    var filters by remember { 
+        mutableStateOf(OpportunityFilters()).also { 
+            Log.d("ListScreen", "🎯 Initial filters created: ${OpportunityFilters()}")
+        }
+    }
+    var isInitialLoad by remember { mutableStateOf(true) }
     var showMessageDialog by remember { mutableStateOf(false) }
     var messageText by remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -104,9 +135,27 @@ fun ListScreen(
         }
     }
 
-    LaunchedEffect(filters) {
-        viewModel.applyFilters(filters)
+    // Track when first successful load happens
+    LaunchedEffect(uiState) {
+        if (isInitialLoad && uiState is UiState.Success) {
+            Log.d("ListScreen", "🏁 Initial load complete with ${(uiState as UiState.Success).data.opportunities.size} opportunities, marking as no longer initial")
+            isInitialLoad = false
+        }
     }
+
+    // TEMPORARILY DISABLED: Apply filters only when explicitly requested after initial load
+    // fun applyCurrentFilters() {
+    //     if (!isInitialLoad) {
+    //         Log.d("ListScreen", "🎯 Applying filters: ${filters}")
+    //         Log.d("ListScreen", "  - Selected categories: ${filters.selectedCategories}")
+    //         Log.d("ListScreen", "  - Only available: ${filters.onlyAvailable}")
+    //         Log.d("ListScreen", "  - Use distance filter: ${filters.useDistanceFilter}")
+    //         Log.d("ListScreen", "  - Date filter: ${filters.dateFilter}")
+    //         viewModel.applyFilters(filters)
+    //     } else {
+    //         Log.d("ListScreen", "⏭️ Skipping filter application during initial load")
+    //     }
+    // }
 
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted() else viewModel.onLocationPermissionDenied()
@@ -467,20 +516,147 @@ private fun OrganizerProfileScreen(
     onMessage: () -> Unit,
     onSubscriptionToggle: () -> Unit,
 ) {
-    val context = LocalContext.current
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Profile", style = MaterialTheme.typography.headlineMedium)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Row(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Organizer Profile",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            
+            BasicInfoCard(organizer)
+            
+            // Subscribe and Message buttons section
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        OutlinedButton(
+                            onClick = onSubscriptionToggle,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(CornerRadius.medium),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (organizer.isSubscribed) {
+                                    MaterialTheme.colorScheme.surface
+                                } else {
+                                    Color.Transparent
+                                },
+                                contentColor = if (organizer.isSubscribed) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (organizer.isSubscribed) {
+                                    MaterialTheme.colorScheme.outline
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = if (organizer.isSubscribed) Icons.Default.Check else Icons.Default.Add,
+                                contentDescription = null,
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(if (organizer.isSubscribed) "Unsubscribe" else "Subscribe")
+                        }
+
+                        OutlinedButton(
+                            onClick = onMessage,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(CornerRadius.medium),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        ) {
+                            Icon(Icons.Default.Chat, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Message")
+                        }
+                    }
+                    
+                    if (organizer.subscriberCount > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${organizer.subscriberCount} subscribers",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            
+            ContactInfoCard(organizer)
+            OrganizerInfoCard(organizer)
+            if (!organizer.organizationSocialMedia.isNullOrEmpty()) {
+                SocialMediaCard(organizer)
+            }
+            if (!organizer.organizationImages.isNullOrEmpty()) {
+                OrganizationImagesCard(organizer)
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+// Helper functions for OrganizerProfileScreen
+@Composable
+private fun BasicInfoCard(organizer: DomainOrganizerWithSubscriptionStatus) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (!organizer.bannerUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = organizer.bannerUrl,
+                    contentDescription = "Organization Banner",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
             if (organizer.profilePictureUrl != null && organizer.profilePictureUrl.isNotEmpty()) {
                 AsyncImage(
                     model = organizer.profilePictureUrl,
@@ -506,9 +682,7 @@ private fun OrganizerProfileScreen(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
             organizer.organizationName?.let { orgName ->
                 Text(
                     text = orgName,
@@ -516,6 +690,7 @@ private fun OrganizerProfileScreen(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             } ?: organizer.fullName?.let { fullName ->
                 Text(
@@ -524,106 +699,225 @@ private fun OrganizerProfileScreen(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
-
             Text(
                 text = "@${organizer.username}",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = organizer.email,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(organizer.organizationDescription ?: "No description available", style = MaterialTheme.typography.bodyMedium)
+@Composable
+private fun ContactInfoCard(organizer: DomainOrganizerWithSubscriptionStatus) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            SectionHeader("Contact Information")
+            InfoRow("Email", organizer.email)
+            organizer.phone?.let { InfoRow("Phone", it) }
+            organizer.organizationName?.let { InfoRow("Organization", it) }
+            organizer.locationArea?.let { InfoRow("Location", it) }
+        }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
+@Composable
+private fun OrganizerInfoCard(organizer: DomainOrganizerWithSubscriptionStatus) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            SectionHeader("Organization Information")
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            OutlinedButton(
-                onClick = onSubscriptionToggle,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(CornerRadius.medium),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (organizer.isSubscribed) {
-                        MaterialTheme.colorScheme.surface
-                    } else {
-                        Color.Transparent
-                    },
-                    contentColor = if (organizer.isSubscribed) {
-                        MaterialTheme.colorScheme.onSurface
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                ),
-                border = BorderStroke(
-                    1.dp,
-                    if (organizer.isSubscribed) {
-                        MaterialTheme.colorScheme.outline
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                ),
-            ) {
-                Icon(
-                    imageVector = if (organizer.isSubscribed) Icons.Default.Check else Icons.Default.Add,
-                    contentDescription = null,
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(if (organizer.isSubscribed) "Unsubscribe" else "Subscribe")
+            organizer.organizationName?.let { InfoRow("Organization Name", it) }
+
+            organizer.organizationDescription?.let { description ->
+                if (description.isNotBlank()) {
+                    Text(
+                        text = "About Organization",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                    )
+                }
             }
 
-            OutlinedButton(
-                onClick = onMessage,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(CornerRadius.medium),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            organizer.organizationWebsite?.let { website ->
+                if (website.isNotBlank()) {
+                    InfoRow("Website", website)
+                }
+            }
+
+            organizer.locationArea?.let { InfoRow("Location", it) }
+        }
+    }
+}
+
+@Composable
+private fun SocialMediaCard(organizer: DomainOrganizerWithSubscriptionStatus) {
+    organizer.organizationSocialMedia?.let { socialMedia ->
+        if (socialMedia.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
             ) {
-                Icon(Icons.Default.Chat, contentDescription = null)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Message")
+                Column(Modifier.padding(16.dp)) {
+                    SectionHeader("Social Media")
+                    socialMedia.forEach { link ->
+                        SocialMediaRow(
+                            platformString = link.platform,
+                            url = link.url,
+                        )
+                    }
+                }
             }
         }
+    }
+}
 
-        if (organizer.subscriberCount > 0) {
-            Spacer(modifier = Modifier.height(8.dp))
+@Composable
+private fun OrganizationImagesCard(organizer: DomainOrganizerWithSubscriptionStatus) {
+    organizer.organizationImages?.let { images ->
+        if (images.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    SectionHeader("Organization Images")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(images) { imageUrl ->
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "Organization Image",
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(bottom = 12.dp),
+    )
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun SocialMediaRow(platformString: String, url: String) {
+    // Convert string to SocialMediaPlatform enum
+    val platform = when (platformString.lowercase()) {
+        "instagram" -> SocialMediaPlatform.INSTAGRAM
+        "facebook" -> SocialMediaPlatform.FACEBOOK
+        "twitter" -> SocialMediaPlatform.TWITTER
+        "linkedin" -> SocialMediaPlatform.LINKEDIN
+        else -> SocialMediaPlatform.INSTAGRAM // fallback
+    }
+    
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = getSocialMediaIcon(platform),
+                contentDescription = platform.displayName,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "${organizer.subscriberCount} subscribers",
-                style = MaterialTheme.typography.bodySmall,
+                text = platform.displayName,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Text(
+            text = url,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f, fill = false),
+            textAlign = TextAlign.End,
+        )
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("Events", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-        VerticalSpacer()
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Events will be loaded here",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+@Composable
+private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {
+    return when (platform) {
+        SocialMediaPlatform.INSTAGRAM -> ImageVector.vectorResource(R.drawable.ic_instagram)
+        SocialMediaPlatform.FACEBOOK -> ImageVector.vectorResource(R.drawable.ic_facebook)
+        SocialMediaPlatform.TWITTER -> ImageVector.vectorResource(R.drawable.ic_twitter)
+        SocialMediaPlatform.LINKEDIN -> ImageVector.vectorResource(R.drawable.ic_linkedin)
     }
 }
 

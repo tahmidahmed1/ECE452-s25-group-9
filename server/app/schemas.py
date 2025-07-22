@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl, EmailStr
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -37,7 +37,7 @@ class LostFoundType(str, Enum):
 
 class SocialMediaLink(BaseModel):
     platform: SocialMediaPlatform
-    url: HttpUrl
+    url: str
 
 # User schemas
 class UserBase(BaseModel):
@@ -60,7 +60,7 @@ class User(UserBase):
     # Organization fields (for organizers)
     organization_name: Optional[str] = None
     organization_description: Optional[str] = None
-    organization_website: Optional[HttpUrl] = None
+    organization_website: Optional[str] = None
     organization_social_media: Optional[List[SocialMediaLink]] = None
     organization_images: Optional[List[str]] = None
     
@@ -107,7 +107,7 @@ class OnboardingStepTwoOrganizer(BaseModel):
     phone: str
     organization_name: str
     organization_description: Optional[str] = None
-    organization_website: Optional[HttpUrl] = None
+    organization_website: Optional[str] = None
     organization_social_media: Optional[List[SocialMediaLink]] = None
     organization_images: Optional[List[str]] = None
 
@@ -116,7 +116,7 @@ class OnboardingComplete(BaseModel):
     phone: str
     organization_name: Optional[str] = None
     organization_description: Optional[str] = None
-    organization_website: Optional[HttpUrl] = None
+    organization_website: Optional[str] = None
     organization_social_media: Optional[List[SocialMediaLink]] = None
     organization_images: Optional[List[str]] = None
     # Volunteer-specific fields
@@ -157,7 +157,7 @@ class UserUpdate(BaseModel):
     # Organizer specific
     organization_name: Optional[str] = None
     organization_description: Optional[str] = None
-    organization_website: Optional[HttpUrl] = None
+    organization_website: Optional[str] = None
     organization_social_media: Optional[List[SocialMediaLink]] = None
     organization_images: Optional[List[str]] = None
 
