@@ -1,6 +1,7 @@
 package com.example.gooddeedfeed.presentation.viewmodel.volunteer
 
 import android.location.Location
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
@@ -23,7 +24,6 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
-import android.util.Log
 
 data class OpportunitiesData(
     val opportunities: List<VolunteerOpportunity>,
@@ -226,7 +226,7 @@ class OpportunitiesViewModel @Inject constructor(
             Log.d("OpportunitiesViewModel", "🎯 Applying filters: $filters")
             val currentState = _uiState.value
             Log.d("OpportunitiesViewModel", "Current state: ${currentState.javaClass.simpleName}")
-            
+
             if (currentState is UiState.Success) {
                 Log.d("OpportunitiesViewModel", "Setting state to Loading...")
                 _uiState.value = UiState.Loading
@@ -330,7 +330,7 @@ class OpportunitiesViewModel @Inject constructor(
                     if (currentState is UiState.Success) {
                         val useDistanceFilter = currentState.data.useDistanceFilter
                         Log.d("OpportunitiesViewModel", "🌍 Distance filtering enabled: $useDistanceFilter")
-                        
+
                         val filtered = if (useDistanceFilter) {
                             Log.d("OpportunitiesViewModel", "🌍 Filtering ${allOpportunities.size} opportunities by radius ${currentState.data.radiusKm}km")
                             val result = filterByRadius(allOpportunities, loc, currentState.data.radiusKm, true)
@@ -340,7 +340,7 @@ class OpportunitiesViewModel @Inject constructor(
                             Log.d("OpportunitiesViewModel", "🌍 Distance filtering disabled, using all ${allOpportunities.size} opportunities")
                             allOpportunities
                         }
-                        
+
                         _uiState.value = currentState.copy(
                             data = currentState.data.copy(
                                 currentLocation = loc,

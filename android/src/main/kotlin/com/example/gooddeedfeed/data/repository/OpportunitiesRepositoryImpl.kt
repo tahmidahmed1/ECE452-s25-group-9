@@ -154,7 +154,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
         Log.d("OpportunitiesRepo", "🎯 getOpportunitiesWithFilters called")
         Log.d("OpportunitiesRepo", "  - lat: $lat, lon: $lon, radiusKm: $radiusKm")
         Log.d("OpportunitiesRepo", "  - filters: $filters")
-        
+
         val opportunities = try {
             val categoryParam = if (filters.selectedCategories.isNotEmpty()) {
                 filters.selectedCategories.first().toApiValue()
@@ -183,7 +183,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 maxKarmaPoints = filters.maxKarmaPoints,
                 dateFilter = dateFilterParam,
             ).map { it.toOpportunity() }
-            
+
             Log.d("OpportunitiesRepo", "🎯 API returned ${result.size} opportunities")
             result.forEach { opp ->
                 Log.d("OpportunitiesRepo", "  - ${opp.title}: karmaPoints=${opp.karmaPoints}, available=${opp.requiredVolunteers - opp.currentVolunteers}")

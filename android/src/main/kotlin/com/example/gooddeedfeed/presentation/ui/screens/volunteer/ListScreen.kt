@@ -1,6 +1,7 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
 import android.Manifest
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,15 +15,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -57,27 +58,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.hilt.navigation.compose.hiltViewModel
-import android.util.Log
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.R
 import com.example.gooddeedfeed.domain.model.DomainOrganizerWithSubscriptionStatus
 import com.example.gooddeedfeed.domain.model.DomainUser
-import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.OpportunityFilters
+import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.ui.components.base.EnhancedLocationPermissionManager
-import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.FiltersDrawer
 import com.example.gooddeedfeed.presentation.ui.components.volunteer.OpportunitiesList
 import com.example.gooddeedfeed.presentation.ui.theme.CornerRadius
@@ -99,7 +98,7 @@ fun ListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val subscriptionUiState by subscriptionViewModel.uiState.collectAsStateWithLifecycle()
-    
+
     // Log state changes for debugging
     LaunchedEffect(uiState) {
         Log.d("ListScreen", "🔄 UI State changed: ${uiState.javaClass.simpleName}")
@@ -119,8 +118,8 @@ fun ListScreen(
     var selectedOrganizer by remember { mutableStateOf<DomainOrganizerWithSubscriptionStatus?>(null) }
     var selectedOpportunity by remember { mutableStateOf<VolunteerOpportunity?>(null) }
     var filtersExpanded by remember { mutableStateOf(false) }
-    var filters by remember { 
-        mutableStateOf(OpportunityFilters()).also { 
+    var filters by remember {
+        mutableStateOf(OpportunityFilters()).also {
             Log.d("ListScreen", "🎯 Initial filters created: ${OpportunityFilters()}")
         }
     }
@@ -546,9 +545,9 @@ private fun OrganizerProfileScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            
+
             BasicInfoCard(organizer)
-            
+
             // Subscribe and Message buttons section
             Card(
                 modifier = Modifier
@@ -607,7 +606,7 @@ private fun OrganizerProfileScreen(
                             Text("Message")
                         }
                     }
-                    
+
                     if (organizer.subscriberCount > 0) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -618,7 +617,7 @@ private fun OrganizerProfileScreen(
                     }
                 }
             }
-            
+
             ContactInfoCard(organizer)
             OrganizerInfoCard(organizer)
             if (!organizer.organizationSocialMedia.isNullOrEmpty()) {
@@ -627,7 +626,7 @@ private fun OrganizerProfileScreen(
             if (!organizer.organizationImages.isNullOrEmpty()) {
                 OrganizationImagesCard(organizer)
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
@@ -877,7 +876,7 @@ private fun SocialMediaRow(platformString: String, url: String) {
         "linkedin" -> SocialMediaPlatform.LINKEDIN
         else -> SocialMediaPlatform.INSTAGRAM // fallback
     }
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth()

@@ -104,30 +104,30 @@ fun EditOrganizerProfileScreen(
     var organizationImageFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var organizationImageUrls by remember(user) { mutableStateOf(user.organizationImages ?: emptyList()) }
     var mainOrgImageIndex by remember { mutableStateOf(0) }
-    
+
     // Combined list for display: existing URLs + new Files
     val allImages = remember(organizationImageUrls, organizationImageFiles) {
         organizationImageUrls + organizationImageFiles.map { it.absolutePath }
     }
-    
+
     // URL validation function
     fun isValidUrl(url: String): Boolean {
         if (url.isBlank()) return true // Empty is okay
         return try {
             val validPrefixes = listOf("http://", "https://", "www.")
-            validPrefixes.any { url.startsWith(it, ignoreCase = true) } || 
-            url.contains(".", ignoreCase = true)
+            validPrefixes.any { url.startsWith(it, ignoreCase = true) } ||
+                url.contains(".", ignoreCase = true)
         } catch (e: Exception) {
             false
         }
     }
-    
+
     // Validation states
     val isWebsiteValid = isValidUrl(organizationWebsite)
-    val isInstagramValid = isValidUrl(instagramHandle) 
+    val isInstagramValid = isValidUrl(instagramHandle)
     val isTwitterValid = isValidUrl(twitterHandle)
     val isFacebookValid = isValidUrl(facebookPage)
-    
+
     val hasValidationErrors = !isWebsiteValid || !isInstagramValid || !isTwitterValid || !isFacebookValid
 
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -568,7 +568,7 @@ fun EditOrganizerProfileScreen(
 
                     // Combine existing URLs with new file paths for organizationImages
                     val combinedImages = organizationImageUrls + organizationImageFiles.map { it.absolutePath }
-                    
+
                     val userUpdate = DomainUserUpdate(
                         fullName = if (fullName != user.fullName) fullName.takeIf { it.isNotBlank() } else null,
                         phone = if (phone != user.phone) phone.takeIf { it.isNotBlank() } else null,
