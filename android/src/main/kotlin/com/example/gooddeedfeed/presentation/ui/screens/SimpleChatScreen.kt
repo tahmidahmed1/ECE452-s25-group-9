@@ -56,6 +56,9 @@ import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.viewmodel.ChatConversation
 import com.example.gooddeedfeed.presentation.viewmodel.ChatMessage
 import com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel
+import coil.compose.AsyncImage
+import androidx.compose.foundation.clickable
+import com.example.gooddeedfeed.data.mapper.toEmulatorAccessibleUrl
 
 @Composable
 fun SimpleChatScreen(

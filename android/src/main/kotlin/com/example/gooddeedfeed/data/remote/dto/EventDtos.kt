@@ -74,4 +74,10 @@ fun CreateEventData.toDto(): EventDto = EventDto(
     latitude = latitude,
     longitude = longitude,
     karma_points = karmaPoints,
+)
+
+@Serializable
+data class EventActionResponseDto(
+    val message: String,
+    val current_volunteers: Int? = null,
 ) 

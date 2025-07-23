@@ -122,6 +122,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun refreshJoinedEvents() {
+        viewModelScope.launch {
+            try {
+                // Force refresh by getting a fresh flow
+                opportunitiesRepository.getJoinedEvents().collect { events ->
+                    _joinedEventsState.value = UiState.Success(events)
+                }
+            } catch (e: Exception) {
+                _joinedEventsState.value = UiState.Error("Failed to refresh joined events: ${e.message}")
+            }
+        }
+    }
+
     private fun createUserTypeDisplay(user: DomainUser): UserTypeDisplay {
         return when (user.userType) {
             DomainUserType.VOLUNTEER -> UserTypeDisplay(
@@ -167,14 +180,14 @@ class HomeViewModel @Inject constructor(
                 ),
             )
             null -> UserTypeDisplay(
-                title = "Welcome to Good Deed Feed!",
-                subtitle = "Complete your profile to get started",
+                title = "Loading...",
+                subtitle = "",
                 actionItems = listOf(
                     HomeActionItem(
-                        iconName = "explore",
-                        title = "Explore",
-                        description = "Discover volunteer opportunities",
-                        action = HomeAction.BrowseOpportunities,
+                        iconName = "progress",
+                        title = "Loading",
+                        description = "Please wait while we load your data",
+                        action = HomeAction.ManageEvents,
                     ),
                 ),
             )

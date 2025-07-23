@@ -12,8 +12,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import android.content.Intent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +32,7 @@ import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostAndFoundViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundItem
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +46,8 @@ fun LostAndFoundScreen(
     val createItemState by viewModel.createItemState.collectAsStateWithLifecycle()
     var selectedItem by remember { mutableStateOf<LostFoundItem?>(null) }
     var showCreateForm by remember { mutableStateOf(false) }
+    var showEditForm by remember { mutableStateOf<LostFoundItem?>(null) }
+    var itemToDelete by remember { mutableStateOf<LostFoundItem?>(null) }
     var selectedFilter by remember { mutableStateOf<LostFoundType?>(null) }
 
     LaunchedEffect(Unit) {
@@ -64,7 +69,41 @@ fun LostAndFoundScreen(
     if (showCreateForm) {
         CreateLostFoundScreen(
             onBack = { showCreateForm = false },
-            onSubmit = { showCreateForm = false },
+            onSubmit = { title, description, location, itemType, reward, tags, expiryDays, images ->
+                viewModel.createItem(
+                    title = title,
+                    description = description,
+                    location = location,
+                    itemType = itemType,
+                    reward = reward,
+                    tags = tags,
+                    expiryDays = expiryDays,
+                    images = images
+                )
+            },
+            onCreateSuccess = { showCreateForm = false },
+            viewModel = viewModel,
+        )
+        return
+    }
+
+    if (showEditForm != null) {
+        EditLostFoundScreen(
+            item = showEditForm!!,
+            onBack = { showEditForm = null },
+            onSubmit = { title, description, location, reward, tags, isResolved ->
+                viewModel.updateItem(
+                    itemId = showEditForm!!.id,
+                    title = title,
+                    description = description,
+                    location = location,
+                    reward = reward,
+                    tags = tags,
+                    isResolved = isResolved
+                )
+            },
+            onUpdateSuccess = { showEditForm = null },
+            viewModel = viewModel,
         )
         return
     }
@@ -204,7 +243,10 @@ fun LostAndFoundScreen(
                         items(items) { item ->
                             LostFoundItemCard(
                                 item = item,
+                                currentUserId = user.id.toString(),
                                 onClick = { selectedItem = item },
+                                onEdit = { showEditForm = item },
+                                onDelete = { itemToDelete = item },
                             )
                         }
                     }
@@ -214,13 +256,46 @@ fun LostAndFoundScreen(
             }
         }
     }
+
+    // Delete confirmation dialog
+    if (itemToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { itemToDelete = null },
+            title = { Text("Delete Item?") },
+            text = { Text("Are you sure you want to delete '${itemToDelete!!.title}'? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteItem(itemToDelete!!.id)
+                        itemToDelete = null
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { itemToDelete = null },
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(16.dp),
+        )
+    }
 }
 
 @Composable
 private fun LostFoundItemCard(
     item: LostFoundItem,
+    currentUserId: String,
     onClick: () -> Unit,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {},
 ) {
+    val isOwner = item.userId == currentUserId
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -315,6 +390,9 @@ private fun LostFoundItemCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(item.images.take(3)) { imageUrl ->
+                        try {
+                            android.util.Log.d("LostFoundCard", "Loading image for item ${item.id}: $imageUrl")
+                        } catch (_: Throwable) {}
                         AsyncImage(
                             model = imageUrl,
                             contentDescription = "Item image",
@@ -323,6 +401,51 @@ private fun LostFoundItemCard(
                                 .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop,
                         )
+                    }
+                }
+            }
+
+            // Edit and delete buttons for owner
+            if (isOwner) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedButton(
+                        onClick = onEdit,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary,
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Edit")
+                    }
+                    
+                    OutlinedButton(
+                        onClick = onDelete,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Delete")
                     }
                 }
             }
@@ -335,6 +458,7 @@ private fun LostFoundDetailScreen(
     item: LostFoundItem,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -500,8 +624,40 @@ private fun LostFoundDetailScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        if (item.contactPhone != null || item.contactEmail != null) {
+            Text(
+                text = "Contact Information",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            item.contactPhone?.let { phone ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = phone, style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            item.contactEmail?.let { email ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = email, style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
         Button(
-            onClick = { /* Mock contact */ },
+            onClick = {
+                item.contactPhone?.let { phone ->
+                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
+                    context.startActivity(intent)
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
@@ -510,10 +666,11 @@ private fun LostFoundDetailScreen(
                     shape = RoundedCornerShape(12.dp),
                 ),
             shape = RoundedCornerShape(12.dp),
+            enabled = item.contactPhone != null,
         ) {
             Icon(Icons.Default.Phone, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Contact ${item.contactName}")
+            Text("Call ${item.contactName}")
         }
     }
 }
@@ -521,8 +678,21 @@ private fun LostFoundDetailScreen(
 @Composable
 private fun CreateLostFoundScreen(
     onBack: () -> Unit,
-    onSubmit: () -> Unit,
+    onSubmit: (title: String, description: String, location: String, itemType: LostFoundType, reward: String?, tags: List<String>, expiryDays: Int, images: List<String>) -> Unit,
+    onCreateSuccess: () -> Unit,
+    viewModel: LostAndFoundViewModel,
 ) {
+    val createItemState by viewModel.createItemState.collectAsStateWithLifecycle()
+    
+    LaunchedEffect(createItemState) {
+        when (createItemState) {
+            is UiState.Success -> {
+                onCreateSuccess()
+                viewModel.clearCreateItemState()
+            }
+            else -> {}
+        }
+    }
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
@@ -698,15 +868,25 @@ private fun CreateLostFoundScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         val hasValidation = title.isBlank() || description.isBlank() || location.isBlank() || selectedImages.isEmpty()
-        if (hasValidation) {
-            Text(
-                text = when {
+        
+        // Show validation errors or create item errors
+        val errorText = when (val currentState = createItemState) {
+            is UiState.Error -> currentState.message
+            else -> when {
+                hasValidation -> when {
                     title.isBlank() -> "Title is required"
                     description.isBlank() -> "Description is required"
                     location.isBlank() -> "Location is required"
                     selectedImages.isEmpty() -> "At least one image is required"
                     else -> ""
-                },
+                }
+                else -> ""
+            }
+        }
+        
+        if (errorText.isNotEmpty()) {
+            Text(
+                text = errorText,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -714,7 +894,24 @@ private fun CreateLostFoundScreen(
         }
 
         Button(
-            onClick = onSubmit,
+            onClick = {
+                if (!hasValidation) {
+                    val tagsList = if (tags.isBlank()) emptyList() else tags.split(",").map { it.trim() }
+                    val imageUrls = selectedImages.map { it.toString() }
+                    val rewardText = if (reward.isBlank()) null else reward
+                    
+                    onSubmit(
+                        title,
+                        description,
+                        location,
+                        selectedType,
+                        rewardText,
+                        tagsList,
+                        expiryDays,
+                        imageUrls
+                    )
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
@@ -722,10 +919,180 @@ private fun CreateLostFoundScreen(
                     color = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(12.dp),
                 ),
-            enabled = !hasValidation,
+            enabled = !hasValidation && createItemState !is UiState.Loading,
             shape = RoundedCornerShape(12.dp),
         ) {
-            Text("Submit Report")
+            if (createItemState is UiState.Loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Submit Report")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun EditLostFoundScreen(
+    item: LostFoundItem,
+    onBack: () -> Unit,
+    onSubmit: (title: String, description: String, location: String, reward: String?, tags: List<String>, isResolved: Boolean) -> Unit,
+    onUpdateSuccess: () -> Unit,
+    viewModel: LostAndFoundViewModel,
+) {
+    val updateItemState by viewModel.updateItemState.collectAsStateWithLifecycle()
+    
+    LaunchedEffect(updateItemState) {
+        when (updateItemState) {
+            is UiState.Success -> {
+                onUpdateSuccess()
+                viewModel.clearUpdateItemState()
+            }
+            else -> {}
+        }
+    }
+
+    var title by remember { mutableStateOf(item.title) }
+    var description by remember { mutableStateOf(item.description) }
+    var location by remember { mutableStateOf(item.location) }
+    var reward by remember { mutableStateOf(item.reward ?: "") }
+    var tags by remember { mutableStateOf(item.tags.joinToString(", ")) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Edit Item",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val titleError = title.isBlank()
+        val descriptionError = description.isBlank()
+        val locationError = location.isBlank()
+
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Item Title *") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            isError = titleError,
+            supportingText = if (titleError) { { Text("Title is required", color = MaterialTheme.colorScheme.error) } } else null,
+        )
+
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Description *") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            maxLines = 5,
+            shape = RoundedCornerShape(12.dp),
+            isError = descriptionError,
+            supportingText = if (descriptionError) { { Text("Description is required", color = MaterialTheme.colorScheme.error) } } else null,
+        )
+
+        OutlinedTextField(
+            value = location,
+            onValueChange = { location = it },
+            label = { Text("Location *") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            isError = locationError,
+            supportingText = if (locationError) { { Text("Location is required", color = MaterialTheme.colorScheme.error) } } else null,
+        )
+
+        OutlinedTextField(
+            value = reward,
+            onValueChange = { reward = it },
+            label = { Text("Reward (Optional)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+        )
+
+        OutlinedTextField(
+            value = tags,
+            onValueChange = { tags = it },
+            label = { Text("Tags (e.g., technology, personal, jewelry)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Show validation or update errors
+        val hasValidation = title.isBlank() || description.isBlank() || location.isBlank()
+        val errorText = when (val currentState = updateItemState) {
+            is UiState.Error -> currentState.message
+            else -> when {
+                hasValidation -> when {
+                    title.isBlank() -> "Title is required"
+                    description.isBlank() -> "Description is required"
+                    location.isBlank() -> "Location is required"
+                    else -> ""
+                }
+                else -> ""
+            }
+        }
+        
+        if (errorText.isNotEmpty()) {
+            Text(
+                text = errorText,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
+
+        Button(
+            onClick = {
+                if (!hasValidation) {
+                    val tagsList = if (tags.isBlank()) emptyList() else tags.split(",").map { it.trim() }
+                    val rewardText = if (reward.isBlank()) null else reward
+                    
+                    onSubmit(
+                        title,
+                        description,
+                        location,
+                        rewardText,
+                        tagsList,
+                        false
+                    )
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(12.dp),
+                ),
+            enabled = !hasValidation && updateItemState !is UiState.Loading,
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            if (updateItemState is UiState.Loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Update Item")
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))

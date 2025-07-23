@@ -197,6 +197,11 @@ class AuthApiService @Inject constructor(
         }
     }
 
+    suspend fun getUserById(id: Int): UserDto {
+        val url = "${possibleUrls.first()}/users/$id"
+        return client.get(url).body()
+    }
+
     suspend fun setUserType(userType: UserType): Boolean {
         Log.d(TAG, "🚀 Starting setUserType request")
         Log.d(TAG, "📝 UserType: $userType")

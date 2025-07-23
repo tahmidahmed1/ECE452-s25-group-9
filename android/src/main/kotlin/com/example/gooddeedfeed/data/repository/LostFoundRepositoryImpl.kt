@@ -64,11 +64,12 @@ class LostFoundRepositoryImpl @Inject constructor(
         reward: String?,
         tags: List<String>,
         expiryDays: Int,
+        imageFiles: List<File>,
     ): Result<DomainLostFoundItem> {
         Log.d(TAG, "🚀 Repository: Creating lost and found item")
         Log.d(TAG, "📝 Repository data - title: $title, type: $itemType, location: $location")
         Log.d(TAG, "📝 Repository data - description: $description, reward: $reward, expiryDays: $expiryDays")
-        Log.d(TAG, "📝 Repository data - tags: $tags")
+        Log.d(TAG, "📝 Repository data - tags: $tags, imageFiles: ${imageFiles.size} files")
 
         return try {
             val createDto = CreateLostFoundItemDto(
@@ -85,6 +86,47 @@ class LostFoundRepositoryImpl @Inject constructor(
 
             val itemDto = apiService.createLostFoundItem(createDto)
             Log.d(TAG, "✅ Repository: API call successful, created item with ID: ${itemDto.id}")
+
+            // Upload images if any were provided
+            if (imageFiles.isNotEmpty()) {
+                Log.d(TAG, "📸 Repository: Uploading ${imageFiles.size} images for item ${itemDto.id}")
+                var successfulUploads = 0
+                
+                for ((index, imageFile) in imageFiles.withIndex()) {
+                    try {
+                        val uploadResult = uploadImage(itemDto.id.toString(), imageFile)
+                        uploadResult.fold(
+                            onSuccess = { imageUrl ->
+                                Log.d(TAG, "✅ Repository: Successfully uploaded image ${index + 1}/${imageFiles.size}: $imageUrl")
+                                successfulUploads++
+                            },
+                            onFailure = { error ->
+                                Log.e(TAG, "❌ Repository: Failed to upload image ${index + 1}/${imageFiles.size}", error)
+                            }
+                        )
+                    } catch (e: Exception) {
+                        Log.e(TAG, "❌ Repository: Exception uploading image ${index + 1}/${imageFiles.size}", e)
+                    }
+                }
+                
+                Log.d(TAG, "📸 Repository: Uploaded $successfulUploads/${imageFiles.size} images successfully")
+                
+                // Fetch the updated item to get the image URLs
+                try {
+                    val updatedItemResult = getLostFoundItem(itemDto.id.toString())
+                    updatedItemResult.fold(
+                        onSuccess = { updatedItem ->
+                            Log.d(TAG, "✅ Repository: Retrieved updated item with ${updatedItem.images.size} images")
+                            return Result.success(updatedItem)
+                        },
+                        onFailure = { error ->
+                            Log.w(TAG, "⚠️ Repository: Failed to fetch updated item, returning original", error)
+                        }
+                    )
+                } catch (e: Exception) {
+                    Log.w(TAG, "⚠️ Repository: Exception fetching updated item, returning original", e)
+                }
+            }
 
             val domainItem = itemDto.toDomain()
             Log.d(TAG, "✅ Repository: Converted to domain item, returning success")

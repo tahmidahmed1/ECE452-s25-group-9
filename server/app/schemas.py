@@ -422,6 +422,8 @@ class LostFoundItemOut(LostFoundItemBase):
     is_active: bool = True
     images: Optional[List[str]] = []
     contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
     days_remaining: Optional[int] = None
     
     class Config:

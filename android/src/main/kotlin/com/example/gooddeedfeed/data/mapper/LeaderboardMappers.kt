@@ -52,7 +52,16 @@ fun String.toEmulatorAccessibleUrl(): String {
 
     val host = if (isEmulator) "10.0.2.2" else "localhost"
 
-    var mappedUrl = this.replace("http://localhost", "http://$host")
+    // If we receive only a relative path (e.g. /uploads/... or uploads/...), prefix it with the API host so Coil can resolve it
+    val needsPrefix = !this.startsWith("http://") && !this.startsWith("https://")
+    val prefixedUrl = if (needsPrefix) {
+        val trimmed = if (this.startsWith("/")) this else "/$this"
+        "http://$host:9000$trimmed"
+    } else {
+        this
+    }
+
+    var mappedUrl = prefixedUrl.replace("http://localhost", "http://$host")
         .replace("http://127.0.0.1", "http://$host")
         .replace("http://minio:9000", "http://$host:9001")
         .replace("http://minio:9001", "http://$host:9001")
@@ -61,6 +70,11 @@ fun String.toEmulatorAccessibleUrl(): String {
         mappedUrl = mappedUrl.replace("http://localhost", "http://10.0.2.2")
             .replace("http://127.0.0.1", "http://10.0.2.2")
     }
+
+    // Debug log to help trace URL transformations (safe as it only logs in development)
+    try {
+        android.util.Log.d("URLMapper", "Mapped URL: $this -> $mappedUrl")
+    } catch (_: Throwable) {}
 
     return mappedUrl
 } 

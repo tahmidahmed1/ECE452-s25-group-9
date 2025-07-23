@@ -22,6 +22,7 @@ interface LostFoundRepository {
         reward: String?,
         tags: List<String>,
         expiryDays: Int,
+        imageFiles: List<File> = emptyList(),
     ): Result<DomainLostFoundItem>
 
     suspend fun updateLostFoundItem(

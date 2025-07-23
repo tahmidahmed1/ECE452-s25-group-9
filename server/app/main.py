@@ -4,6 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import logging
 import json
+from fastapi.staticfiles import StaticFiles
 
 from .routes import router
 from .database import engine, wait_for_db
@@ -80,6 +81,13 @@ async def log_requests(request: Request, call_next):
 
 # Include routers
 app.include_router(router, prefix="/api")
+
+# Serve uploaded images (lost & found, event images, etc.)
+app.mount(
+    "/uploads",
+    StaticFiles(directory="uploads", html=False),
+    name="uploads",
+)
 
 # Root endpoint
 @app.get("/")

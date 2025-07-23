@@ -5,6 +5,7 @@ import com.example.gooddeedfeed.data.remote.dto.toDomain
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
+import com.example.gooddeedfeed.domain.model.JoinedVolunteer
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.repository.EventRepository
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,13 @@ class EventRepositoryImpl @Inject constructor(
             emptyList()
         }
         emit(dtos.map { it.toDomain() })
+    }
+
+    override suspend fun searchMyEvents(query: String): Flow<List<VolunteerEvent>> = flow {
+        val currentUser = authRepository.getCurrentUser().getOrNull()
+        val userId = currentUser?.id ?: 0
+        val list = apiService.getOrganizerEvents(userId, query).map { it.toDomain() }
+        emit(list)
     }
 
     override suspend fun createEvent(eventData: CreateEventData): Result<VolunteerEvent> = runCatching {
@@ -52,6 +60,17 @@ class EventRepositoryImpl @Inject constructor(
     override suspend fun getEventApplications(eventId: Int): Flow<List<VolunteerApplicationForOrganizer>> = flow {
         emit(emptyList()) // Not yet implemented
     }
+
+    //region Volunteers
+    override suspend fun getEventVolunteers(eventId: Int): Flow<List<JoinedVolunteer>> = flow {
+        val list = apiService.getEventVolunteers(eventId).map { it.toDomain() }
+        emit(list)
+    }
+
+    override suspend fun kickVolunteer(eventId: Int, volunteerId: Int): Result<Unit> = runCatching {
+        apiService.kickVolunteer(eventId, volunteerId)
+    }
+    //endregion
 
     override suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit> = runCatching {
         apiService.uploadEventImage(eventId, file)

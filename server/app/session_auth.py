@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 active_sessions: Dict[str, dict] = {}
 
 # Session configuration
-SESSION_EXPIRE_HOURS = 24 * 7  # 7 days
+SESSION_EXPIRE_HOURS = 24 * 30  # 30 days
 security = HTTPBearer()
 
 def create_session(user: User) -> str:

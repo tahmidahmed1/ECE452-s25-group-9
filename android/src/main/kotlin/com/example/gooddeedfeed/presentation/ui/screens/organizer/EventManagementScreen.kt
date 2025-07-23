@@ -33,6 +33,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -65,6 +67,7 @@ fun EventManagementScreen(
     var creatingEvent by remember { mutableStateOf(false) }
     var editingEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
     var eventToDelete by remember { mutableStateOf<VolunteerEvent?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
 
     if (creatingEvent) {
         CreateEventScreen(onBack = { creatingEvent = false })
@@ -122,6 +125,24 @@ fun EventManagementScreen(
             }
         }
 
+        // Search Bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = {
+                searchQuery = it
+                if (it.isNotBlank()) {
+                    viewModel.searchEvents(it)
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            placeholder = { Text("Search events...") },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(),
+        )
+
         when (val currentState = uiState) {
             is UiState.Idle -> {
             }
@@ -135,8 +156,13 @@ fun EventManagementScreen(
             }
             is UiState.Success -> {
                 val eventData = currentState.data
+                val eventsToShow = if (searchQuery.isNotBlank()) {
+                    viewModel.searchResults.collectAsStateWithLifecycle().value
+                } else {
+                    eventData.events
+                }
 
-                if (eventData.events.isEmpty()) {
+                if (eventsToShow.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -172,7 +198,7 @@ fun EventManagementScreen(
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        items(eventData.events) { event ->
+                        items(eventsToShow) { event ->
                             EventCard(
                                 event = event,
                                 onEditClick = { editingEvent = event },

@@ -18,6 +18,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
+import com.example.gooddeedfeed.data.remote.dto.EventActionResponseDto
 
 class EventApiService @Inject constructor(
     client: HttpClient,
@@ -73,8 +74,10 @@ class EventApiService @Inject constructor(
         }.body()
     }
 
-    suspend fun getOrganizerEvents(organizerId: Int): List<EventDto> {
-        val events: List<EventDto> = client.get(buildUrl("organizers/$organizerId/events")).body()
+    suspend fun getOrganizerEvents(organizerId: Int, query: String? = null): List<EventDto> {
+        val events: List<EventDto> = client.get(buildUrl("organizers/$organizerId/events")) {
+            query?.let { parameter("q", it) }
+        }.body()
         Log.d("EventAPI", "Fetched ${events.size} events for organizer $organizerId")
         events.forEachIndexed { index, event ->
             Log.d("EventAPI", "Event $index: id=${event.id}, title=${event.title}, images=${event.images.size}")
@@ -290,7 +293,7 @@ class EventApiService @Inject constructor(
         }
     }
 
-    suspend fun joinEvent(eventId: Int): Map<String, Any> {
+    suspend fun joinEvent(eventId: Int): EventActionResponseDto {
         Log.d(TAG, "🚀 Starting joinEvent request for event ID: $eventId")
 
         val sessionId = getSessionIdFromDataStore()
@@ -311,7 +314,7 @@ class EventApiService @Inject constructor(
             Log.d(TAG, "📥 joinEvent response status: ${response.status}")
 
             if (response.status.value in 200..299) {
-                val responseBody: Map<String, Any> = response.body()
+                val responseBody: com.example.gooddeedfeed.data.remote.dto.EventActionResponseDto = response.body()
                 Log.d(TAG, "✅ joinEvent successful - Event ID: $eventId")
                 responseBody
             } else {
@@ -324,7 +327,7 @@ class EventApiService @Inject constructor(
         }
     }
 
-    suspend fun leaveEvent(eventId: Int): Map<String, Any> {
+    suspend fun leaveEvent(eventId: Int): EventActionResponseDto {
         Log.d(TAG, "🚀 Starting leaveEvent request for event ID: $eventId")
 
         val sessionId = getSessionIdFromDataStore()
@@ -345,7 +348,7 @@ class EventApiService @Inject constructor(
             Log.d(TAG, "📥 leaveEvent response status: ${response.status}")
 
             if (response.status.value in 200..299) {
-                val responseBody: Map<String, Any> = response.body()
+                val responseBody: com.example.gooddeedfeed.data.remote.dto.EventActionResponseDto = response.body()
                 Log.d(TAG, "✅ leaveEvent successful - Event ID: $eventId")
                 responseBody
             } else {
@@ -391,4 +394,34 @@ class EventApiService @Inject constructor(
             throw Exception("Failed to get joined events: ${e.message}")
         }
     }
+
+    //region Volunteers Management
+
+    suspend fun getEventVolunteers(eventId: Int): List<com.example.gooddeedfeed.data.remote.dto.VolunteerDto> {
+        val sessionId = getSessionIdFromDataStore() ?: throw Exception("No authentication session found")
+        val response = withFallbackUrls { baseUrl ->
+            client.get("$baseUrl/events/$eventId/volunteers") {
+                header(io.ktor.http.HttpHeaders.Authorization, "Bearer $sessionId")
+            }
+        }
+        // Expect {volunteers:[...], total_count:n}
+        val body: com.example.gooddeedfeed.data.remote.dto.EventVolunteersResponseDto = response.body()
+        return body.volunteers
+    }
+
+    suspend fun kickVolunteer(eventId: Int, volunteerId: Int): com.example.gooddeedfeed.data.remote.dto.EventActionResponseDto {
+        val sessionId = getSessionIdFromDataStore() ?: throw Exception("No authentication session found")
+        val response = withFallbackUrls { baseUrl ->
+            client.delete("$baseUrl/events/$eventId/volunteers/$volunteerId") {
+                header(io.ktor.http.HttpHeaders.Authorization, "Bearer $sessionId")
+            }
+        }
+        if (response.status.value in 200..299) {
+            return response.body()
+        } else {
+            throw Exception("Server returned ${response.status.value}: ${response.status.description}")
+        }
+    }
+
+    //endregion
 } 

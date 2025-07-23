@@ -1,6 +1,7 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -170,44 +171,115 @@ private fun BasicInfoCard(user: DomainUser) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (user.userType?.name == "ORGANIZER" && !user.bannerUrl.isNullOrEmpty()) {
-                AsyncImage(
-                    model = user.bannerUrl,
-                    contentDescription = "Organization Banner",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            if (user.profilePictureUrl != null && user.profilePictureUrl.isNotEmpty()) {
-                AsyncImage(
-                    model = user.profilePictureUrl,
-                    contentDescription = "Profile picture",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                )
+            if (user.userType?.name == "ORGANIZER") {
+                val bannerImage = when {
+                    !user.organizationImages.isNullOrEmpty() -> user.organizationImages.first()
+                    else -> null
+                }
+                
+                if (bannerImage != null) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        AsyncImage(
+                            model = bannerImage,
+                            contentDescription = "Organization Banner",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+                        
+                        if (user.profilePictureUrl != null && user.profilePictureUrl.isNotEmpty()) {
+                            AsyncImage(
+                                model = user.profilePictureUrl,
+                                contentDescription = "Profile picture",
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .offset(y = 60.dp)
+                                    .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .offset(y = 60.dp)
+                                    .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Default Profile Picture",
+                                    modifier = Modifier.size(100.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(72.dp))
+                } else {
+                    if (user.profilePictureUrl != null && user.profilePictureUrl.isNotEmpty()) {
+                        AsyncImage(
+                            model = user.profilePictureUrl,
+                            contentDescription = "Profile picture",
+                            modifier = Modifier
+                                .size(200.dp)
+                                .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(200.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Default Profile Picture",
+                                modifier = Modifier.size(100.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
             } else {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Default Profile Picture",
-                        modifier = Modifier.size(60.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (user.profilePictureUrl != null && user.profilePictureUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = user.profilePictureUrl,
+                        contentDescription = "Profile picture",
+                        modifier = Modifier
+                            .size(200.dp)
+                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(200.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Default Profile Picture",
+                            modifier = Modifier.size(100.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             user.fullName?.let { fullName ->
                 Text(
                     text = fullName,

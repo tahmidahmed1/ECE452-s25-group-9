@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, WebSocket, WebSocketDisconnect, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 import logging
 from typing import List, Dict, Optional
 from sqlalchemy import text, select
@@ -32,8 +32,9 @@ from .schemas import (
 )
 from .session_auth import (
     authenticate_user, get_password_hash, get_current_active_user, get_current_user,
-    create_session, invalidate_session, invalidate_all_user_sessions
+    create_session, invalidate_session, invalidate_all_user_sessions, security
 )
+from fastapi.security import HTTPAuthorizationCredentials
 from .storage import storage_service
 from .firebase_service import firebase_service
 
@@ -428,7 +429,29 @@ def list_events_nearby(
     db: Session = Depends(get_db),
 ):
     """Return all events, filtered by various criteria."""
+    from datetime import datetime, timedelta
+    
     query = db.query(Event).options(selectinload(Event.images))
+    
+    # DEFAULT: Only show future events (events that haven't started yet)
+    # Filter by exact date and time comparison
+    now = datetime.now()
+    current_date = now.date().strftime("%Y-%m-%d")
+    current_time = now.time().strftime("%H:%M")
+    
+    # Import SQLAlchemy or_ and and_ operators
+    from sqlalchemy import or_, and_
+    
+    # Filter events: future dates OR today's events that haven't started yet
+    query = query.filter(
+        or_(
+            Event.date > current_date,  # Future dates
+            and_(
+                Event.date == current_date,  # Today's events
+                Event.start_time > current_time  # That haven't started yet
+            )
+        )
+    )
     
     # Category filter
     if category:
@@ -455,9 +478,8 @@ def list_events_nearby(
         Event.karma_points <= max_karma_points
     )
     
-    # Date filter (basic implementation)
+    # Date filter (additional filtering on top of future-only default)
     if date_filter:
-        from datetime import datetime, timedelta
         today = datetime.now().date()
         
         if date_filter == "today":
@@ -745,8 +767,13 @@ async def get_my_joined_events(
     return events
 
 @router.get("/organizers/{organizer_id}/events", response_model=List[EventSchema])
-def list_events_by_organizer(organizer_id: int, db: Session = Depends(get_db)):
-    events = db.query(Event).options(selectinload(Event.images)).filter(Event.organizer_id == organizer_id).all()
+def list_events_by_organizer(organizer_id: int, q: str | None = None, db: Session = Depends(get_db)):
+    query = db.query(Event).options(selectinload(Event.images)).filter(Event.organizer_id == organizer_id)
+    if q:
+        like_pattern = f"%{q}%"
+        query = query.filter(Event.title.ilike(like_pattern))
+
+    events = query.all()
     
     # Debug logging
     logger.info(f"Returning {len(events)} events for organizer {organizer_id}")
@@ -2118,14 +2145,22 @@ async def get_lost_found_items(
     limit: int = Query(50, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
-    """Get lost and found items with optional filtering"""
+    """List lost & found items. Authentication optional."""
+    # Try to identify user, but ignore authentication errors
+    current_user: Optional[User] = None
+    if credentials:
+        try:
+            current_user = await get_current_user(credentials, db)
+        except Exception:
+            current_user = None
+    
     try:
         from datetime import datetime
         
         current_time = datetime.utcnow()
-        logger.info(f"Getting lost/found items - User: {current_user.username} (ID: {current_user.id})")
+        logger.info(f"Getting lost/found items - User: {current_user.username if current_user else 'Unauthenticated'} (ID: {current_user.id if current_user else 'N/A'})")
         logger.info(f"Query parameters - item_type: {item_type}, limit: {limit}, offset: {offset}")
         logger.info(f"Current UTC time for expiry check: {current_time}")
         
@@ -2472,20 +2507,34 @@ def convert_lost_found_item_to_out(item: LostFoundItem, user: User) -> schemas.L
     # Calculate days remaining
     days_remaining = None
     if item.expires_at:
-        delta = item.expires_at - datetime.utcnow()
+        delta = item.expires_at - datetime.now(timezone.utc)
         days_remaining = max(0, delta.days)
     
     # Get contact name
     contact_name = None
+    contact_phone = None
+    contact_email = None
     if user.user_type == "volunteer":
         contact_name = user.full_name or user.username
+        contact_phone = user.phone
+        contact_email = user.email
     elif user.user_type == "organizer":
         contact_name = user.organization_name or user.username
+        contact_phone = user.phone
+        contact_email = user.email
     else:
         contact_name = user.username
     
     # Get image URLs
     image_urls = [img.image_url for img in item.images] if item.images else []
+    
+    # Convert item_type string to enum safely
+    try:
+        item_type_enum = schemas.LostFoundType(item.item_type)
+    except ValueError:
+        # If the database contains invalid enum value, default to "lost"
+        logger.warning(f"Invalid item_type '{item.item_type}' for item {item.id}, defaulting to 'lost'")
+        item_type_enum = schemas.LostFoundType.LOST
     
     return schemas.LostFoundItemOut(
         id=item.id,
@@ -2493,7 +2542,7 @@ def convert_lost_found_item_to_out(item: LostFoundItem, user: User) -> schemas.L
         title=item.title,
         description=item.description,
         location=item.location,
-        item_type=schemas.LostFoundType(item.item_type),
+        item_type=item_type_enum,
         reward=item.reward,
         tags=item.tags or [],
         expiry_days=item.expiry_days,
@@ -2503,6 +2552,8 @@ def convert_lost_found_item_to_out(item: LostFoundItem, user: User) -> schemas.L
         is_active=item.is_active,
         images=image_urls,
         contact_name=contact_name,
+        contact_phone=contact_phone,
+        contact_email=contact_email,
         days_remaining=days_remaining
     )
 
@@ -2519,7 +2570,7 @@ async def cleanup_expired_lost_found_items(
         # Find expired items
         expired_items = db.query(LostFoundItem).filter(
             LostFoundItem.is_active == True,
-            LostFoundItem.expires_at < datetime.utcnow()
+            LostFoundItem.expires_at < datetime.now(timezone.utc)
         ).all()
         
         if not expired_items:
@@ -2559,7 +2610,7 @@ def schedule_lost_found_cleanup():
             # Find expired items
             expired_items = db.query(LostFoundItem).filter(
                 LostFoundItem.is_active == True,
-                LostFoundItem.expires_at < datetime.utcnow()
+                LostFoundItem.expires_at < datetime.now(timezone.utc)
             ).all()
             
             if expired_items:
@@ -2578,3 +2629,74 @@ def schedule_lost_found_cleanup():
     
     # Run the cleanup task
     asyncio.create_task(cleanup_task())
+
+@router.get("/users/{user_id}", response_model=schemas.User)
+def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+    """Public endpoint to fetch a user's basic profile by ID (no auth required)."""
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.delete("/events/{event_id}/volunteers/{volunteer_id}")
+async def kick_volunteer_from_event(
+    event_id: int,
+    volunteer_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Kick (remove) a volunteer from an event. Only event organizer can perform this action."""
+    logger.info(
+        f"Organizer {current_user.username} (ID: {current_user.id}) attempts to kick volunteer {volunteer_id} from event {event_id}"
+    )
+
+    # Verify user is an organizer
+    if current_user.user_type != UserType.ORGANIZER:
+        logger.error("Current user is not an organizer")
+        raise HTTPException(status_code=403, detail="Only organizers can perform this action")
+
+    # Verify event exists and belongs to current organizer
+    event = db.get(Event, event_id)
+    if not event:
+        logger.error(f"Event {event_id} not found")
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    if event.organizer_id != current_user.id:
+        logger.error(
+            f"Organizer {current_user.id} is not owner of event {event_id} (owner: {event.organizer_id})"
+        )
+        raise HTTPException(status_code=403, detail="Not allowed to modify this event")
+
+    # Check volunteer exists in event
+    existing_join = db.execute(
+        select(volunteer_events).where(
+            volunteer_events.c.volunteer_id == volunteer_id,
+            volunteer_events.c.event_id == event_id,
+        )
+    ).first()
+
+    if not existing_join:
+        logger.warning(f"Volunteer {volunteer_id} is not joined to event {event_id}")
+        raise HTTPException(status_code=400, detail="Volunteer not part of this event")
+
+    try:
+        # Delete association
+        db.execute(
+            volunteer_events.delete().where(
+                volunteer_events.c.volunteer_id == volunteer_id,
+                volunteer_events.c.event_id == event_id,
+            )
+        )
+
+        # Decrement volunteer count safely
+        if event.current_volunteers and event.current_volunteers > 0:
+            event.current_volunteers -= 1
+
+        db.commit()
+        logger.info(f"Volunteer {volunteer_id} removed from event {event_id}")
+        return {"message": "Volunteer removed from event", "current_volunteers": event.current_volunteers}
+
+    except Exception as e:
+        logger.error(f"Failed to remove volunteer {volunteer_id} from event {event_id}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to remove volunteer from event")

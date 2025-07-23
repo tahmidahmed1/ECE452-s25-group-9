@@ -569,6 +569,11 @@ fun EditOrganizerProfileScreen(
                     // Combine existing URLs with new file paths for organizationImages
                     val combinedImages = organizationImageUrls + organizationImageFiles.map { it.absolutePath }
 
+                    // Reorder images so that the selected MAIN image is the first element
+                    val reorderedImages = if (combinedImages.isNotEmpty() && mainOrgImageIndex < combinedImages.size) {
+                        listOf(combinedImages[mainOrgImageIndex]) + combinedImages.filterIndexed { index, _ -> index != mainOrgImageIndex }
+                    } else combinedImages
+
                     val userUpdate = DomainUserUpdate(
                         fullName = if (fullName != user.fullName) fullName.takeIf { it.isNotBlank() } else null,
                         phone = if (phone != user.phone) phone.takeIf { it.isNotBlank() } else null,
@@ -576,7 +581,7 @@ fun EditOrganizerProfileScreen(
                         organizationDescription = if (organizationDescription != user.organizationDescription) organizationDescription.takeIf { it.isNotBlank() } else null,
                         organizationWebsite = if (organizationWebsite != user.organizationWebsite) organizationWebsite.takeIf { it.isNotBlank() } else null,
                         organizationSocialMedia = if (socialMedia != user.organizationSocialMedia) socialMedia else null,
-                        organizationImages = if (combinedImages != user.organizationImages) combinedImages else null,
+                        organizationImages = if (reorderedImages != user.organizationImages) reorderedImages else null,
                     )
                     Log.d("EditOrganizerProfileScreen", "Save clicked: update=$userUpdate, file=$profilePictureFile")
 

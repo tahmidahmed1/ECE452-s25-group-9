@@ -294,8 +294,8 @@ private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
     Box(
         modifier = Modifier
             .height(300.dp)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
-            .clip(RoundedCornerShape(4.dp)),
+            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp)),
     ) {
         VerticalCalendar(
             modifier = Modifier.fillMaxSize(),

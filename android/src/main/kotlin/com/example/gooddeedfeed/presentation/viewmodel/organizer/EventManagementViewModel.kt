@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
+import com.example.gooddeedfeed.domain.model.JoinedVolunteer
 import com.example.gooddeedfeed.domain.usecase.organizer.ManageEventsUseCase
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,12 @@ class EventManagementViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<UiState<EventManagementData>>(UiState.Loading)
     val uiState: StateFlow<UiState<EventManagementData>> = _uiState.asStateFlow()
+
+    private val _volunteers = MutableStateFlow<List<JoinedVolunteer>>(emptyList())
+    val volunteers: StateFlow<List<JoinedVolunteer>> = _volunteers.asStateFlow()
+
+    private val _searchResults = MutableStateFlow<List<VolunteerEvent>>(emptyList())
+    val searchResults: StateFlow<List<VolunteerEvent>> = _searchResults.asStateFlow()
 
     init {
         loadEvents()
@@ -119,6 +126,31 @@ class EventManagementViewModel @Inject constructor(
             manageEventsUseCase.setMainEventImage(eventId, imageId)
                 .onSuccess { loadEvents() }
                 .onFailure { e -> _uiState.value = UiState.Error("Failed to set main image: ${e.message}") }
+        }
+    }
+
+    fun loadEventVolunteers(eventId: Int) {
+        viewModelScope.launch {
+            manageEventsUseCase.getEventVolunteers(eventId)
+                .catch { /* ignore for now */ }
+                .collect { list -> _volunteers.value = list }
+        }
+    }
+
+    fun kickVolunteer(eventId: Int, volunteerId: Int) {
+        viewModelScope.launch {
+            manageEventsUseCase.kickVolunteer(eventId, volunteerId)
+            // refresh list
+            loadEventVolunteers(eventId)
+            loadEvents() // refresh events to update counts
+        }
+    }
+
+    fun searchEvents(query: String) {
+        viewModelScope.launch {
+            manageEventsUseCase.searchMyEvents(query)
+                .catch { /* ignore */ }
+                .collect { list -> _searchResults.value = list }
         }
     }
 } 

@@ -12,11 +12,13 @@ import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.domain.model.toApiValue
 import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flatMapLatest
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private fun EventDto.toOpportunity(): VolunteerOpportunity = VolunteerOpportunity(
+private fun EventDto.toOpportunity(isJoined: Boolean = false): VolunteerOpportunity = VolunteerOpportunity(
     id = id ?: 0,
     title = title,
     organizationName = organizer_name ?: "",
@@ -36,12 +38,15 @@ private fun EventDto.toOpportunity(): VolunteerOpportunity = VolunteerOpportunit
     longitude = longitude ?: 0.0,
     imageUrl = image_url?.toEmulatorAccessibleUrl(),
     karmaPoints = karma_points,
+    isJoined = isJoined,
 )
 
 @Singleton
 class OpportunitiesRepositoryImpl @Inject constructor(
     private val apiService: EventApiService,
 ) : OpportunitiesRepository {
+
+    private val _joinedEventsRefresh = MutableStateFlow(System.currentTimeMillis())
 
     private suspend fun fetchAll(): List<VolunteerOpportunity> {
         return try {
@@ -115,6 +120,8 @@ class OpportunitiesRepositoryImpl @Inject constructor(
     override suspend fun joinEvent(eventId: Int): Result<Unit> {
         return runCatching {
             apiService.joinEvent(eventId)
+            // Trigger refresh of joined events
+            _joinedEventsRefresh.value = System.currentTimeMillis()
             Unit
         }
     }
@@ -122,18 +129,24 @@ class OpportunitiesRepositoryImpl @Inject constructor(
     override suspend fun leaveEvent(eventId: Int): Result<Unit> {
         return runCatching {
             apiService.leaveEvent(eventId)
+            // Trigger refresh of joined events
+            _joinedEventsRefresh.value = System.currentTimeMillis()
             Unit
         }
     }
 
-    override suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>> = flow {
-        try {
-            val joinedEvents = apiService.getMyJoinedEvents().map { it.toOpportunity() }
-            emit(joinedEvents)
-        } catch (e: Exception) {
-            emit(emptyList())
+    override suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>> = 
+        _joinedEventsRefresh.flatMapLatest {
+            flow {
+                try {
+                    val joinedEvents = apiService.getMyJoinedEvents().map { it.toOpportunity(isJoined = true) }
+                    emit(joinedEvents)
+                } catch (e: Exception) {
+                    Log.e("OpportunitiesRepo", "❌ Error getting joined events", e)
+                    emit(emptyList())
+                }
+            }
         }
-    }
 
     override suspend fun getOpportunityById(opportunityId: Int): Result<VolunteerOpportunity> {
         return runCatching {

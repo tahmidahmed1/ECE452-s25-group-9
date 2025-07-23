@@ -47,4 +47,16 @@ class ManageEventsUseCase @Inject constructor(
     suspend fun setMainEventImage(eventId: Int, imageId: Int): Result<Unit> {
         return repository.setMainEventImage(eventId, imageId)
     }
+
+    suspend fun getEventVolunteers(eventId: Int): Flow<List<com.example.gooddeedfeed.domain.model.JoinedVolunteer>> {
+        return repository.getEventVolunteers(eventId)
+    }
+
+    suspend fun kickVolunteer(eventId: Int, volunteerId: Int): Result<Unit> {
+        return repository.kickVolunteer(eventId, volunteerId)
+    }
+
+    suspend fun searchMyEvents(query: String): Flow<List<VolunteerEvent>> {
+        return repository.searchMyEvents(query)
+    }
 } 

@@ -3,6 +3,7 @@ package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 import android.Manifest
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -142,6 +144,18 @@ fun ListScreen(
         }
     }
 
+    // Update selectedOpportunity when the opportunities list in uiState changes
+    LaunchedEffect(uiState) {
+        selectedOpportunity?.let { current ->
+            if (uiState is UiState.Success) {
+                val updated = (uiState as UiState.Success).data.opportunities.find { it.id == current.id }
+                if (updated != null) {
+                    selectedOpportunity = updated
+                }
+            }
+        }
+    }
+
     // TEMPORARILY DISABLED: Apply filters only when explicitly requested after initial load
     // fun applyCurrentFilters() {
     //     if (!isInitialLoad) {
@@ -198,6 +212,7 @@ fun ListScreen(
                     opportunity = selectedOpportunity!!,
                     onBack = { selectedOpportunity = null },
                     onJoin = { opportunityId -> viewModel.joinOpportunity(opportunityId) },
+                    onLeave = { opportunityId -> viewModel.leaveOpportunity(opportunityId) },
                 )
             } else {
                 Column(modifier = modifier.fillMaxSize()) {
@@ -273,6 +288,10 @@ fun ListScreen(
                                 OpportunitiesList(
                                     opportunities = state.data.opportunities,
                                     onJoinOpportunity = { opportunityId -> viewModel.joinOpportunity(opportunityId) },
+                                    onLeaveOpportunity = { opportunityId -> viewModel.leaveOpportunity(opportunityId) },
+                                    onOpportunityClick = { opportunityId -> 
+                                        selectedOpportunity = state.data.opportunities.find { it.id == opportunityId }
+                                    },
                                     modifier = Modifier.weight(1f),
                                 )
                             }
@@ -638,50 +657,90 @@ private fun BasicInfoCard(organizer: DomainOrganizerWithSubscriptionStatus) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (!organizer.bannerUrl.isNullOrEmpty()) {
-                AsyncImage(
-                    model = organizer.bannerUrl,
-                    contentDescription = "Organization Banner",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop,
-                )
+            // Banner and profile image overlay (matches PreviewProfileScreen style)
+            val bannerImage = organizer.organizationImages?.firstOrNull()
+
+            if (bannerImage != null) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.BottomCenter,
+                ) {
+                    AsyncImage(
+                        model = bannerImage,
+                        contentDescription = "Organization Banner",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                    )
+
+                    if (!organizer.profilePictureUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = organizer.profilePictureUrl,
+                            contentDescription = "Profile picture",
+                            modifier = Modifier
+                                .size(200.dp)
+                                .offset(y = 60.dp)
+                                .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(200.dp)
+                                .offset(y = 60.dp)
+                                .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Default Profile Picture",
+                                modifier = Modifier.size(100.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(72.dp))
+            } else {
+                if (!organizer.profilePictureUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = organizer.profilePictureUrl,
+                        contentDescription = "Profile picture",
+                        modifier = Modifier
+                            .size(200.dp)
+                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(200.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Default Profile Picture",
+                            modifier = Modifier.size(100.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
             }
-            if (organizer.profilePictureUrl != null && organizer.profilePictureUrl.isNotEmpty()) {
-                AsyncImage(
-                    model = organizer.profilePictureUrl,
-                    contentDescription = "Profile picture",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Default Profile Picture",
-                        modifier = Modifier.size(60.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
             organizer.organizationName?.let { orgName ->
                 Text(
                     text = orgName,

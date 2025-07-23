@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.remote.ChatApiService
+import com.example.gooddeedfeed.data.remote.AuthApiService
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -67,6 +68,7 @@ data class ChatConversation(
 class ChatViewModel @Inject constructor(
     private val httpClient: HttpClient,
     private val chatApiService: ChatApiService,
+    private val authApiService: AuthApiService,
     private val dataStore: DataStore<Preferences>,
 ) : ViewModel() {
 
@@ -83,6 +85,9 @@ class ChatViewModel @Inject constructor(
 
     private val _sendMessageState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val sendMessageState: StateFlow<UiState<String>> = _sendMessageState.asStateFlow()
+
+    private val _otherUserState = MutableStateFlow<UiState<com.example.gooddeedfeed.data.remote.dto.UserDto>>(UiState.Idle)
+    val otherUserState: StateFlow<UiState<com.example.gooddeedfeed.data.remote.dto.UserDto>> = _otherUserState.asStateFlow()
 
     private val _messageChannel = Channel<ChatMessage>()
     val messageFlow = _messageChannel.receiveAsFlow()
@@ -237,6 +242,18 @@ class ChatViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "WebSocket connection failed", e)
+            }
+        }
+    }
+
+    fun loadOtherUser(otherId: Int) {
+        viewModelScope.launch {
+            try {
+                _otherUserState.value = UiState.Loading
+                val dto = authApiService.getUserById(otherId)
+                _otherUserState.value = UiState.Success(dto)
+            } catch (e: Exception) {
+                _otherUserState.value = UiState.Error("Failed to load user: ${e.message}")
             }
         }
     }

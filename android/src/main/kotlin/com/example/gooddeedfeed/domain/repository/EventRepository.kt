@@ -16,6 +16,9 @@ interface EventRepository {
      */
     suspend fun getMyEvents(): Flow<List<VolunteerEvent>>
 
+    /** Search my events by title */
+    suspend fun searchMyEvents(query: String): Flow<List<VolunteerEvent>>
+
     /**
      * Create a new event
      */
@@ -60,4 +63,14 @@ interface EventRepository {
      * Get volunteer applications for an event
      */
     suspend fun getEventApplications(eventId: Int): Flow<List<VolunteerApplicationForOrganizer>>
+
+    /**
+     * Get volunteers joined to this event
+     */
+    suspend fun getEventVolunteers(eventId: Int): kotlinx.coroutines.flow.Flow<List<com.example.gooddeedfeed.domain.model.JoinedVolunteer>>
+
+    /**
+     * Kick volunteer from event
+     */
+    suspend fun kickVolunteer(eventId: Int, volunteerId: Int): Result<Unit>
 } 

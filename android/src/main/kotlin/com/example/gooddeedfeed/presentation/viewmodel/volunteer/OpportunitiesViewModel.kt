@@ -50,9 +50,18 @@ class OpportunitiesViewModel @Inject constructor(
 
     private var allOpportunities: List<VolunteerOpportunity> = emptyList()
 
+    private var joinedIds: Set<Int> = emptySet()
+
     init {
         Log.d("OpportunitiesViewModel", "🚀 ViewModel initialized, loading opportunities...")
         loadOpportunities()
+        // collect joined events continuously
+        viewModelScope.launch {
+            opportunitiesRepository.getJoinedEvents().collect { joinedList ->
+                joinedIds = joinedList.map { it.id }.toSet()
+                refreshOpportunitiesState()
+            }
+        }
     }
 
     fun loadOpportunities() {
@@ -116,12 +125,13 @@ class OpportunitiesViewModel @Inject constructor(
                     _uiState.value = UiState.Error("Failed to search opportunities: ${e.message}")
                 }
                 .collect { opportunities ->
+                    val merged = mergeJoinedFlag(opportunities)
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
-                        allOpportunities = opportunities
+                        allOpportunities = merged
                         _uiState.value = currentState.copy(
                             data = currentState.data.copy(
-                                opportunities = filterByRadius(opportunities, currentState.data.currentLocation, currentState.data.radiusKm, true),
+                                opportunities = filterByRadius(merged, currentState.data.currentLocation, currentState.data.radiusKm, true),
                                 selectedCategory = null,
                             ),
                         )
@@ -134,7 +144,9 @@ class OpportunitiesViewModel @Inject constructor(
         viewModelScope.launch {
             opportunitiesRepository.joinEvent(opportunityId)
                 .onSuccess {
-                    loadOpportunities() // Refresh to update status
+                    com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Joined event successfully!")
+                    // Refresh opportunities list to update volunteer counts and joined status
+                    loadOpportunities()
                 }
                 .onFailure { e ->
                     _uiState.value = UiState.Error("Failed to join opportunity: ${e.message}")
@@ -146,7 +158,9 @@ class OpportunitiesViewModel @Inject constructor(
         viewModelScope.launch {
             opportunitiesRepository.leaveEvent(opportunityId)
                 .onSuccess {
-                    loadOpportunities() // Refresh to update status
+                    com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Left event")
+                    // Refresh opportunities list to update volunteer counts and joined status
+                    loadOpportunities()
                 }
                 .onFailure { e ->
                     _uiState.value = UiState.Error("Failed to leave opportunity: ${e.message}")
@@ -267,10 +281,12 @@ class OpportunitiesViewModel @Inject constructor(
             val categoryMatch = filters.selectedCategories.isEmpty() || filters.selectedCategories.contains(opportunity.category)
 
             val availabilityMatch = when {
-                filters.onlyAvailable -> opportunity.currentVolunteers < opportunity.requiredVolunteers
+                filters.onlyAvailable -> opportunity.requiredVolunteers == 0 || opportunity.currentVolunteers < opportunity.requiredVolunteers
                 filters.almostFull -> {
+                    opportunity.requiredVolunteers != 0 && run {
                     val percentage = opportunity.currentVolunteers.toFloat() / opportunity.requiredVolunteers.toFloat()
                     percentage >= 0.8f && percentage < 1.0f
+                    }
                 }
                 else -> true
             }
@@ -349,6 +365,21 @@ class OpportunitiesViewModel @Inject constructor(
                         )
                     }
                 }
+        }
+    }
+
+    private fun mergeJoinedFlag(list: List<VolunteerOpportunity>): List<VolunteerOpportunity> {
+        return list.map { it.copy(isJoined = joinedIds.contains(it.id)) }
+    }
+
+    private fun refreshOpportunitiesState() {
+        val current = _uiState.value
+        if (current is UiState.Success) {
+            _uiState.value = current.copy(
+                data = current.data.copy(
+                    opportunities = mergeJoinedFlag(current.data.opportunities)
+                )
+            )
         }
     }
 } 
