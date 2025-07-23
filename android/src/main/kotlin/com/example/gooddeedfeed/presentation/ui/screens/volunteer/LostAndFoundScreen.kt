@@ -1,8 +1,10 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,15 +14,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import android.content.Intent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,7 +33,6 @@ import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostAndFoundViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundItem
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.LostFoundType
-import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +78,7 @@ fun LostAndFoundScreen(
                     reward = reward,
                     tags = tags,
                     expiryDays = expiryDays,
-                    images = images
+                    images = images,
                 )
             },
             onCreateSuccess = { showCreateForm = false },
@@ -99,7 +99,7 @@ fun LostAndFoundScreen(
                     location = location,
                     reward = reward,
                     tags = tags,
-                    isResolved = isResolved
+                    isResolved = isResolved,
                 )
             },
             onUpdateSuccess = { showEditForm = null },
@@ -279,7 +279,7 @@ fun LostAndFoundScreen(
             dismissButton = {
                 OutlinedButton(
                     onClick = { itemToDelete = null },
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) { Text("Cancel") }
             },
             shape = RoundedCornerShape(16.dp),
@@ -410,7 +410,7 @@ private fun LostFoundItemCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     OutlinedButton(
                         onClick = onEdit,
@@ -419,17 +419,17 @@ private fun LostFoundItemCard(
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.primary,
                         ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Edit")
                     }
-                    
+
                     OutlinedButton(
                         onClick = onDelete,
                         modifier = Modifier.weight(1f),
@@ -437,12 +437,12 @@ private fun LostFoundItemCard(
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.error,
                         ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete",
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Delete")
@@ -683,7 +683,7 @@ private fun CreateLostFoundScreen(
     viewModel: LostAndFoundViewModel,
 ) {
     val createItemState by viewModel.createItemState.collectAsStateWithLifecycle()
-    
+
     LaunchedEffect(createItemState) {
         when (createItemState) {
             is UiState.Success -> {
@@ -868,7 +868,7 @@ private fun CreateLostFoundScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         val hasValidation = title.isBlank() || description.isBlank() || location.isBlank() || selectedImages.isEmpty()
-        
+
         // Show validation errors or create item errors
         val errorText = when (val currentState = createItemState) {
             is UiState.Error -> currentState.message
@@ -883,7 +883,7 @@ private fun CreateLostFoundScreen(
                 else -> ""
             }
         }
-        
+
         if (errorText.isNotEmpty()) {
             Text(
                 text = errorText,
@@ -899,7 +899,7 @@ private fun CreateLostFoundScreen(
                     val tagsList = if (tags.isBlank()) emptyList() else tags.split(",").map { it.trim() }
                     val imageUrls = selectedImages.map { it.toString() }
                     val rewardText = if (reward.isBlank()) null else reward
-                    
+
                     onSubmit(
                         title,
                         description,
@@ -908,7 +908,7 @@ private fun CreateLostFoundScreen(
                         rewardText,
                         tagsList,
                         expiryDays,
-                        imageUrls
+                        imageUrls,
                     )
                 }
             },
@@ -925,7 +925,7 @@ private fun CreateLostFoundScreen(
             if (createItemState is UiState.Loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
                 Text("Submit Report")
@@ -945,7 +945,7 @@ private fun EditLostFoundScreen(
     viewModel: LostAndFoundViewModel,
 ) {
     val updateItemState by viewModel.updateItemState.collectAsStateWithLifecycle()
-    
+
     LaunchedEffect(updateItemState) {
         when (updateItemState) {
             is UiState.Success -> {
@@ -1049,7 +1049,7 @@ private fun EditLostFoundScreen(
                 else -> ""
             }
         }
-        
+
         if (errorText.isNotEmpty()) {
             Text(
                 text = errorText,
@@ -1064,14 +1064,14 @@ private fun EditLostFoundScreen(
                 if (!hasValidation) {
                     val tagsList = if (tags.isBlank()) emptyList() else tags.split(",").map { it.trim() }
                     val rewardText = if (reward.isBlank()) null else reward
-                    
+
                     onSubmit(
                         title,
                         description,
                         location,
                         rewardText,
                         tagsList,
-                        false
+                        false,
                     )
                 }
             },
@@ -1088,7 +1088,7 @@ private fun EditLostFoundScreen(
             if (updateItemState is UiState.Loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
                 Text("Update Item")

@@ -6,8 +6,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.gooddeedfeed.data.remote.ChatApiService
 import com.example.gooddeedfeed.data.remote.AuthApiService
+import com.example.gooddeedfeed.data.remote.ChatApiService
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel

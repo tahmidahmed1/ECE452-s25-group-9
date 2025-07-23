@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.gooddeedfeed.data.remote.dto.EventActionResponseDto
 import com.example.gooddeedfeed.data.remote.dto.EventDto
 import com.example.gooddeedfeed.data.remote.dto.EventImageDto
 import com.example.gooddeedfeed.data.remote.dto.toDto
@@ -18,7 +19,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
-import com.example.gooddeedfeed.data.remote.dto.EventActionResponseDto
 
 class EventApiService @Inject constructor(
     client: HttpClient,

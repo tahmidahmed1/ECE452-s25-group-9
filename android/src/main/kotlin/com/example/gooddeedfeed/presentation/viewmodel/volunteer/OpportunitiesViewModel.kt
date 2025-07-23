@@ -284,8 +284,8 @@ class OpportunitiesViewModel @Inject constructor(
                 filters.onlyAvailable -> opportunity.requiredVolunteers == 0 || opportunity.currentVolunteers < opportunity.requiredVolunteers
                 filters.almostFull -> {
                     opportunity.requiredVolunteers != 0 && run {
-                    val percentage = opportunity.currentVolunteers.toFloat() / opportunity.requiredVolunteers.toFloat()
-                    percentage >= 0.8f && percentage < 1.0f
+                        val percentage = opportunity.currentVolunteers.toFloat() / opportunity.requiredVolunteers.toFloat()
+                        percentage >= 0.8f && percentage < 1.0f
                     }
                 }
                 else -> true
@@ -377,8 +377,8 @@ class OpportunitiesViewModel @Inject constructor(
         if (current is UiState.Success) {
             _uiState.value = current.copy(
                 data = current.data.copy(
-                    opportunities = mergeJoinedFlag(current.data.opportunities)
-                )
+                    opportunities = mergeJoinedFlag(current.data.opportunities),
+                ),
             )
         }
     }

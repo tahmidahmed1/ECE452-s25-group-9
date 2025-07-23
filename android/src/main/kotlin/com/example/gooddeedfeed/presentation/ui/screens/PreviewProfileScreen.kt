@@ -176,11 +176,11 @@ private fun BasicInfoCard(user: DomainUser) {
                     !user.organizationImages.isNullOrEmpty() -> user.organizationImages.first()
                     else -> null
                 }
-                
+
                 if (bannerImage != null) {
                     Box(
                         modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.BottomCenter
+                        contentAlignment = Alignment.BottomCenter,
                     ) {
                         AsyncImage(
                             model = bannerImage,
@@ -191,7 +191,7 @@ private fun BasicInfoCard(user: DomainUser) {
                                 .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop,
                         )
-                        
+
                         if (user.profilePictureUrl != null && user.profilePictureUrl.isNotEmpty()) {
                             AsyncImage(
                                 model = user.profilePictureUrl,

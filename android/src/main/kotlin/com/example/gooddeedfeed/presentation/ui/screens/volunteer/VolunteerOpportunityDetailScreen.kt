@@ -1,8 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -13,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -60,14 +57,14 @@ fun VolunteerOpportunityDetailScreen(
             InfoRow(icon = Icons.Default.Group, text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers} volunteers")
             InfoRow(icon = Icons.Default.Star, text = "${opportunity.karmaPoints} Karma Points")
             InfoRow(icon = Icons.Default.Business, text = opportunity.organizationName)
-            
+
             Divider(modifier = Modifier.padding(vertical = 16.dp))
             Text(text = opportunity.description, style = MaterialTheme.typography.bodyLarge)
 
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Button(
-                onClick = { 
+                onClick = {
                     if (opportunity.isJoined) {
                         onLeave(opportunity.id)
                     } else {
@@ -89,7 +86,7 @@ fun VolunteerOpportunityDetailScreen(
                         MaterialTheme.colorScheme.onError
                     } else {
                         MaterialTheme.colorScheme.onPrimary
-                    }
+                    },
                 ),
             ) {
                 Text(

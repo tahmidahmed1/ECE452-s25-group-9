@@ -3,8 +3,8 @@ package com.example.gooddeedfeed.presentation.viewmodel.organizer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.domain.model.CreateEventData
-import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.model.JoinedVolunteer
+import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.usecase.organizer.ManageEventsUseCase
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel

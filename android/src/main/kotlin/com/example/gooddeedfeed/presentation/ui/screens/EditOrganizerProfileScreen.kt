@@ -572,7 +572,9 @@ fun EditOrganizerProfileScreen(
                     // Reorder images so that the selected MAIN image is the first element
                     val reorderedImages = if (combinedImages.isNotEmpty() && mainOrgImageIndex < combinedImages.size) {
                         listOf(combinedImages[mainOrgImageIndex]) + combinedImages.filterIndexed { index, _ -> index != mainOrgImageIndex }
-                    } else combinedImages
+                    } else {
+                        combinedImages
+                    }
 
                     val userUpdate = DomainUserUpdate(
                         fullName = if (fullName != user.fullName) fullName.takeIf { it.isNotBlank() } else null,

@@ -5,7 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.remote.dto.CreateLostFoundItemDto
-import com.example.gooddeedfeed.data.remote.dto.CreateLostFoundResponseDto
 import com.example.gooddeedfeed.data.remote.dto.ErrorResponseDto
 import com.example.gooddeedfeed.data.remote.dto.LostFoundImageUploadResponseDto
 import com.example.gooddeedfeed.data.remote.dto.LostFoundItemDto
@@ -67,12 +66,12 @@ class LostFoundApiService @Inject constructor(
                     Log.d(TAG, "🔐 Added Authorization header with session")
                 }
             }
-            
+
             // Check if we got a server error (5xx) or client error (4xx)
             if (httpResponse.status.value >= 400) {
                 val rawResponse = httpResponse.body<String>()
                 Log.w(TAG, "⚠️ Server returned error ${httpResponse.status.value}: $rawResponse")
-                
+
                 // Check for specific server errors to provide better logging
                 when {
                     rawResponse.contains("TypeError") && rawResponse.contains("datetime") -> {
@@ -91,15 +90,15 @@ class LostFoundApiService @Inject constructor(
                         }
                     }
                 }
-                
+
                 // Return empty response to unblock development - don't throw for server errors
                 Log.d(TAG, "🔄 Returning empty response due to server error")
                 return LostFoundItemsResponseDto(
                     items = emptyList(),
-                    totalCount = 0
+                    totalCount = 0,
                 )
             }
-            
+
             // Try to parse successful responses
             try {
                 val response = httpResponse.body<LostFoundItemsResponseDto>()
@@ -107,23 +106,23 @@ class LostFoundApiService @Inject constructor(
                 response
             } catch (parseException: Exception) {
                 Log.w(TAG, "⚠️ Failed to parse as LostFoundItemsResponseDto, trying array format", parseException)
-                
+
                 val rawResponse = httpResponse.body<String>()
                 Log.d(TAG, "📋 Raw successful response: $rawResponse")
-                
+
                 // Try direct array format
                 try {
                     val itemsArray = httpResponse.body<List<LostFoundItemDto>>()
                     Log.d(TAG, "✅ Successfully parsed as direct array with ${itemsArray.size} items")
                     LostFoundItemsResponseDto(
                         items = itemsArray,
-                        totalCount = itemsArray.size
+                        totalCount = itemsArray.size,
                     )
                 } catch (arrayException: Exception) {
                     Log.w(TAG, "⚠️ Failed to parse as array, returning empty response", arrayException)
                     LostFoundItemsResponseDto(
                         items = emptyList(),
-                        totalCount = 0
+                        totalCount = 0,
                     )
                 }
             }
@@ -133,7 +132,7 @@ class LostFoundApiService @Inject constructor(
             Log.d(TAG, "🔄 Returning empty response due to network error")
             LostFoundItemsResponseDto(
                 items = emptyList(),
-                totalCount = 0
+                totalCount = 0,
             )
         }
     }
@@ -166,13 +165,13 @@ class LostFoundApiService @Inject constructor(
                         Log.d(TAG, "🔐 Added Authorization header with session")
                     } ?: Log.w(TAG, "⚠️ No session ID found - request might fail")
                 }.body<LostFoundItemDto>()
-                
+
                 Log.d(TAG, "✅ Successfully created lost and found item with ID: ${response.id}")
                 Log.d(TAG, "📋 Created item - title: ${response.title}, isActive: ${response.isActive}")
                 response
             } catch (parseException: Exception) {
                 Log.w(TAG, "⚠️ Failed to parse as LostFoundItemDto, getting raw response for debugging", parseException)
-                
+
                 // Get raw response for debugging
                 val rawResponse = client.post(url) {
                     contentType(ContentType.Application.Json)
@@ -182,9 +181,9 @@ class LostFoundApiService @Inject constructor(
                         Log.d(TAG, "🔐 Added Authorization header with session")
                     }
                 }.body<String>()
-                
+
                 Log.d(TAG, "📋 Raw response from server: $rawResponse")
-                
+
                 // For now, return a mock successful response to unblock development
                 // TODO: Parse the actual response or modify backend to return full item
                 Log.d(TAG, "🔄 Creating temporary mock response to unblock development")
@@ -203,7 +202,7 @@ class LostFoundApiService @Inject constructor(
                     isActive = true,
                     contactName = "User",
                     images = emptyList(),
-                    daysRemaining = item.expiryDays
+                    daysRemaining = item.expiryDays,
                 )
             }
         } catch (e: Exception) {

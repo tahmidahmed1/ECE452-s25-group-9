@@ -88,7 +88,6 @@ class LostAndFoundViewModel @Inject constructor(
         }
     }
 
-
     fun createItem(
         title: String,
         description: String,
@@ -124,7 +123,7 @@ class LostAndFoundViewModel @Inject constructor(
                         Log.e(TAG, "❌ Error processing image URI: $imageUri", e)
                     }
                 }
-                
+
                 Log.d(TAG, "📸 ViewModel: Converted ${imageFiles.size}/${images.size} images to files")
 
                 val result = lostFoundRepository.createLostFoundItem(
@@ -150,7 +149,7 @@ class LostAndFoundViewModel @Inject constructor(
                         _createItemState.value = UiState.Error(error.message ?: "Failed to create item")
                     },
                 )
-                
+
                 // Clean up temporary files
                 imageFiles.forEach { file ->
                     try {

@@ -13,8 +13,8 @@ import com.example.gooddeedfeed.domain.model.toApiValue
 import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -135,7 +135,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>> = 
+    override suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>> =
         _joinedEventsRefresh.flatMapLatest {
             flow {
                 try {

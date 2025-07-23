@@ -3,9 +3,9 @@ package com.example.gooddeedfeed.data.repository
 import com.example.gooddeedfeed.data.remote.EventApiService
 import com.example.gooddeedfeed.data.remote.dto.toDomain
 import com.example.gooddeedfeed.domain.model.CreateEventData
+import com.example.gooddeedfeed.domain.model.JoinedVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
-import com.example.gooddeedfeed.domain.model.JoinedVolunteer
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.repository.EventRepository
 import kotlinx.coroutines.flow.Flow

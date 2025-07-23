@@ -91,7 +91,7 @@ class LostFoundRepositoryImpl @Inject constructor(
             if (imageFiles.isNotEmpty()) {
                 Log.d(TAG, "📸 Repository: Uploading ${imageFiles.size} images for item ${itemDto.id}")
                 var successfulUploads = 0
-                
+
                 for ((index, imageFile) in imageFiles.withIndex()) {
                     try {
                         val uploadResult = uploadImage(itemDto.id.toString(), imageFile)
@@ -102,15 +102,15 @@ class LostFoundRepositoryImpl @Inject constructor(
                             },
                             onFailure = { error ->
                                 Log.e(TAG, "❌ Repository: Failed to upload image ${index + 1}/${imageFiles.size}", error)
-                            }
+                            },
                         )
                     } catch (e: Exception) {
                         Log.e(TAG, "❌ Repository: Exception uploading image ${index + 1}/${imageFiles.size}", e)
                     }
                 }
-                
+
                 Log.d(TAG, "📸 Repository: Uploaded $successfulUploads/${imageFiles.size} images successfully")
-                
+
                 // Fetch the updated item to get the image URLs
                 try {
                     val updatedItemResult = getLostFoundItem(itemDto.id.toString())
@@ -121,7 +121,7 @@ class LostFoundRepositoryImpl @Inject constructor(
                         },
                         onFailure = { error ->
                             Log.w(TAG, "⚠️ Repository: Failed to fetch updated item, returning original", error)
-                        }
+                        },
                     )
                 } catch (e: Exception) {
                     Log.w(TAG, "⚠️ Repository: Exception fetching updated item, returning original", e)
