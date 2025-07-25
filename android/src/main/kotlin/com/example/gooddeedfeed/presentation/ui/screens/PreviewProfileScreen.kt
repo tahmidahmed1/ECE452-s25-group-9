@@ -616,7 +616,7 @@ private fun OrganizerEventsPreviewCard(uiState: UiState<EventManagementData>) {
                             .height(120.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView()
                     }
                 }
                 is UiState.Success -> {
