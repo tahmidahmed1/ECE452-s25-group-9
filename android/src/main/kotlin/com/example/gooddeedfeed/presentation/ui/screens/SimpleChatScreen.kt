@@ -30,7 +30,7 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -175,7 +175,7 @@ private fun ChatListScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    ShutterLoadingView()
                 }
             }
             is UiState.Success -> {
@@ -532,7 +532,7 @@ private fun ChatMessagesScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        ShutterLoadingView()
                     }
                 }
                 is UiState.Success -> {

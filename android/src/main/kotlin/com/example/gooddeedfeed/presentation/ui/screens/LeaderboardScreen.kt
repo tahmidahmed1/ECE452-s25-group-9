@@ -41,7 +41,7 @@ import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -140,7 +140,7 @@ fun StatsScreen(
                         .height(200.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    ShutterLoadingView()
                 }
             } else if (uiState.entries.isEmpty()) {
                 Text(
@@ -178,7 +178,7 @@ fun StatsScreen(
                                     .padding(16.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                ShutterLoadingView(modifier = Modifier.size(24.dp))
                             }
                         }
                     }
@@ -205,7 +205,7 @@ fun StatsScreen(
                             .height(120.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        ShutterLoadingView()
                     }
                 }
                 is UiState.Success -> {
@@ -318,7 +318,7 @@ fun StatsScreen(
                             .height(120.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView()
                     }
                 }
             }
@@ -850,7 +850,7 @@ private fun SubscriptionsSection(
                         .height(120.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView()
                 }
             }
             is UiState.Success -> {
