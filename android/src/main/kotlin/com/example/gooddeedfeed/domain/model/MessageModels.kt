@@ -8,7 +8,7 @@ data class MessageReaction(
     val userId: Int,
     val username: String,
     val emoji: String,
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
 )
 
 data class DomainMessage(
@@ -25,7 +25,7 @@ data class DomainMessage(
     val isDeletedReceiver: Boolean,
     val reactions: List<MessageReaction>,
     val createdAt: LocalDateTime,
-    val isFromCurrentUser: Boolean = false
+    val isFromCurrentUser: Boolean = false,
 )
 
 data class ChatSummary(
@@ -36,14 +36,14 @@ data class ChatSummary(
     val latestMessage: String,
     val latestMessageTime: LocalDateTime,
     val unreadCount: Int,
-    val isImportant: Boolean
+    val isImportant: Boolean,
 )
 
 // For UI state
 data class MessageUiState(
     val message: DomainMessage,
     val showReactionPicker: Boolean = false,
-    val isSelected: Boolean = false
+    val isSelected: Boolean = false,
 )
 
 // Available emoji reactions
@@ -54,6 +54,6 @@ object MessageEmojis {
     const val HAPPY = "😄"
     const val SAD = "😢"
     const val SURPRISED = "😮"
-    
+
     val ALL = listOf(HEART, THUMBS_UP, THUMBS_DOWN, HAPPY, SAD, SURPRISED)
 }

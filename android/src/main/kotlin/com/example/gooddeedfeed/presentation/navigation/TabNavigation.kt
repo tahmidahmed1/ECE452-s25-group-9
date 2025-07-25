@@ -215,12 +215,12 @@ fun TabNavigationScreen(
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
                 tabs[selectedTabIndex].screen(
-                    currentUser, 
+                    currentUser,
                     onLogout,
                     { profileUser ->
                         chatProfileUser = profileUser
                         showChatProfile = true
-                    }
+                    },
                 )
 
                 androidx.compose.animation.AnimatedVisibility(

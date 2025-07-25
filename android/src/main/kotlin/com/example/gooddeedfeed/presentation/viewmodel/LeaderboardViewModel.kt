@@ -151,14 +151,14 @@ class LeaderboardViewModel @Inject constructor(
     fun loadVolunteerHistory() {
         viewModelScope.launch {
             _volunteerHistoryState.value = UiState.Loading
-            
+
             authRepository.getVolunteerHistory().fold(
                 onSuccess = { historyEntries ->
                     _volunteerHistoryState.value = UiState.Success(historyEntries)
                 },
                 onFailure = { error ->
                     _volunteerHistoryState.value = UiState.Error(error.message ?: "Failed to load volunteer history")
-                }
+                },
             )
         }
     }

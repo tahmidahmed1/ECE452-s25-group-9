@@ -2,7 +2,6 @@ package com.example.gooddeedfeed.data.repository
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import kotlinx.coroutines.flow.Flow
@@ -13,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class ConversationPreferencesRepository @Inject constructor(
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
 ) {
     companion object {
         private val STARRED_CONVERSATIONS_KEY = stringSetPreferencesKey("starred_conversations")
@@ -36,7 +35,7 @@ class ConversationPreferencesRepository @Inject constructor(
     suspend fun toggleConversationStar(userId: Int, conversationId: String): Boolean {
         val key = starredConversationsKey(userId)
         var isStarred = false
-        
+
         dataStore.edit { preferences ->
             val starredSet = preferences[key]?.toMutableSet() ?: mutableSetOf()
             if (starredSet.contains(conversationId)) {
@@ -48,13 +47,13 @@ class ConversationPreferencesRepository @Inject constructor(
             }
             preferences[key] = starredSet
         }
-        
+
         return isStarred
     }
 
     suspend fun deleteConversation(userId: Int, conversationId: String) {
         val key = deletedConversationsKey(userId)
-        
+
         dataStore.edit { preferences ->
             val deletedSet = preferences[key]?.toMutableSet() ?: mutableSetOf()
             deletedSet.add(conversationId)
@@ -64,7 +63,7 @@ class ConversationPreferencesRepository @Inject constructor(
 
     suspend fun restoreConversation(userId: Int, conversationId: String) {
         val key = deletedConversationsKey(userId)
-        
+
         dataStore.edit { preferences ->
             val deletedSet = preferences[key]?.toMutableSet() ?: mutableSetOf()
             deletedSet.remove(conversationId)

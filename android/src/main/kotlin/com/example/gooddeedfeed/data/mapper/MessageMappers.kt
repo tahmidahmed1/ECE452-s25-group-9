@@ -12,7 +12,7 @@ fun MessageReactionDto.toDomain(): MessageReaction = MessageReaction(
     userId = user_id,
     username = username,
     emoji = emoji,
-    createdAt = LocalDateTime.parse(created_at, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+    createdAt = LocalDateTime.parse(created_at, DateTimeFormatter.ISO_OFFSET_DATE_TIME),
 )
 
 fun MessageDto.toDomain(currentUserId: Int): DomainMessage = DomainMessage(
@@ -29,7 +29,7 @@ fun MessageDto.toDomain(currentUserId: Int): DomainMessage = DomainMessage(
     isDeletedReceiver = is_deleted_receiver,
     reactions = reactions.map { it.toDomain() },
     createdAt = LocalDateTime.parse(created_at, DateTimeFormatter.ISO_OFFSET_DATE_TIME),
-    isFromCurrentUser = sender_id == currentUserId
+    isFromCurrentUser = sender_id == currentUserId,
 )
 
 fun ChatSummaryDto.toDomain(): ChatSummary = ChatSummary(
@@ -40,21 +40,21 @@ fun ChatSummaryDto.toDomain(): ChatSummary = ChatSummary(
     latestMessage = latest_message,
     latestMessageTime = LocalDateTime.parse(latest_message_time, DateTimeFormatter.ISO_OFFSET_DATE_TIME),
     unreadCount = unread_count,
-    isImportant = is_important
+    isImportant = is_important,
 )
 
 // Factory methods for DTOs
-fun MessageCreateDto.Companion.create(receiverId: Int, content: String): MessageCreateDto = 
+fun MessageCreateDto.Companion.create(receiverId: Int, content: String): MessageCreateDto =
     MessageCreateDto(
         receiver_id = receiverId,
-        content = content
+        content = content,
     )
 
-fun MessageReactionCreateDto.Companion.create(emoji: String): MessageReactionCreateDto = 
+fun MessageReactionCreateDto.Companion.create(emoji: String): MessageReactionCreateDto =
     MessageReactionCreateDto(emoji = emoji)
 
-fun MessageUpdateImportantDto.Companion.create(isImportant: Boolean): MessageUpdateImportantDto = 
+fun MessageUpdateImportantDto.Companion.create(isImportant: Boolean): MessageUpdateImportantDto =
     MessageUpdateImportantDto(is_important = isImportant)
 
-fun MessageUpdateDeletedDto.Companion.create(isDeleted: Boolean): MessageUpdateDeletedDto = 
+fun MessageUpdateDeletedDto.Companion.create(isDeleted: Boolean): MessageUpdateDeletedDto =
     MessageUpdateDeletedDto(is_deleted = isDeleted)

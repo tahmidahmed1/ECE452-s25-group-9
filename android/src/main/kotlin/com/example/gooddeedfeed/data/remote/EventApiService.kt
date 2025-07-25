@@ -480,7 +480,7 @@ class EventApiService @Inject constructor(
 
     suspend fun getEventVolunteersForAttendance(eventId: Int): List<EventVolunteerDto> {
         Log.d(TAG, "🚀 Getting volunteers for attendance for event $eventId")
-        
+
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found")
@@ -508,7 +508,7 @@ class EventApiService @Inject constructor(
 
     suspend fun submitAttendance(eventId: Int, attendanceData: AttendanceSubmissionDto): AttendanceResponseDto {
         Log.d(TAG, "🚀 Submitting attendance for event $eventId")
-        
+
         val sessionId = getSessionIdFromDataStore()
         if (sessionId == null) {
             Log.e(TAG, "❌ No session ID found")

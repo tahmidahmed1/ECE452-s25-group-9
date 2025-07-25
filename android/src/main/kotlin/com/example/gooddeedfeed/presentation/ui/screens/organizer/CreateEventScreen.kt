@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -85,7 +86,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import androidx.compose.material3.CircularProgressIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -178,7 +178,7 @@ fun CreateEventScreen(
         if (dateStr.isBlank() || timeStr.isBlank()) return false
 
         val eventDateTime = parseEventDateTime(dateStr, timeStr) ?: return false
-        
+
         // Always allow any valid date/time - no minimum time restriction
         return true
     }
@@ -594,8 +594,8 @@ fun CreateEventScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 isError = maxVolunteersError,
-                supportingText = if (maxVolunteersError) { 
-                    { 
+                supportingText = if (maxVolunteersError) {
+                    {
                         Text(
                             text = when {
                                 maxVolunteersText.isBlank() -> "Max volunteers is required (1-100)"
@@ -603,10 +603,12 @@ fun CreateEventScreen(
                                 isEditing && eventToEdit != null && (maxVolunteersText.toIntOrNull() ?: 0) < eventToEdit.currentVolunteers -> "Cannot be less than current volunteers (${eventToEdit.currentVolunteers})"
                                 else -> "Max volunteers is required (1-100)"
                             },
-                            color = MaterialTheme.colorScheme.error
-                        ) 
-                    } 
-                } else null,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                } else {
+                    null
+                },
             )
 
             var expanded by remember { mutableStateOf(false) }

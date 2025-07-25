@@ -19,12 +19,12 @@ object ChatModule {
     @Singleton
     fun provideChatApiService(
         client: HttpClient,
-        dataStore: DataStore<Preferences>
+        dataStore: DataStore<Preferences>,
     ): ChatApiService = ChatApiService(client, dataStore)
 
     @Provides
     @Singleton
     fun provideConversationPreferencesRepository(
-        dataStore: DataStore<Preferences>
+        dataStore: DataStore<Preferences>,
     ): ConversationPreferencesRepository = ConversationPreferencesRepository(dataStore)
 } 

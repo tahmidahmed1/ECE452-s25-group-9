@@ -120,5 +120,5 @@ fun VolunteerHistoryEntryDto.toDomain(): DomainVolunteerHistoryEntry = DomainVol
     isApproved = is_approved,
     rejectionReason = rejection_reason,
     karmaPointsEarned = karma_points_earned,
-    status = status
+    status = status,
 )

@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,9 +63,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DateFilter
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
-import com.example.gooddeedfeed.domain.model.toDisplayString
 import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
+import com.example.gooddeedfeed.domain.model.toDisplayString
 
 /**
  * Enhanced card component for displaying volunteer opportunities with banner
@@ -446,14 +444,14 @@ fun FiltersDrawer(
                                 )
                             }
                         }
-                        
+
                         // Show selected categories count
                         if (filters.selectedCategories.isNotEmpty()) {
                             Text(
                                 text = "${filters.selectedCategories.size} categories selected",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = 8.dp),
                             )
                         }
                     }

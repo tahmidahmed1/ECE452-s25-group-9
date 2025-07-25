@@ -63,19 +63,19 @@ fun VolunteerOpportunityDetailScreen(
             InfoRow(icon = Icons.Default.Business, text = opportunity.organizationName)
 
             Divider(modifier = Modifier.padding(vertical = 16.dp))
-            
+
             // Event Photos Section
             if (opportunity.images.isNotEmpty()) {
                 Text(
                     text = "Event Photos",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
-                
+
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 16.dp),
                 ) {
                     items(opportunity.images) { image ->
                         AsyncImage(
@@ -84,20 +84,20 @@ fun VolunteerOpportunityDetailScreen(
                             modifier = Modifier
                                 .size(120.dp)
                                 .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
                     }
                 }
-                
+
                 Divider(modifier = Modifier.padding(vertical = 16.dp))
             }
-            
+
             Text(text = opportunity.description, style = MaterialTheme.typography.bodyLarge)
 
             Spacer(modifier = Modifier.height(24.dp))
 
             val eventHasPassed = opportunity.hasPassed()
-            
+
             Button(
                 onClick = {
                     if (opportunity.isJoined && !eventHasPassed) {

@@ -109,15 +109,15 @@ fun EventManagementScreen(
                             volunteerId = volunteerAttendance.volunteer.id,
                             hoursWorked = if (volunteerAttendance.isRejected) null else volunteerAttendance.hoursWorked.toDoubleOrNull(),
                             isApproved = !volunteerAttendance.isRejected,
-                            rejectionReason = if (volunteerAttendance.isRejected) volunteerAttendance.rejectionReason else null
+                            rejectionReason = if (volunteerAttendance.isRejected) volunteerAttendance.rejectionReason else null,
                         )
                     }
-                    
+
                     val attendanceSubmission = AttendanceSubmission(
                         eventId = attendanceEvent!!.id,
-                        attendanceRecords = attendanceRecords
+                        attendanceRecords = attendanceRecords,
                     )
-                    
+
                     viewModel.submitAttendance(attendanceSubmission).fold(
                         onSuccess = { karmaAwarded ->
                             Log.d("EventManagement", "✅ Attendance submitted successfully. Karma awarded: $karmaAwarded")
@@ -125,10 +125,10 @@ fun EventManagementScreen(
                         },
                         onFailure = { error ->
                             Log.e("EventManagement", "❌ Failed to submit attendance: ${error.message}")
-                        }
+                        },
                     )
                 }
-            }
+            },
         )
         return
     }
@@ -319,7 +319,7 @@ private fun EventCard(
             Log.d("EventManagementDebug", "Event Title: ${event.title}")
             Log.d("EventManagementDebug", "Raw event date: '${event.date}'")
             Log.d("EventManagementDebug", "Raw event startTime: '${event.startTime}'")
-            
+
             // Parse date using multiple formats (same as OrganizerEventDetailScreen)
             fun parseDate(dateStr: String): LocalDate? {
                 val patterns = listOf("yyyy-MM-dd", "MMM d, yyyy", "MMMM d, yyyy")
@@ -341,28 +341,28 @@ private fun EventCard(
                 }
                 return null
             }
-            
+
             val eventDate = parseDate(event.date)
             val eventStartTime = parseTime(event.startTime)
-            
+
             if (eventDate == null || eventStartTime == null) {
                 Log.e("EventManagementDebug", "Failed to parse date or time - eventDate: $eventDate, eventStartTime: $eventStartTime")
                 return false // Default to not started if parsing fails
             }
-            
+
             val currentDateTime = LocalDateTime.now()
             val eventStartDateTime = LocalDateTime.of(eventDate, eventStartTime)
-            
+
             Log.d("EventManagementDebug", "Parsed event date: $eventDate")
             Log.d("EventManagementDebug", "Parsed event start time: $eventStartTime")
             Log.d("EventManagementDebug", "Event start date-time: $eventStartDateTime")
             Log.d("EventManagementDebug", "Current date-time: $currentDateTime")
-            
+
             val hasStarted = currentDateTime.isAfter(eventStartDateTime) || currentDateTime.isEqual(eventStartDateTime)
             Log.d("EventManagementDebug", "Has event started? $hasStarted")
             Log.d("EventManagementDebug", "currentDateTime >= eventStartDateTime: $hasStarted")
             Log.d("EventManagementDebug", "=== END EVENT START CHECK ===")
-            
+
             hasStarted
         } catch (e: Exception) {
             Log.e("EventManagementDebug", "Error checking if event has started", e)

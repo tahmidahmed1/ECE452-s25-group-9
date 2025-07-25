@@ -45,15 +45,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.EventVolunteer
-import com.example.gooddeedfeed.domain.model.VolunteerAttendanceRecord
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
-import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 import kotlinx.coroutines.launch
 
@@ -61,7 +57,7 @@ data class VolunteerAttendance(
     val volunteer: EventVolunteer,
     var hoursWorked: String = "",
     var isRejected: Boolean = false,
-    var rejectionReason: String = ""
+    var rejectionReason: String = "",
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,21 +67,21 @@ fun VolunteerAttendanceScreen(
     onBack: () -> Unit,
     onSubmit: (List<VolunteerAttendance>) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: EventManagementViewModel = hiltViewModel()
+    viewModel: EventManagementViewModel = hiltViewModel(),
 ) {
     var volunteers by remember { mutableStateOf<List<VolunteerAttendance>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
     var showRejectDialog by remember { mutableStateOf<VolunteerAttendance?>(null) }
-    
+
     val scope = rememberCoroutineScope()
 
     // Load volunteers when screen opens
     LaunchedEffect(event.id) {
         isLoading = true
         error = null
-        
+
         scope.launch {
             viewModel.getEventVolunteersForAttendance(event.id).fold(
                 onSuccess = { eventVolunteers ->
@@ -97,13 +93,13 @@ fun VolunteerAttendanceScreen(
                 onFailure = { exception ->
                     error = exception.message ?: "Failed to load volunteers"
                     isLoading = false
-                }
+                },
             )
         }
     }
 
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) {
         TopAppBar(
             title = { Text("Volunteer Attendance") },
@@ -111,32 +107,32 @@ fun VolunteerAttendanceScreen(
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
-            }
+            },
         )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(16.dp),
         ) {
             // Event info header
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
                 ) {
                     Text(
                         text = event.title,
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${event.date} • ${event.startTime} - ${event.endTime}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -146,14 +142,14 @@ fun VolunteerAttendanceScreen(
             Text(
                 text = "Volunteers (${volunteers.size})",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(volunteers) { volunteer ->
                     VolunteerAttendanceCard(
@@ -162,12 +158,14 @@ fun VolunteerAttendanceScreen(
                             volunteers = volunteers.map {
                                 if (it.volunteer.id == volunteer.volunteer.id) {
                                     it.copy(hoursWorked = newHours, isRejected = false)
-                                } else it
+                                } else {
+                                    it
+                                }
                             }
                         },
                         onRejectClick = {
                             showRejectDialog = volunteer
-                        }
+                        },
                     )
                 }
             }
@@ -178,7 +176,7 @@ fun VolunteerAttendanceScreen(
                 onClick = { onSubmit(volunteers) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                enabled = volunteers.all { it.hoursWorked.isNotBlank() || it.isRejected }
+                enabled = volunteers.all { it.hoursWorked.isNotBlank() || it.isRejected },
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -196,10 +194,12 @@ fun VolunteerAttendanceScreen(
                 volunteers = volunteers.map {
                     if (it.volunteer.id == volunteer.volunteer.id) {
                         it.copy(isRejected = true, rejectionReason = reason, hoursWorked = "")
-                    } else it
+                    } else {
+                        it
+                    }
                 }
                 showRejectDialog = null
-            }
+            },
         )
     }
 }
@@ -209,24 +209,24 @@ private fun VolunteerAttendanceCard(
     volunteer: VolunteerAttendance,
     onHoursChanged: (String) -> Unit,
     onRejectClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 // Profile picture
                 Surface(
                     modifier = Modifier.size(48.dp),
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = MaterialTheme.colorScheme.primaryContainer,
                 ) {
                     if (volunteer.volunteer.profilePictureUrl != null) {
                         AsyncImage(
@@ -235,14 +235,14 @@ private fun VolunteerAttendanceCard(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Default Profile",
                             modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -253,17 +253,17 @@ private fun VolunteerAttendanceCard(
                     Text(
                         text = volunteer.volunteer.name,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                     Text(
                         text = "@${volunteer.volunteer.username}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = volunteer.volunteer.email,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -273,21 +273,21 @@ private fun VolunteerAttendanceCard(
             if (volunteer.isRejected) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 ) {
                     Column(
-                        modifier = Modifier.padding(12.dp)
+                        modifier = Modifier.padding(12.dp),
                     ) {
                         Text(
                             text = "REJECTED",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Text(
                             text = volunteer.rejectionReason,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -295,7 +295,7 @@ private fun VolunteerAttendanceCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     OutlinedTextField(
                         value = volunteer.hoursWorked,
@@ -305,15 +305,15 @@ private fun VolunteerAttendanceCard(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(8.dp),
-                        singleLine = true
+                        singleLine = true,
                     )
 
                     OutlinedButton(
                         onClick = onRejectClick,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
                     ) {
                         Text("Reject")
                     }
@@ -327,7 +327,7 @@ private fun VolunteerAttendanceCard(
 private fun RejectVolunteerDialog(
     volunteer: VolunteerAttendance,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
 ) {
     var rejectionReason by remember { mutableStateOf("") }
 
@@ -344,7 +344,7 @@ private fun RejectVolunteerDialog(
                     placeholder = { Text("Enter reason...") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
-                    maxLines = 4
+                    maxLines = 4,
                 )
             }
         },
@@ -353,8 +353,8 @@ private fun RejectVolunteerDialog(
                 onClick = { onConfirm(rejectionReason) },
                 enabled = rejectionReason.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
+                    containerColor = MaterialTheme.colorScheme.error,
+                ),
             ) {
                 Text("Reject")
             }
@@ -364,6 +364,6 @@ private fun RejectVolunteerDialog(
                 Text("Cancel")
             }
         },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     )
 }

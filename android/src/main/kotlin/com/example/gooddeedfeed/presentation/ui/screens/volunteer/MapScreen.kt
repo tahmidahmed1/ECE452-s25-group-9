@@ -5,33 +5,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
-import com.example.gooddeedfeed.presentation.ui.components.base.EnhancedLocationPermissionManager
-import com.example.gooddeedfeed.presentation.ui.screens.organizer.OrganizerEventDetailScreen
-import com.example.gooddeedfeed.presentation.ui.screens.volunteer.VolunteerOpportunityDetailScreen
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
+import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.ui.components.base.EnhancedLocationPermissionManager
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.MapViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
-import kotlin.math.ln
-import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
-import androidx.compose.material3.Surface
-import androidx.compose.material3.MaterialTheme
-import com.example.gooddeedfeed.presentation.common.UiState
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -74,16 +66,14 @@ fun MapScreen(
 
                     // Legend panel removed in new design
                 }
-
-
             }
 
             // Only show popup if no detail event is open
             if (detailEvent == null) {
                 selectedEvent?.let { event ->
-                    EventDetailDialog(event, uiState.currentLocation, onDismiss = { selectedEvent = null }, onNavigateToDetails = { 
+                    EventDetailDialog(event, uiState.currentLocation, onDismiss = { selectedEvent = null }, onNavigateToDetails = {
                         detailEvent = event
-                        selectedEvent = null  // Clear popup when opening details
+                        selectedEvent = null // Clear popup when opening details
                     })
                 }
             }
@@ -95,7 +85,7 @@ fun MapScreen(
                     is UiState.Success -> currentState.data.opportunities.any { it.id == ev.id && it.isJoined }
                     else -> false
                 }
-                
+
                 val opp = VolunteerOpportunity(
                     id = ev.id,
                     title = ev.title,
@@ -118,7 +108,7 @@ fun MapScreen(
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     VolunteerOpportunityDetailScreen(
                         opportunity = opp,

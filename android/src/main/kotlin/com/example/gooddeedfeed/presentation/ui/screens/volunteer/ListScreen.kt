@@ -159,7 +159,7 @@ fun ListScreen(
     // Apply filters only when explicitly requested after initial load
     fun applyCurrentFilters() {
         if (!isInitialLoad) {
-            Log.d("ListScreen", "🎯 Applying filters: ${filters}")
+            Log.d("ListScreen", "🎯 Applying filters: $filters")
             Log.d("ListScreen", "  - Selected categories: ${filters.selectedCategories}")
             Log.d("ListScreen", "  - Only available: ${filters.onlyAvailable}")
             Log.d("ListScreen", "  - Use distance filter: ${filters.useDistanceFilter}")

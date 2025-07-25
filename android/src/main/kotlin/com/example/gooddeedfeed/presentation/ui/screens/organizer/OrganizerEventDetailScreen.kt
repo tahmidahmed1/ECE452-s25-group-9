@@ -5,18 +5,17 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -90,7 +90,7 @@ fun OrganizerEventDetailScreen(
             Log.d("AttendanceDebug", "Event Title: ${event.title}")
             Log.d("AttendanceDebug", "Raw event date: '${event.date}'")
             Log.d("AttendanceDebug", "Raw event endTime: '${event.endTime}'")
-            
+
             // Parse date using multiple formats (copied from VolunteerOpportunity.hasPassed())
             fun parseDate(dateStr: String): LocalDate? {
                 val patterns = listOf("yyyy-MM-dd", "MMM d, yyyy", "MMMM d, yyyy")
@@ -112,32 +112,32 @@ fun OrganizerEventDetailScreen(
                 }
                 return null
             }
-            
+
             val eventDate = parseDate(event.date)
             val eventEndTime = parseTime(event.endTime)
-            
+
             if (eventDate == null || eventEndTime == null) {
                 Log.e("AttendanceDebug", "Failed to parse date or time - eventDate: $eventDate, eventEndTime: $eventEndTime")
                 return false // Default to not completed if parsing fails
             }
-            
+
             val currentDate = LocalDate.now()
             val currentTime = LocalTime.now()
             val eventEndDateTime = LocalDateTime.of(eventDate, eventEndTime)
             val currentDateTime = LocalDateTime.now()
-            
+
             Log.d("AttendanceDebug", "Parsed event date: $eventDate")
             Log.d("AttendanceDebug", "Parsed event end time: $eventEndTime")
             Log.d("AttendanceDebug", "Current date: $currentDate")
             Log.d("AttendanceDebug", "Current time: $currentTime")
             Log.d("AttendanceDebug", "Event end date-time: $eventEndDateTime")
             Log.d("AttendanceDebug", "Current date-time: $currentDateTime")
-            
+
             val isCompleted = eventEndDateTime.isBefore(currentDateTime)
             Log.d("AttendanceDebug", "Is event completed? $isCompleted")
             Log.d("AttendanceDebug", "eventEndDateTime.isBefore(currentDateTime): $isCompleted")
             Log.d("AttendanceDebug", "=== END EVENT COMPLETION CHECK ===")
-            
+
             isCompleted
         } catch (e: Exception) {
             Log.e("AttendanceDebug", "Error checking event completion", e)
@@ -145,10 +145,10 @@ fun OrganizerEventDetailScreen(
             false // Default to not completed if parsing fails
         }
     }
-    
+
     val eventCompleted = isEventCompleted(event)
     val showAttendanceSection = eventCompleted
-    
+
     Log.d("AttendanceDebug", "=== ATTENDANCE SECTION DECISION ===")
     Log.d("AttendanceDebug", "eventCompleted: $eventCompleted")
     Log.d("AttendanceDebug", "showAttendanceSection: $showAttendanceSection")
@@ -223,11 +223,11 @@ fun OrganizerEventDetailScreen(
 
             // Volunteers Joined or Attendance
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Log.d("AttendanceDebug", "=== UI SECTION DISPLAY ===")
             Log.d("AttendanceDebug", "showAttendanceSection in UI: $showAttendanceSection")
             Log.d("AttendanceDebug", "Section title will be: ${if (showAttendanceSection) "Volunteer Attendance" else "Volunteers Joined"}")
-            
+
             Text(
                 text = if (showAttendanceSection) "Volunteer Attendance" else "Volunteers Joined",
                 style = MaterialTheme.typography.titleMedium,
@@ -262,10 +262,10 @@ fun OrganizerEventDetailScreen(
                                 OutlinedButton(
                                     onClick = { viewModel.kickVolunteer(event.id, v.id) },
                                     colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.error
+                                        contentColor = MaterialTheme.colorScheme.error,
                                     ),
                                     shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.padding(start = 8.dp)
+                                    modifier = Modifier.padding(start = 8.dp),
                                 ) {
                                     Text("Reject", style = MaterialTheme.typography.bodySmall)
                                 }
@@ -320,7 +320,7 @@ private fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text:
 private fun AttendanceSection(
     volunteers: List<com.example.gooddeedfeed.domain.model.JoinedVolunteer>,
     eventId: Int,
-    viewModel: EventManagementViewModel
+    viewModel: EventManagementViewModel,
 ) {
     var volunteerHours by remember { mutableStateOf(mutableMapOf<Int, String>()) }
     var rejectionDialogVolunteer by remember { mutableStateOf<com.example.gooddeedfeed.domain.model.JoinedVolunteer?>(null) }
@@ -331,7 +331,7 @@ private fun AttendanceSection(
         volunteers.forEach { volunteer ->
             val isApproved = approvedVolunteers.contains(volunteer.id)
             val isRejected = rejectedVolunteers.contains(volunteer.id)
-            
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -339,14 +339,14 @@ private fun AttendanceSection(
                         isApproved -> MaterialTheme.colorScheme.primaryContainer
                         isRejected -> MaterialTheme.colorScheme.errorContainer
                         else -> MaterialTheme.colorScheme.surface
-                    }
+                    },
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         AsyncImage(
                             model = volunteer.profilePictureUrl?.toEmulatorAccessibleUrl(),
@@ -358,24 +358,24 @@ private fun AttendanceSection(
                             contentScale = ContentScale.Crop,
                         )
                         Spacer(Modifier.width(12.dp))
-                        
+
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = volunteer.fullName.ifBlank { volunteer.username },
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                             Text(
                                 text = "@${volunteer.username}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                    
+
                     if (!isApproved && !isRejected) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        
+
                         // Hours input
                         OutlinedTextField(
                             value = volunteerHours[volunteer.id] ?: "",
@@ -389,15 +389,15 @@ private fun AttendanceSection(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         // Action buttons
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             OutlinedButton(
                                 onClick = {
@@ -409,21 +409,21 @@ private fun AttendanceSection(
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.primary
+                                    contentColor = MaterialTheme.colorScheme.primary,
                                 ),
                                 shape = RoundedCornerShape(8.dp),
-                                enabled = (volunteerHours[volunteer.id]?.toDoubleOrNull() ?: 0.0) > 0
+                                enabled = (volunteerHours[volunteer.id]?.toDoubleOrNull() ?: 0.0) > 0,
                             ) {
                                 Text("Approve")
                             }
-                            
+
                             OutlinedButton(
                                 onClick = { rejectionDialogVolunteer = volunteer },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
+                                    contentColor = MaterialTheme.colorScheme.error,
                                 ),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
                             ) {
                                 Text("Reject")
                             }
@@ -434,7 +434,7 @@ private fun AttendanceSection(
                             text = "✓ Approved - ${volunteerHours[volunteer.id] ?: "0"} hours",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     } else if (isRejected) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -442,18 +442,18 @@ private fun AttendanceSection(
                             text = "✗ Rejected",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                     }
                 }
             }
         }
     }
-    
+
     // Rejection dialog
     rejectionDialogVolunteer?.let { volunteer ->
         var rejectionReason by remember { mutableStateOf("") }
-        
+
         AlertDialog(
             onDismissRequest = { rejectionDialogVolunteer = null },
             title = { Text("Reject Volunteer") },
@@ -467,7 +467,7 @@ private fun AttendanceSection(
                         placeholder = { Text("Enter reason...") },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2,
-                        maxLines = 4
+                        maxLines = 4,
                     )
                 }
             },
@@ -482,8 +482,8 @@ private fun AttendanceSection(
                     },
                     enabled = rejectionReason.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+                        containerColor = MaterialTheme.colorScheme.error,
+                    ),
                 ) {
                     Text("Reject")
                 }
@@ -493,7 +493,7 @@ private fun AttendanceSection(
                     Text("Cancel")
                 }
             },
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         )
     }
 } 

@@ -79,10 +79,10 @@ class HomeViewModel @Inject constructor(
             _isGeneratingIdeas.value = true
             try {
                 opportunitiesRepository.generateOpportunityIdeas()
-                    .onSuccess { ideas -> 
+                    .onSuccess { ideas ->
                         _ideaSuggestions.value = ideas
                     }
-                    .onFailure { e -> 
+                    .onFailure { e ->
                         _uiState.value = UiState.Error("Failed to generate ideas: ${e.message}")
                     }
             } catch (e: Exception) {

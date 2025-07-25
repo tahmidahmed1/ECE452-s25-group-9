@@ -51,7 +51,7 @@ class OpportunitiesViewModel @Inject constructor(
     private var allOpportunities: List<VolunteerOpportunity> = emptyList()
 
     private var joinedIds: Set<Int> = emptySet()
-    
+
     // Track optimistic updates to prevent race conditions
     private var optimisticJoinedIds: Set<Int> = emptySet()
     private var optimisticLeftIds: Set<Int> = emptySet()
@@ -63,16 +63,16 @@ class OpportunitiesViewModel @Inject constructor(
         viewModelScope.launch {
             opportunitiesRepository.getJoinedEvents().collect { joinedList ->
                 val serverJoinedIds = joinedList.map { it.id }.toSet()
-                
+
                 // Clear optimistic updates that are now confirmed by server
                 optimisticJoinedIds = optimisticJoinedIds.filter { id ->
                     !serverJoinedIds.contains(id)
                 }.toSet()
-                
+
                 optimisticLeftIds = optimisticLeftIds.filter { id ->
                     serverJoinedIds.contains(id)
                 }.toSet()
-                
+
                 joinedIds = serverJoinedIds
                 refreshOpportunitiesState()
             }
@@ -165,7 +165,7 @@ class OpportunitiesViewModel @Inject constructor(
             optimisticJoinedIds = optimisticJoinedIds + opportunityId
             optimisticLeftIds = optimisticLeftIds - opportunityId
             refreshOpportunitiesState()
-            
+
             opportunitiesRepository.joinEvent(opportunityId)
                 .onSuccess {
                     com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Joined event successfully!")
@@ -173,12 +173,15 @@ class OpportunitiesViewModel @Inject constructor(
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
                         val updated = currentState.data.opportunities.map { opp ->
-                            if (opp.id == opportunityId) opp.copy(currentVolunteers = opp.currentVolunteers + 1)
-                            else opp
+                            if (opp.id == opportunityId) {
+                                opp.copy(currentVolunteers = opp.currentVolunteers + 1)
+                            } else {
+                                opp
+                            }
                         }
                         allOpportunities = updated
                         _uiState.value = currentState.copy(
-                            data = currentState.data.copy(opportunities = updated)
+                            data = currentState.data.copy(opportunities = updated),
                         )
                     }
                 }
@@ -197,7 +200,7 @@ class OpportunitiesViewModel @Inject constructor(
             optimisticLeftIds = optimisticLeftIds + opportunityId
             optimisticJoinedIds = optimisticJoinedIds - opportunityId
             refreshOpportunitiesState()
-            
+
             opportunitiesRepository.leaveEvent(opportunityId)
                 .onSuccess {
                     com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Left event")
@@ -205,12 +208,15 @@ class OpportunitiesViewModel @Inject constructor(
                     val currentState = _uiState.value
                     if (currentState is UiState.Success) {
                         val updated = currentState.data.opportunities.map { opp ->
-                            if (opp.id == opportunityId) opp.copy(currentVolunteers = opp.currentVolunteers - 1)
-                            else opp
+                            if (opp.id == opportunityId) {
+                                opp.copy(currentVolunteers = opp.currentVolunteers - 1)
+                            } else {
+                                opp
+                            }
                         }
                         allOpportunities = updated
                         _uiState.value = currentState.copy(
-                            data = currentState.data.copy(opportunities = updated)
+                            data = currentState.data.copy(opportunities = updated),
                         )
                     }
                 }

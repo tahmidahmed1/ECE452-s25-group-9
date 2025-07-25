@@ -139,7 +139,7 @@ fun AppTopBar(
                         Surface(
                             modifier = Modifier
                                 .size(44.dp)
-                                .clickable { 
+                                .clickable {
                                     showNotifMenu = true
                                     notificationViewModel.loadNotifications()
                                 },
@@ -171,7 +171,7 @@ fun AppTopBar(
                             ) {
                                 Box(
                                     contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
+                                    modifier = Modifier.fillMaxSize(),
                                 ) {
                                     Text(
                                         text = if (unreadCount > 99) "99+" else unreadCount.toString(),

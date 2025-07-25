@@ -10,12 +10,12 @@ import com.example.gooddeedfeed.presentation.ui.theme.Constants
 fun ChatTabIcon(
     icon: ImageVector,
     isSelected: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Icon(
         imageVector = icon,
         contentDescription = "Chat",
         tint = if (isSelected) Constants.Colors.primary else Constants.Colors.darkGray,
-        modifier = modifier
+        modifier = modifier,
     )
 }

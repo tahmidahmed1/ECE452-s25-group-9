@@ -9,7 +9,7 @@ data class MessageReactionDto(
     val user_id: Int,
     val username: String,
     val emoji: String,
-    val created_at: String
+    val created_at: String,
 )
 
 @Serializable
@@ -26,7 +26,7 @@ data class MessageDto(
     val is_deleted_sender: Boolean,
     val is_deleted_receiver: Boolean,
     val reactions: List<MessageReactionDto> = emptyList(),
-    val created_at: String
+    val created_at: String,
 )
 
 @Serializable
@@ -38,39 +38,39 @@ data class ChatSummaryDto(
     val latest_message: String,
     val latest_message_time: String,
     val unread_count: Int,
-    val is_important: Boolean
+    val is_important: Boolean,
 )
 
 @Serializable
 data class MessageCreateDto(
     val receiver_id: Int,
-    val content: String
+    val content: String,
 ) {
     companion object
 }
 
 @Serializable
 data class MessageReactionCreateDto(
-    val emoji: String
+    val emoji: String,
 ) {
     companion object
 }
 
 @Serializable
 data class MessageUpdateImportantDto(
-    val is_important: Boolean
+    val is_important: Boolean,
 ) {
     companion object
 }
 
 @Serializable
 data class MessageUpdateDeletedDto(
-    val is_deleted: Boolean
+    val is_deleted: Boolean,
 ) {
     companion object
 }
 
 @Serializable
 data class UnreadCountDto(
-    val unread_count: Int
+    val unread_count: Int,
 )

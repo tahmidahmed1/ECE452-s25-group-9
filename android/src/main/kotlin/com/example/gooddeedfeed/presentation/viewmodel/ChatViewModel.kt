@@ -118,7 +118,7 @@ class ChatViewModel @Inject constructor(
                         return@launch
                     }
                     val conversations = response.body<List<ChatConversation>>()
-                    
+
                     // Apply user preferences for starring and filtering deleted conversations
                     val filteredConversations = conversations.mapNotNull { conversation ->
                         val isDeleted = conversationPreferencesRepository.isConversationDeleted(currentUser.id, conversation.id)
@@ -129,7 +129,7 @@ class ChatViewModel @Inject constructor(
                             conversation.copy(isStarred = isStarred)
                         }
                     }
-                    
+
                     _conversationsState.value = UiState.Success(filteredConversations)
                 }
             } catch (e: Exception) {
@@ -307,7 +307,7 @@ class ChatViewModel @Inject constructor(
             try {
                 // Store the deletion preference
                 conversationPreferencesRepository.deleteConversation(currentUser.id, conversationId)
-                
+
                 // Update the UI state by filtering out the deleted conversation
                 val currentConversations = (_conversationsState.value as? UiState.Success)?.data ?: return@launch
                 val updatedConversations = currentConversations.filter { it.id != conversationId }
@@ -323,7 +323,7 @@ class ChatViewModel @Inject constructor(
             try {
                 // Toggle the star preference and get the new state
                 val isStarred = conversationPreferencesRepository.toggleConversationStar(currentUser.id, conversationId)
-                
+
                 // Update the UI state
                 val currentConversations = (_conversationsState.value as? UiState.Success)?.data ?: return@launch
                 val updatedConversations = currentConversations.map { conversation ->

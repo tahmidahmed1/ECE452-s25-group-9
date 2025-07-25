@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
@@ -43,7 +42,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface  
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -384,19 +383,19 @@ fun StatsScreen(
                                                 Text(
                                                     text = historyEntry.eventTitle,
                                                     style = MaterialTheme.typography.bodyLarge,
-                                                    fontWeight = FontWeight.Medium
+                                                    fontWeight = FontWeight.Medium,
                                                 )
                                                 Text(
                                                     text = historyEntry.eventDate,
                                                     style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 )
                                             }
-                                            
+
                                             // Status tag based on the status field
                                             StatusTag(status = historyEntry.status)
                                         }
-                                        
+
                                         if (historyEntry.isApproved) {
                                             if (historyEntry.hoursWorked != null && historyEntry.hoursWorked > 0) {
                                                 Spacer(modifier = Modifier.height(8.dp))
@@ -404,7 +403,7 @@ fun StatsScreen(
                                                     text = "Hours worked: ${historyEntry.hoursWorked}",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Medium
+                                                    fontWeight = FontWeight.Medium,
                                                 )
                                             }
                                             if (historyEntry.karmaPointsEarned > 0) {
@@ -412,7 +411,7 @@ fun StatsScreen(
                                                     text = "Karma earned: ${historyEntry.karmaPointsEarned} points",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.primary,
-                                                    fontWeight = FontWeight.Medium
+                                                    fontWeight = FontWeight.Medium,
                                                 )
                                             }
                                         } else if (historyEntry.rejectionReason != null) {
@@ -549,16 +548,16 @@ private fun exportVolunteerHistoryPdf(context: android.content.Context, history:
     val paint = android.graphics.Paint()
     paint.textSize = 14f
     var y = 30f
-    
+
     // Title
     paint.isFakeBoldText = true
     canvas.drawText("Volunteer History Report", 20f, y, paint)
     paint.isFakeBoldText = false
     y += 30f
-    
+
     // Filter to only show verified/approved events in PDF
     val verifiedHistory = history.filter { it.status == "approved" }
-    
+
     if (verifiedHistory.isEmpty()) {
         canvas.drawText("No verified volunteer events yet.", 20f, y, paint)
     } else {
@@ -569,31 +568,31 @@ private fun exportVolunteerHistoryPdf(context: android.content.Context, history:
             canvas.drawText("Event: ${entry.eventTitle}", 20f, y, paint)
             paint.isFakeBoldText = false
             y += 18f
-            
+
             // Date
             canvas.drawText("Date: ${entry.eventDate}", 20f, y, paint)
             y += 16f
-            
+
             // Status (always "Verified" since we filtered to only approved events)
             canvas.drawText("Status: Verified", 20f, y, paint)
             y += 16f
-            
+
             // Hours worked
             if (entry.hoursWorked != null && entry.hoursWorked > 0) {
                 canvas.drawText("Hours Worked: ${entry.hoursWorked}", 20f, y, paint)
                 y += 16f
             }
-            
+
             // Karma points earned
             if (entry.karmaPointsEarned > 0) {
                 canvas.drawText("Karma Points Earned: ${entry.karmaPointsEarned}", 20f, y, paint)
                 y += 16f
             }
-            
+
             y += 10f // Space between entries
         }
     }
-    
+
     doc.finishPage(page)
     val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
     val file = File(downloads, "volunteer_history.pdf")
@@ -944,36 +943,36 @@ private fun StatusTag(status: String) {
         "pending" -> Triple(
             MaterialTheme.colorScheme.surface,
             MaterialTheme.colorScheme.onSurface,
-            "Pending"
+            "Pending",
         )
         "approved" -> Triple(
             MaterialTheme.colorScheme.primaryContainer,
             MaterialTheme.colorScheme.onPrimaryContainer,
-            "Verified"
+            "Verified",
         )
         "rejected" -> Triple(
             MaterialTheme.colorScheme.errorContainer,
             MaterialTheme.colorScheme.onErrorContainer,
-            "Rejected"
+            "Rejected",
         )
         else -> Triple(
             MaterialTheme.colorScheme.surface,
             MaterialTheme.colorScheme.onSurface,
-            "Unknown"
+            "Unknown",
         )
     }
-    
+
     Surface(
         color = backgroundColor,
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.padding(horizontal = 4.dp)
+        modifier = Modifier.padding(horizontal = 4.dp),
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
             color = textColor,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
 } 

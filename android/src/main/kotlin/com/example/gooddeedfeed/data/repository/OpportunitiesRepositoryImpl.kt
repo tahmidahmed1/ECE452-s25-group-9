@@ -16,10 +16,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -62,7 +58,6 @@ private fun EventDto.toOpportunity(isJoined: Boolean = false): VolunteerOpportun
     images = images.map { it.copy(image_url = it.image_url.toEmulatorAccessibleUrl()) },
 )
 
-
 @Singleton
 class OpportunitiesRepositoryImpl @Inject constructor(
     private val apiService: EventApiService,
@@ -77,15 +72,15 @@ class OpportunitiesRepositoryImpl @Inject constructor(
             Log.d("OpportunitiesRepo", "📞 API returned ${events.size} events")
             val opportunities = events.map { it.toOpportunity() }
             Log.d("OpportunitiesRepo", "📞 Mapped to ${opportunities.size} opportunities")
-            
+
             // Log all opportunities with their date/time data before filtering
             opportunities.forEach { opp ->
                 Log.d("OpportunitiesRepo", "  📊 Event: '${opp.title}' | Date: ${opp.date} | Start: ${opp.startTime} | End: ${opp.endTime}")
             }
-            
+
             val futureOpportunities = opportunities.filterNot { it.hasPassed() }
             Log.d("OpportunitiesRepo", "📞 Filtered to ${futureOpportunities.size} future opportunities (removed ${opportunities.size - futureOpportunities.size} past events)")
-            
+
             // Log remaining opportunities after filtering
             futureOpportunities.forEach { opp ->
                 Log.d("OpportunitiesRepo", "  ✅ Remaining: '${opp.title}' | Date: ${opp.date} | Start: ${opp.startTime} | End: ${opp.endTime}")
@@ -155,11 +150,11 @@ class OpportunitiesRepositoryImpl @Inject constructor(
     override suspend fun joinEvent(eventId: Int): Result<Unit> {
         return runCatching {
             Log.i("OpportunitiesRepo", "🎯 JOIN EVENT - Attempting to join event $eventId")
-            
+
             // Join the event first
             apiService.joinEvent(eventId)
             Log.i("OpportunitiesRepo", "✅ JOIN EVENT - Successfully joined event $eventId")
-            
+
             // Send notification to organizer about volunteer joining
             try {
                 apiService.notifyOrganizerOfVolunteerJoin(eventId)
@@ -168,7 +163,7 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                 // Log but don't fail the join if notification fails
                 Log.w("OpportunitiesRepo", "⚠️ JOIN EVENT - Failed to send notification to organizer for event $eventId", e)
             }
-            
+
             // Trigger refresh of joined events
             val refreshTime = System.currentTimeMillis()
             _joinedEventsRefresh.value = refreshTime
@@ -195,18 +190,18 @@ class OpportunitiesRepositoryImpl @Inject constructor(
                     Log.i("OpportunitiesRepo", "📅 GET JOINED EVENTS - Fetching joined events (refresh time: $refreshTime)")
                     val joinedEventsDto = apiService.getMyJoinedEvents()
                     Log.i("OpportunitiesRepo", "📅 GET JOINED EVENTS - API returned ${joinedEventsDto.size} joined events")
-                    
+
                     joinedEventsDto.forEach { eventDto ->
                         Log.i("OpportunitiesRepo", "  📋 Joined Event: '${eventDto.title}' (ID: ${eventDto.id}) on ${eventDto.date} from ${eventDto.start_time} to ${eventDto.end_time}")
                     }
-                    
+
                     val joinedEvents = joinedEventsDto.map { it.toOpportunity(isJoined = true) }
                     Log.i("OpportunitiesRepo", "📅 GET JOINED EVENTS - Mapped to ${joinedEvents.size} volunteer opportunities")
-                    
+
                     joinedEvents.forEach { opportunity ->
                         Log.i("OpportunitiesRepo", "  ✅ Mapped Opportunity: '${opportunity.title}' (ID: ${opportunity.id}) - isJoined: ${opportunity.isJoined}")
                     }
-                    
+
                     emit(joinedEvents)
                 } catch (e: Exception) {
                     Log.e("OpportunitiesRepo", "❌ GET JOINED EVENTS - Error getting joined events", e)
@@ -277,13 +272,13 @@ class OpportunitiesRepositoryImpl @Inject constructor(
             allOpportunities.forEach { opp ->
                 Log.d("OpportunitiesRepo", "  🎯 Event: '${opp.title}' | Date: ${opp.date} | Start: ${opp.startTime} | End: ${opp.endTime}")
             }
-            
+
             // Filter out past events
             val result = allOpportunities.filterNot { it.hasPassed() }
 
             Log.d("OpportunitiesRepo", "🎯 API returned ${allOpportunities.size} opportunities")
             Log.d("OpportunitiesRepo", "🎯 Filtered to ${result.size} future opportunities (removed ${allOpportunities.size - result.size} past events)")
-            
+
             // Log remaining opportunities after filtering
             result.forEach { opp ->
                 Log.d("OpportunitiesRepo", "  🎯✅ Remaining: '${opp.title}' | Date: ${opp.date} | Start: ${opp.startTime} | End: ${opp.endTime}")

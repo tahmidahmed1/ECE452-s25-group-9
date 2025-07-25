@@ -1,6 +1,7 @@
 package com.example.gooddeedfeed.presentation.viewmodel.volunteer
 
 import android.location.Location
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
@@ -16,7 +17,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import android.util.Log
 
 interface MapUiContract {
     val currentLocation: Location?
