@@ -8,8 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /**
  * A composable that displays a shutter-style loading animation.
@@ -23,12 +23,12 @@ fun ShutterLoadingView(
     barWidth: Dp = 16.dp,
     barHeight: Dp = 64.dp,
     barSpacing: Dp = 8.dp,
-    animationDuration: Int = 800
+    animationDuration: Int = 800,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "shutter-loading")
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(barSpacing)
+        horizontalArrangement = Arrangement.spacedBy(barSpacing),
     ) {
         for (i in 0 until barCount) {
             val delay = i * (animationDuration / barCount)
@@ -37,14 +37,15 @@ fun ShutterLoadingView(
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(animationDuration, delayMillis = delay, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ), label = "bar-alpha-$i"
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "bar-alpha-$i",
             )
             Box(
                 modifier = Modifier
                     .size(width = barWidth, height = barHeight)
                     .alpha(alpha)
-                    .background(barColor)
+                    .background(barColor),
             )
         }
     }

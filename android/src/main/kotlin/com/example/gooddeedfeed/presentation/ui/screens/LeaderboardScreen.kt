@@ -41,7 +41,6 @@ import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +69,7 @@ import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainVolunteerHistoryEntry
 import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer

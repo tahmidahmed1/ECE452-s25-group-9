@@ -924,7 +924,7 @@ private fun CreateLostFoundScreen(
         ) {
             if (createItemState is UiState.Loading) {
                 com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView(
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             } else {
                 Text("Submit Report")
@@ -1086,7 +1086,7 @@ private fun EditLostFoundScreen(
         ) {
             if (updateItemState is UiState.Loading) {
                 com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView(
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             } else {
                 Text("Update Item")

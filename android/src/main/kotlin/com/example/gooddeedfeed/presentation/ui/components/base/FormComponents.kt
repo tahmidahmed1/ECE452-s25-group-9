@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -36,6 +35,7 @@ import com.example.gooddeedfeed.presentation.theme.ModernAnimatedVisibility
 import com.example.gooddeedfeed.presentation.theme.Spacing
 import com.example.gooddeedfeed.presentation.theme.bounceClick
 import com.example.gooddeedfeed.presentation.theme.shake
+import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 
 /**
  * Modern form input field with enhanced styling and animations

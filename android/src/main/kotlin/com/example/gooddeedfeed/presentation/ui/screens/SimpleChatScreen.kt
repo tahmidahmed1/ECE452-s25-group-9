@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -62,6 +61,7 @@ import coil.compose.AsyncImage
 import com.example.gooddeedfeed.data.mapper.toDomain
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.viewmodel.ChatConversation
 import com.example.gooddeedfeed.presentation.viewmodel.ChatMessage
