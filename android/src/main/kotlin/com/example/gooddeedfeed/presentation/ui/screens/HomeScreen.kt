@@ -27,14 +27,17 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -216,6 +219,7 @@ private fun HomeContent(
                 ActionCard(
                     icon = when (actionItem.iconName) {
                         "list" -> Icons.AutoMirrored.Filled.List
+                        "chat" -> Icons.Default.Chat
                         else -> getIconForAction(actionItem.iconName)
                     },
                     title = actionItem.title,
@@ -224,6 +228,31 @@ private fun HomeContent(
                     showBorder = actionItem.title == "Lost & Found",
                 )
                 VerticalSpacer(SpacingSize.Small)
+            }
+
+            // Opportunity Idea Generator for organizers
+            if (user.userType == DomainUserType.ORGANIZER) {
+                val ideas by homeViewModel.ideaSuggestions.collectAsStateWithLifecycle()
+                val isGenerating by homeViewModel.isGeneratingIdeas.collectAsStateWithLifecycle()
+
+                DisposableEffect(Unit) {
+                    onDispose {
+                        homeViewModel.resetOpportunityIdeas()
+                    }
+                }
+
+                InfoCard(
+                    title = "Opportunity Ideas",
+                    content = if (ideas.isNotEmpty()) ideas.joinToString(separator = "\n• ", prefix = "• ") else "Tap below to generate ideas for your next event.",
+                    icon = Icons.Default.Lightbulb,
+                )
+                VerticalSpacer(SpacingSize.Small)
+                PrimaryButton(
+                    text = if (isGenerating) "Generating Ideas..." else "Generate Ideas",
+                    onClick = { homeViewModel.generateOpportunityIdeas() },
+                    enabled = !isGenerating,
+                )
+                VerticalSpacer(SpacingSize.Large)
             }
 
             if (user.userType == DomainUserType.VOLUNTEER) {
@@ -271,7 +300,7 @@ private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
                     events.map { event ->
                         EventItem(
                             title = event.title,
-                            time = event.startTime ?: "All Day",
+                            time = formatEventTime(event.startTime, event.endTime),
                         )
                     }
                 }
@@ -362,5 +391,20 @@ private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
                 InfoCard(title = it.title, content = it.time, icon = Icons.Default.Event)
             }
         }
+    }
+}
+
+/**
+ * Formats event time display showing start and end times, or fallback to "All Day"
+ */
+private fun formatEventTime(startTime: String?, endTime: String?): String {
+    return when {
+        startTime != null && endTime != null && startTime.isNotBlank() && endTime.isNotBlank() -> {
+            "$startTime - $endTime"
+        }
+        startTime != null && startTime.isNotBlank() -> {
+            startTime
+        }
+        else -> "All Day"
     }
 }

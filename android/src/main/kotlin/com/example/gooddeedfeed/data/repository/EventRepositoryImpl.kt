@@ -2,7 +2,10 @@ package com.example.gooddeedfeed.data.repository
 
 import com.example.gooddeedfeed.data.remote.EventApiService
 import com.example.gooddeedfeed.data.remote.dto.toDomain
+import com.example.gooddeedfeed.data.remote.dto.toDto
+import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.CreateEventData
+import com.example.gooddeedfeed.domain.model.EventVolunteer
 import com.example.gooddeedfeed.domain.model.JoinedVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
@@ -82,5 +85,19 @@ class EventRepositoryImpl @Inject constructor(
 
     override suspend fun setMainEventImage(eventId: Int, imageId: Int): Result<Unit> = runCatching {
         apiService.setMainEventImage(eventId, imageId)
+    }
+
+    override suspend fun generateDescriptionSuggestion(title: String): Result<String> = runCatching {
+        apiService.generateDescriptionSuggestion(title)
+    }
+
+    override suspend fun getEventVolunteersForAttendance(eventId: Int): Result<List<EventVolunteer>> = runCatching {
+        val volunteers = apiService.getEventVolunteersForAttendance(eventId)
+        volunteers.map { it.toDomain() }
+    }
+
+    override suspend fun submitAttendance(attendanceData: AttendanceSubmission): Result<Map<String, Int>> = runCatching {
+        val response = apiService.submitAttendance(attendanceData.eventId, attendanceData.toDto())
+        response.karma_points_awarded ?: emptyMap()
     }
 } 

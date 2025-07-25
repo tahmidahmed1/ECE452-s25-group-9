@@ -53,3 +53,28 @@ data class CreateEventData(
     val longitude: Double? = null,
     val karmaPoints: Int = 10,
 )
+
+/**
+ * Domain models for volunteer attendance tracking
+ */
+data class EventVolunteer(
+    val id: Int,
+    val userId: Int,
+    val name: String,
+    val username: String,
+    val email: String,
+    val profilePictureUrl: String? = null,
+    val joinedAt: String,
+)
+
+data class VolunteerAttendanceRecord(
+    val volunteerId: Int,
+    val hoursWorked: Double?,
+    val isApproved: Boolean,
+    val rejectionReason: String? = null,
+)
+
+data class AttendanceSubmission(
+    val eventId: Int,
+    val attendanceRecords: List<VolunteerAttendanceRecord>,
+)

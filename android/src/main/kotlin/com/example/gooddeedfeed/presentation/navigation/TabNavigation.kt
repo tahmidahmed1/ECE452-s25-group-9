@@ -140,6 +140,8 @@ fun TabNavigationScreen(
     var showPreviewProfile by remember { mutableStateOf(false) }
     var showPrivacySettings by remember { mutableStateOf(false) }
     var showLostAndFound by remember { mutableStateOf(false) }
+    var showChatProfile by remember { mutableStateOf(false) }
+    var chatProfileUser by remember { mutableStateOf<DomainUser?>(null) }
 
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
@@ -172,7 +174,11 @@ fun TabNavigationScreen(
                     selectedTabIndex
                 }
                 HomeAction.CreateEvent, HomeAction.ManageEvents -> {
-                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title == "Events" }
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title == "Manage Events" }
+                    if (index >= 0) index else selectedTabIndex
+                }
+                HomeAction.Chat -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title == "Chat" }
                     if (index >= 0) index else selectedTabIndex
                 }
                 HomeAction.ViewDashboard, HomeAction.ManagePrograms -> {
@@ -208,7 +214,14 @@ fun TabNavigationScreen(
             modifier = Modifier.fillMaxSize(),
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
-                tabs[selectedTabIndex].screen(currentUser, onLogout)
+                tabs[selectedTabIndex].screen(
+                    currentUser, 
+                    onLogout,
+                    { profileUser ->
+                        chatProfileUser = profileUser
+                        showChatProfile = true
+                    }
+                )
 
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showLostAndFound,
@@ -252,6 +265,20 @@ fun TabNavigationScreen(
                 onClose = { showPrivacySettings = false },
                 modifier = Modifier.fillMaxSize(),
             )
+        }
+
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showChatProfile,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+        ) {
+            chatProfileUser?.let { profileUser ->
+                com.example.gooddeedfeed.presentation.ui.screens.PreviewProfileScreen(
+                    user = profileUser,
+                    onBack = { showChatProfile = false },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
 
         BadgeManager(

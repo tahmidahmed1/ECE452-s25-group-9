@@ -16,6 +16,12 @@ class OpportunityCategory(str, Enum):
     HEALTHCARE = "healthcare"
     SOCIAL_SERVICES = "social_services"
     DISASTER_RELIEF = "disaster_relief"
+    FOOD_SECURITY = "food_security"
+    ANIMAL_WELFARE = "animal_welfare"
+    ARTS_CULTURE = "arts_culture"
+    YOUTH_MENTORING = "youth_mentoring"
+    ELDERLY_CARE = "elderly_care"
+    TECHNOLOGY = "technology"
     OTHER = "other"
 
 
@@ -247,8 +253,29 @@ class MessageCreate(MessageBase):
 class MessageOut(MessageBase):
     id: int
     sender_id: int
+    sender_username: str
+    receiver_username: str
     created_at: datetime
 
+    # --- Additional fields (migration 009) ---
+    is_read: bool = False
+    is_important_sender: bool = False
+    is_important_receiver: bool = False
+    is_deleted_sender: bool = False
+    is_deleted_receiver: bool = False
+    reactions: List[dict] = []
+
+    class Config:
+        from_attributes = True
+
+class ChatSummary(BaseModel):
+    other_user_id: int
+    other_user_username: str
+    other_user_full_name: Optional[str] = None
+    other_user_profile_picture: Optional[str] = None
+    latest_message: str
+    latest_message_time: datetime
+    
     class Config:
         from_attributes = True
 
@@ -432,6 +459,47 @@ class LostFoundItemOut(LostFoundItemBase):
 class LostFoundItemsResponse(BaseModel):
     items: List[LostFoundItemOut]
     total_count: int
+    
+    class Config:
+        from_attributes = True
+
+# Volunteer Attendance Schemas
+class EventVolunteer(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    username: str
+    email: str
+    profile_picture_url: Optional[str] = None
+    joined_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class VolunteerAttendanceRecord(BaseModel):
+    volunteer_id: int
+    hours_worked: Optional[float] = None
+    is_approved: bool
+    rejection_reason: Optional[str] = None
+
+class AttendanceSubmission(BaseModel):
+    event_id: int
+    attendance_records: List[VolunteerAttendanceRecord]
+
+class AttendanceResponse(BaseModel):
+    success: bool
+    message: str
+    karma_points_awarded: Optional[Dict[str, int]] = None
+    
+class VolunteerHistoryEntry(BaseModel):
+    event_id: int
+    event_title: str
+    event_date: str
+    hours_worked: Optional[float] = None
+    is_approved: bool
+    rejection_reason: Optional[str] = None
+    karma_points_earned: int = 0
+    status: str  # "pending", "approved", "rejected"
     
     class Config:
         from_attributes = True

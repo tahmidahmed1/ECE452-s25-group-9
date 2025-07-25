@@ -12,6 +12,7 @@ import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.DomainVolunteerHistoryEntry
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.first
@@ -291,6 +292,24 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             val user = api.increaseKarmaPointsDevOnly()
             Result.success(user.toDomain())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getVolunteerHistory(): Result<List<DomainVolunteerHistoryEntry>> {
+        return try {
+            val historyEntries = api.getVolunteerHistory()
+            Result.success(historyEntries.map { it.toDomain() })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun downloadVolunteerHistoryPdf(): Result<ByteArray> {
+        return try {
+            val bytes = api.downloadVolunteerHistoryPdf()
+            Result.success(bytes)
         } catch (e: Exception) {
             Result.failure(e)
         }

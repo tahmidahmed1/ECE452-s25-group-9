@@ -1,6 +1,8 @@
 package com.example.gooddeedfeed.domain.usecase.organizer
 
+import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.CreateEventData
+import com.example.gooddeedfeed.domain.model.EventVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.repository.EventRepository
 import kotlinx.coroutines.flow.Flow
@@ -56,7 +58,19 @@ class ManageEventsUseCase @Inject constructor(
         return repository.kickVolunteer(eventId, volunteerId)
     }
 
+    suspend fun generateDescriptionSuggestion(title: String): Result<String> {
+        return repository.generateDescriptionSuggestion(title)
+    }
+
     suspend fun searchMyEvents(query: String): Flow<List<VolunteerEvent>> {
         return repository.searchMyEvents(query)
+    }
+
+    suspend fun getEventVolunteersForAttendance(eventId: Int): Result<List<EventVolunteer>> {
+        return repository.getEventVolunteersForAttendance(eventId)
+    }
+
+    suspend fun submitAttendance(attendanceData: AttendanceSubmission): Result<Map<String, Int>> {
+        return repository.submitAttendance(attendanceData)
     }
 } 

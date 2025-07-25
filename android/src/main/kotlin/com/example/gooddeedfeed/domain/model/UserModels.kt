@@ -106,3 +106,17 @@ data class DomainOrganizationImagesResponse(
     val message: String,
     val totalImages: Int,
 )
+
+/**
+ * Domain model for volunteer history entries
+ */
+data class DomainVolunteerHistoryEntry(
+    val eventId: Int,
+    val eventTitle: String,
+    val eventDate: String,
+    val hoursWorked: Double? = null,
+    val isApproved: Boolean,
+    val rejectionReason: String? = null,
+    val karmaPointsEarned: Int = 0,
+    val status: String, // "pending", "approved", "rejected"
+)

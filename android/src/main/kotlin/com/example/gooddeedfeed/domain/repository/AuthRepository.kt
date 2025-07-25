@@ -4,6 +4,7 @@ import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.DomainVolunteerHistoryEntry
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import java.io.File
 
@@ -27,4 +28,6 @@ interface AuthRepository {
     ): Result<Unit>
     suspend fun updateProfile(updates: DomainUserUpdate): Result<DomainUser>
     suspend fun increaseKarmaPointsDevOnly(): Result<DomainUser>
+    suspend fun getVolunteerHistory(): Result<List<DomainVolunteerHistoryEntry>>
+    suspend fun downloadVolunteerHistoryPdf(): Result<ByteArray>
 }

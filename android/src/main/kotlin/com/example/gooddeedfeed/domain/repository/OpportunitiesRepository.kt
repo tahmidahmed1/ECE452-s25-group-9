@@ -85,4 +85,9 @@ interface OpportunitiesRepository {
      * Get events that the current user has joined
      */
     suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>>
+
+    /**
+     * Generate creative volunteer opportunity ideas using AI.
+     */
+    suspend fun generateOpportunityIdeas(): Result<List<String>>
 } 

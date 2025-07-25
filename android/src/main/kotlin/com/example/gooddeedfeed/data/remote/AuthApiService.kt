@@ -16,6 +16,7 @@ import com.example.gooddeedfeed.data.remote.dto.SignUpRequestDto
 import com.example.gooddeedfeed.data.remote.dto.UserDto
 import com.example.gooddeedfeed.data.remote.dto.UserType
 import com.example.gooddeedfeed.data.remote.dto.UserUpdateDto
+import com.example.gooddeedfeed.data.remote.dto.VolunteerHistoryEntryDto
 import com.example.gooddeedfeed.domain.model.DomainOrganizerProfile
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import io.ktor.client.HttpClient
@@ -565,5 +566,55 @@ class AuthApiService @Inject constructor(
             Log.e(TAG, "❌ Failed to increase karma points", e)
             throw e
         }
+    }
+
+    suspend fun getVolunteerHistory(): List<VolunteerHistoryEntryDto> {
+        Log.d(TAG, "🚀 Starting getVolunteerHistory request")
+
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for getVolunteerHistory")
+            throw Exception("No authentication session found")
+        }
+
+        return try {
+            Log.d(TAG, "📤 Calling volunteer history endpoint...")
+            val response = withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying volunteer history URL: $baseUrl/users/me/volunteer-history")
+                client.get("$baseUrl/users/me/volunteer-history") {
+                    header("Authorization", "Bearer $sessionId")
+                }
+            }
+
+            Log.d(TAG, "📥 Volunteer history response status: ${response.status}")
+
+            if (!response.status.isSuccess()) {
+                val errorBody = response.bodyAsText()
+                Log.e(TAG, "❌ Volunteer history failed with status ${response.status}")
+                Log.e(TAG, "❌ Error response body: $errorBody")
+                throw Exception("Failed to get volunteer history: ${response.status.description}")
+            }
+
+            val historyEntries: List<VolunteerHistoryEntryDto> = response.body()
+            Log.d(TAG, "✅ Retrieved ${historyEntries.size} volunteer history entries")
+            historyEntries
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to get volunteer history", e)
+            throw e
+        }
+    }
+
+    suspend fun downloadVolunteerHistoryPdf(): ByteArray {
+        val sessionId = getSessionIdFromDataStore() ?: throw Exception("No authentication session found")
+        val response = withFallbackUrls { baseUrl ->
+            client.get("$baseUrl/users/me/volunteer-history/pdf") {
+                header("Authorization", "Bearer $sessionId")
+            }
+        }
+        if (!response.status.isSuccess()) {
+            val err = response.bodyAsText()
+            throw Exception("Failed to download volunteer history PDF: ${response.status.description} - $err")
+        }
+        return response.body()
     }
 }

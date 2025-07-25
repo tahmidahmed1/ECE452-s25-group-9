@@ -44,6 +44,7 @@ sealed class HomeAction {
     object LostAndFound : HomeAction()
     object CreateEvent : HomeAction()
     object ManageEvents : HomeAction()
+    object Chat : HomeAction()
     object ViewDashboard : HomeAction()
     object ManagePrograms : HomeAction()
 }
@@ -54,6 +55,12 @@ class HomeViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
     private val opportunitiesRepository: OpportunitiesRepository,
 ) : ViewModel() {
+    // Opportunity Idea Generator State
+    private val _ideaSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val ideaSuggestions: StateFlow<List<String>> = _ideaSuggestions.asStateFlow()
+
+    private val _isGeneratingIdeas = MutableStateFlow(false)
+    val isGeneratingIdeas: StateFlow<Boolean> = _isGeneratingIdeas.asStateFlow()
 
     private val _uiState = MutableStateFlow<UiState<HomeData>>(UiState.Loading)
     val uiState: StateFlow<UiState<HomeData>> = _uiState.asStateFlow()
@@ -63,6 +70,33 @@ class HomeViewModel @Inject constructor(
 
     private val _joinedEventsState = MutableStateFlow<UiState<List<VolunteerOpportunity>>>(UiState.Idle)
     val joinedEventsState: StateFlow<UiState<List<VolunteerOpportunity>>> = _joinedEventsState.asStateFlow()
+
+    /**
+     * Generate creative volunteer opportunity ideas and update state.
+     */
+    fun generateOpportunityIdeas() {
+        viewModelScope.launch {
+            _isGeneratingIdeas.value = true
+            try {
+                opportunitiesRepository.generateOpportunityIdeas()
+                    .onSuccess { ideas -> 
+                        _ideaSuggestions.value = ideas
+                    }
+                    .onFailure { e -> 
+                        _uiState.value = UiState.Error("Failed to generate ideas: ${e.message}")
+                    }
+            } catch (e: Exception) {
+                _uiState.value = UiState.Error("Failed to generate ideas: ${e.message}")
+            } finally {
+                _isGeneratingIdeas.value = false
+            }
+        }
+    }
+
+    fun resetOpportunityIdeas() {
+        _ideaSuggestions.value = emptyList()
+        _isGeneratingIdeas.value = false
+    }
 
     fun loadUserHome(user: DomainUser) {
         viewModelScope.launch {
@@ -112,11 +146,18 @@ class HomeViewModel @Inject constructor(
     fun loadJoinedEvents() {
         viewModelScope.launch {
             try {
+                android.util.Log.i("HomeViewModel", "📅 LOAD JOINED EVENTS - Starting to load joined events")
                 _joinedEventsState.value = UiState.Loading
                 opportunitiesRepository.getJoinedEvents().collect { events ->
+                    android.util.Log.i("HomeViewModel", "📅 LOAD JOINED EVENTS - Received ${events.size} joined events from repository")
+                    events.forEach { event ->
+                        android.util.Log.i("HomeViewModel", "  📋 Event: '${event.title}' (ID: ${event.id}) on ${event.date} - isJoined: ${event.isJoined}")
+                    }
                     _joinedEventsState.value = UiState.Success(events)
+                    android.util.Log.i("HomeViewModel", "✅ LOAD JOINED EVENTS - Updated UI state with ${events.size} events")
                 }
             } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "❌ LOAD JOINED EVENTS - Failed to load joined events", e)
                 _joinedEventsState.value = UiState.Error("Failed to load joined events: ${e.message}")
             }
         }
@@ -125,11 +166,18 @@ class HomeViewModel @Inject constructor(
     fun refreshJoinedEvents() {
         viewModelScope.launch {
             try {
+                android.util.Log.i("HomeViewModel", "🔄 REFRESH JOINED EVENTS - Starting to refresh joined events")
                 // Force refresh by getting a fresh flow
                 opportunitiesRepository.getJoinedEvents().collect { events ->
+                    android.util.Log.i("HomeViewModel", "🔄 REFRESH JOINED EVENTS - Received ${events.size} joined events from repository")
+                    events.forEach { event ->
+                        android.util.Log.i("HomeViewModel", "  📋 Refreshed Event: '${event.title}' (ID: ${event.id}) on ${event.date} - isJoined: ${event.isJoined}")
+                    }
                     _joinedEventsState.value = UiState.Success(events)
+                    android.util.Log.i("HomeViewModel", "✅ REFRESH JOINED EVENTS - Updated UI state with ${events.size} events")
                 }
             } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "❌ REFRESH JOINED EVENTS - Failed to refresh joined events", e)
                 _joinedEventsState.value = UiState.Error("Failed to refresh joined events: ${e.message}")
             }
         }
@@ -163,7 +211,7 @@ class HomeViewModel @Inject constructor(
             )
             DomainUserType.ORGANIZER -> UserTypeDisplay(
                 title = "Welcome, Organizer!",
-                subtitle = "Manage your volunteer events and connect with volunteers",
+                subtitle = "Manage your events and connect with volunteers!",
                 actionItems = listOf(
                     HomeActionItem(
                         iconName = "add_circle",
@@ -176,6 +224,12 @@ class HomeViewModel @Inject constructor(
                         title = "Manage Events",
                         description = "View and edit your posted events",
                         action = HomeAction.ManageEvents,
+                    ),
+                    HomeActionItem(
+                        iconName = "chat",
+                        title = "Messages",
+                        description = "View messages with volunteers",
+                        action = HomeAction.Chat,
                     ),
                 ),
             )

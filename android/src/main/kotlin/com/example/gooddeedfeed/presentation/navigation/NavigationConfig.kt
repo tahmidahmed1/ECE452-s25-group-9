@@ -21,7 +21,7 @@ import com.example.gooddeedfeed.presentation.ui.screens.volunteer.MapScreen
 data class TabItem(
     val title: String,
     val icon: ImageVector,
-    val screen: @Composable (DomainUser, () -> Unit) -> Unit,
+    val screen: @Composable (DomainUser, () -> Unit, ((DomainUser) -> Unit)?) -> Unit,
 )
 
 /**
@@ -29,11 +29,11 @@ data class TabItem(
  */
 fun getVolunteerTabs(): List<TabItem> {
     return listOf(
-        TabItem("Home", Icons.Default.Home) { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
-        TabItem("Events", Icons.AutoMirrored.Filled.List) { user, onLogout -> ListScreen(user = user, onLogout = onLogout) },
-        TabItem("Map", Icons.Default.Map) { user, onLogout -> MapScreen(user = user, onLogout = onLogout) },
-        TabItem("Chat", Icons.Default.Chat) { user, onLogout -> SimpleChatScreen(user = user) },
-        TabItem("Leaderboard", Icons.Default.Leaderboard) { user, onLogout -> StatsScreen() },
+        TabItem("Home", Icons.Default.Home) { user, onLogout, _ -> HomeScreen(user = user, onLogout = onLogout) },
+        TabItem("Events", Icons.AutoMirrored.Filled.List) { user, onLogout, _ -> ListScreen(user = user, onLogout = onLogout) },
+        TabItem("Map", Icons.Default.Map) { user, onLogout, _ -> MapScreen(user = user, onLogout = onLogout) },
+        TabItem("Chat", Icons.Default.Chat) { user, onLogout, onShowProfile -> SimpleChatScreen(user = user, onShowProfile = onShowProfile ?: {}) },
+        TabItem("Leaderboard", Icons.Default.Leaderboard) { user, onLogout, _ -> StatsScreen() },
     )
 }
 
@@ -42,9 +42,9 @@ fun getVolunteerTabs(): List<TabItem> {
  */
 fun getOrganizerTabs(): List<TabItem> {
     return listOf(
-        TabItem("Home", Icons.Default.Home) { user, onLogout -> HomeScreen(user = user, onLogout = onLogout) },
-        TabItem("Manage Events", Icons.Default.Event) { user, onLogout -> EventManagementScreen(user = user) },
-        TabItem("Chat", Icons.Default.Chat) { user, onLogout -> SimpleChatScreen(user = user) },
+        TabItem("Home", Icons.Default.Home) { user, onLogout, _ -> HomeScreen(user = user, onLogout = onLogout) },
+        TabItem("Manage Events", Icons.Default.Event) { user, onLogout, _ -> EventManagementScreen(user = user) },
+        TabItem("Chat", Icons.Default.Chat) { user, onLogout, onShowProfile -> SimpleChatScreen(user = user, onShowProfile = onShowProfile ?: {}) },
     )
 }
 

@@ -4,15 +4,21 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.example.gooddeedfeed.data.remote.dto.AttendanceResponseDto
+import com.example.gooddeedfeed.data.remote.dto.AttendanceSubmissionDto
+import com.example.gooddeedfeed.data.remote.dto.DescriptionSuggestionDto
 import com.example.gooddeedfeed.data.remote.dto.EventActionResponseDto
 import com.example.gooddeedfeed.data.remote.dto.EventDto
 import com.example.gooddeedfeed.data.remote.dto.EventImageDto
+import com.example.gooddeedfeed.data.remote.dto.EventVolunteerDto
+import com.example.gooddeedfeed.data.remote.dto.IdeaSuggestionDto
 import com.example.gooddeedfeed.data.remote.dto.toDto
 import com.example.gooddeedfeed.domain.model.CreateEventData
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -395,6 +401,55 @@ class EventApiService @Inject constructor(
         }
     }
 
+    suspend fun notifyOrganizerOfVolunteerJoin(eventId: Int) {
+        Log.d(TAG, "🚀 Starting notifyOrganizerOfVolunteerJoin request for event ID: $eventId")
+
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found in DataStore for notifyOrganizerOfVolunteerJoin")
+            throw Exception("No authentication session found")
+        }
+
+        try {
+            Log.d(TAG, "📤 Sending notifyOrganizerOfVolunteerJoin request with session authorization...")
+            withFallbackUrls { baseUrl ->
+                Log.d(TAG, "🌐 Trying notifyOrganizerOfVolunteerJoin URL: $baseUrl/events/$eventId/notify-organizer")
+                client.post("$baseUrl/events/$eventId/notify-organizer") {
+                    header(HttpHeaders.Authorization, "Bearer $sessionId")
+                }
+            }
+            Log.d(TAG, "✅ notifyOrganizerOfVolunteerJoin successful for event ID: $eventId")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ notifyOrganizerOfVolunteerJoin failed with exception", e)
+            throw Exception("Failed to notify organizer: ${e.message}")
+        }
+    }
+
+    /* ----------------- Description Suggestion ----------------- */
+
+    suspend fun generateDescriptionSuggestion(title: String): String {
+        // Attach stored session for authenticated request
+        val sessionId = getSessionIdFromDataStore()
+            ?: throw Exception("No authentication session found for description suggestion")
+        val response: DescriptionSuggestionDto = client.get(buildUrl("events/description/suggestion")) {
+            header(HttpHeaders.Authorization, "Bearer $sessionId")
+            parameter("title", title)
+        }.body()
+        return response.suggested_description
+    }
+
+    /* ----------------- Opportunity Ideas ----------------- */
+
+    suspend fun generateOpportunityIdeas(): List<String> {
+        // Attach stored session for authenticated request
+        val sessionId = getSessionIdFromDataStore()
+            ?: throw Exception("No authentication session found for idea suggestion")
+        val response: IdeaSuggestionDto = client.get(buildUrl("events/idea/suggestion")) {
+            header(HttpHeaders.Authorization, "Bearer $sessionId")
+        }.body()
+        return response.ideas
+    }
+
     //region Volunteers Management
 
     suspend fun getEventVolunteers(eventId: Int): List<com.example.gooddeedfeed.data.remote.dto.VolunteerDto> {
@@ -421,6 +476,64 @@ class EventApiService @Inject constructor(
         } else {
             throw Exception("Server returned ${response.status.value}: ${response.status.description}")
         }
+    }
+
+    suspend fun getEventVolunteersForAttendance(eventId: Int): List<EventVolunteerDto> {
+        Log.d(TAG, "🚀 Getting volunteers for attendance for event $eventId")
+        
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found")
+            throw Exception("No authentication session found")
+        }
+
+        val response = withFallbackUrls { baseUrl ->
+            Log.d(TAG, "🌐 Trying URL: $baseUrl/events/$eventId/volunteers/attendance")
+            client.get("$baseUrl/events/$eventId/volunteers/attendance") {
+                header("Authorization", "Bearer $sessionId")
+            }
+        }
+
+        if (response.status.value !in 200..299) {
+            val errorBody = response.bodyAsText()
+            Log.e(TAG, "❌ Failed to get volunteers: ${response.status}")
+            Log.e(TAG, "❌ Error body: $errorBody")
+            throw Exception("Failed to get volunteers: ${response.status.description}")
+        }
+
+        val volunteers: List<EventVolunteerDto> = response.body()
+        Log.d(TAG, "✅ Retrieved ${volunteers.size} volunteers for attendance")
+        return volunteers
+    }
+
+    suspend fun submitAttendance(eventId: Int, attendanceData: AttendanceSubmissionDto): AttendanceResponseDto {
+        Log.d(TAG, "🚀 Submitting attendance for event $eventId")
+        
+        val sessionId = getSessionIdFromDataStore()
+        if (sessionId == null) {
+            Log.e(TAG, "❌ No session ID found")
+            throw Exception("No authentication session found")
+        }
+
+        val response = withFallbackUrls { baseUrl ->
+            Log.d(TAG, "🌐 Trying URL: $baseUrl/events/$eventId/attendance")
+            client.post("$baseUrl/events/$eventId/attendance") {
+                header("Authorization", "Bearer $sessionId")
+                contentType(ContentType.Application.Json)
+                setBody(attendanceData)
+            }
+        }
+
+        if (response.status.value !in 200..299) {
+            val errorBody = response.bodyAsText()
+            Log.e(TAG, "❌ Failed to submit attendance: ${response.status}")
+            Log.e(TAG, "❌ Error body: $errorBody")
+            throw Exception("Failed to submit attendance: ${response.status.description}")
+        }
+
+        val result: AttendanceResponseDto = response.body()
+        Log.d(TAG, "✅ Attendance submitted successfully")
+        return result
     }
 
     //endregion

@@ -51,6 +51,10 @@ class OpportunitiesViewModel @Inject constructor(
     private var allOpportunities: List<VolunteerOpportunity> = emptyList()
 
     private var joinedIds: Set<Int> = emptySet()
+    
+    // Track optimistic updates to prevent race conditions
+    private var optimisticJoinedIds: Set<Int> = emptySet()
+    private var optimisticLeftIds: Set<Int> = emptySet()
 
     init {
         Log.d("OpportunitiesViewModel", "🚀 ViewModel initialized, loading opportunities...")
@@ -58,7 +62,18 @@ class OpportunitiesViewModel @Inject constructor(
         // collect joined events continuously
         viewModelScope.launch {
             opportunitiesRepository.getJoinedEvents().collect { joinedList ->
-                joinedIds = joinedList.map { it.id }.toSet()
+                val serverJoinedIds = joinedList.map { it.id }.toSet()
+                
+                // Clear optimistic updates that are now confirmed by server
+                optimisticJoinedIds = optimisticJoinedIds.filter { id ->
+                    !serverJoinedIds.contains(id)
+                }.toSet()
+                
+                optimisticLeftIds = optimisticLeftIds.filter { id ->
+                    serverJoinedIds.contains(id)
+                }.toSet()
+                
+                joinedIds = serverJoinedIds
                 refreshOpportunitiesState()
             }
         }
@@ -76,10 +91,12 @@ class OpportunitiesViewModel @Inject constructor(
                 .collect { opportunities ->
                     Log.d("OpportunitiesViewModel", "✅ Loaded ${opportunities.size} opportunities")
                     val categories = OpportunityCategory.values().toList()
-                    allOpportunities = opportunities
+                    // Merge joined flag into opportunities
+                    val mergedOps = mergeJoinedFlag(opportunities)
+                    allOpportunities = mergedOps
                     _uiState.value = UiState.Success(
                         OpportunitiesData(
-                            opportunities = opportunities,
+                            opportunities = mergedOps,
                             categories = categories,
                             selectedCategory = null,
                             isMapView = false,
@@ -105,10 +122,12 @@ class OpportunitiesViewModel @Inject constructor(
                     .collect { opportunities ->
                         val currentState = _uiState.value
                         if (currentState is UiState.Success) {
-                            allOpportunities = opportunities
+                            // Merge joined flag
+                            val mergedOps = mergeJoinedFlag(opportunities)
+                            allOpportunities = mergedOps
                             _uiState.value = currentState.copy(
                                 data = currentState.data.copy(
-                                    opportunities = filterByRadius(opportunities, currentState.data.currentLocation, currentState.data.radiusKm, true),
+                                    opportunities = filterByRadius(mergedOps, currentState.data.currentLocation, currentState.data.radiusKm, currentState.data.useDistanceFilter),
                                     selectedCategory = category,
                                 ),
                             )
@@ -131,7 +150,7 @@ class OpportunitiesViewModel @Inject constructor(
                         allOpportunities = merged
                         _uiState.value = currentState.copy(
                             data = currentState.data.copy(
-                                opportunities = filterByRadius(merged, currentState.data.currentLocation, currentState.data.radiusKm, true),
+                                opportunities = filterByRadius(merged, currentState.data.currentLocation, currentState.data.radiusKm, currentState.data.useDistanceFilter),
                                 selectedCategory = null,
                             ),
                         )
@@ -142,13 +161,31 @@ class OpportunitiesViewModel @Inject constructor(
 
     fun joinOpportunity(opportunityId: Int) {
         viewModelScope.launch {
+            // Immediately update optimistic state
+            optimisticJoinedIds = optimisticJoinedIds + opportunityId
+            optimisticLeftIds = optimisticLeftIds - opportunityId
+            refreshOpportunitiesState()
+            
             opportunitiesRepository.joinEvent(opportunityId)
                 .onSuccess {
                     com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Joined event successfully!")
-                    // Refresh opportunities list to update volunteer counts and joined status
-                    loadOpportunities()
+                    // Update volunteer count optimistically
+                    val currentState = _uiState.value
+                    if (currentState is UiState.Success) {
+                        val updated = currentState.data.opportunities.map { opp ->
+                            if (opp.id == opportunityId) opp.copy(currentVolunteers = opp.currentVolunteers + 1)
+                            else opp
+                        }
+                        allOpportunities = updated
+                        _uiState.value = currentState.copy(
+                            data = currentState.data.copy(opportunities = updated)
+                        )
+                    }
                 }
                 .onFailure { e ->
+                    // Revert optimistic update on failure
+                    optimisticJoinedIds = optimisticJoinedIds - opportunityId
+                    refreshOpportunitiesState()
                     _uiState.value = UiState.Error("Failed to join opportunity: ${e.message}")
                 }
         }
@@ -156,13 +193,31 @@ class OpportunitiesViewModel @Inject constructor(
 
     fun leaveOpportunity(opportunityId: Int) {
         viewModelScope.launch {
+            // Immediately update optimistic state
+            optimisticLeftIds = optimisticLeftIds + opportunityId
+            optimisticJoinedIds = optimisticJoinedIds - opportunityId
+            refreshOpportunitiesState()
+            
             opportunitiesRepository.leaveEvent(opportunityId)
                 .onSuccess {
                     com.example.gooddeedfeed.presentation.ui.components.ToastManager.showSuccess("Left event")
-                    // Refresh opportunities list to update volunteer counts and joined status
-                    loadOpportunities()
+                    // Update volunteer count optimistically
+                    val currentState = _uiState.value
+                    if (currentState is UiState.Success) {
+                        val updated = currentState.data.opportunities.map { opp ->
+                            if (opp.id == opportunityId) opp.copy(currentVolunteers = opp.currentVolunteers - 1)
+                            else opp
+                        }
+                        allOpportunities = updated
+                        _uiState.value = currentState.copy(
+                            data = currentState.data.copy(opportunities = updated)
+                        )
+                    }
                 }
                 .onFailure { e ->
+                    // Revert optimistic update on failure
+                    optimisticLeftIds = optimisticLeftIds - opportunityId
+                    refreshOpportunitiesState()
                     _uiState.value = UiState.Error("Failed to leave opportunity: ${e.message}")
                 }
         }
@@ -193,15 +248,16 @@ class OpportunitiesViewModel @Inject constructor(
     fun updateRadius(newRadius: Float) {
         val currentState = _uiState.value
         if (currentState is UiState.Success) {
-            val filtered = if (currentState.data.useDistanceFilter) {
+            val newOpportunities = if (currentState.data.useDistanceFilter) {
                 filterByRadius(allOpportunities, currentState.data.currentLocation, newRadius, true)
             } else {
-                allOpportunities
+                // Keep current opportunities unchanged when distance filtering is disabled
+                currentState.data.opportunities
             }
             _uiState.value = currentState.copy(
                 data = currentState.data.copy(
                     radiusKm = newRadius,
-                    opportunities = filtered,
+                    opportunities = newOpportunities,
                 ),
             )
         }
@@ -260,9 +316,11 @@ class OpportunitiesViewModel @Inject constructor(
                         }
                         .collect { opportunities ->
                             Log.d("OpportunitiesViewModel", "✅ Filtered to ${opportunities.size} opportunities")
+                            // Merge joined flag into filtered opportunities
+                            val mergedOps = mergeJoinedFlag(opportunities)
                             _uiState.value = UiState.Success(
                                 currentState.data.copy(
-                                    opportunities = opportunities,
+                                    opportunities = mergedOps,
                                 ),
                             )
                         }
@@ -347,29 +405,50 @@ class OpportunitiesViewModel @Inject constructor(
                         val useDistanceFilter = currentState.data.useDistanceFilter
                         Log.d("OpportunitiesViewModel", "🌍 Distance filtering enabled: $useDistanceFilter")
 
-                        val filtered = if (useDistanceFilter) {
+                        // Only update opportunities if distance filtering is enabled
+                        val newOpportunities = if (useDistanceFilter) {
                             Log.d("OpportunitiesViewModel", "🌍 Filtering ${allOpportunities.size} opportunities by radius ${currentState.data.radiusKm}km")
                             val result = filterByRadius(allOpportunities, loc, currentState.data.radiusKm, true)
                             Log.d("OpportunitiesViewModel", "🌍 Location filtering resulted in ${result.size} opportunities")
                             result
                         } else {
-                            Log.d("OpportunitiesViewModel", "🌍 Distance filtering disabled, using all ${allOpportunities.size} opportunities")
-                            allOpportunities
+                            Log.d("OpportunitiesViewModel", "🌍 Distance filtering disabled, keeping current opportunities unchanged")
+                            // Keep the current opportunities list unchanged when distance filtering is disabled
+                            currentState.data.opportunities
                         }
 
-                        _uiState.value = currentState.copy(
-                            data = currentState.data.copy(
-                                currentLocation = loc,
-                                opportunities = filtered,
-                            ),
-                        )
+                        // Only update the state if something actually changed
+                        val newLocation = loc
+                        val currentLocation = currentState.data.currentLocation
+                        val opportunitiesChanged = newOpportunities != currentState.data.opportunities
+                        val locationChanged = newLocation != currentLocation
+
+                        if (opportunitiesChanged || locationChanged) {
+                            _uiState.value = currentState.copy(
+                                data = currentState.data.copy(
+                                    currentLocation = newLocation,
+                                    opportunities = newOpportunities,
+                                ),
+                            )
+                        } else {
+                            Log.d("OpportunitiesViewModel", "🌍 No changes needed, skipping UI update")
+                        }
                     }
                 }
         }
     }
 
     private fun mergeJoinedFlag(list: List<VolunteerOpportunity>): List<VolunteerOpportunity> {
-        return list.map { it.copy(isJoined = joinedIds.contains(it.id)) }
+        return list.map { opportunity ->
+            val isJoined = when {
+                // Optimistic updates take priority
+                optimisticJoinedIds.contains(opportunity.id) -> true
+                optimisticLeftIds.contains(opportunity.id) -> false
+                // Fall back to server state
+                else -> joinedIds.contains(opportunity.id)
+            }
+            opportunity.copy(isJoined = isJoined)
+        }
     }
 
     private fun refreshOpportunitiesState() {

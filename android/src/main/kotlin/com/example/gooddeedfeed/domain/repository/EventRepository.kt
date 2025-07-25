@@ -1,6 +1,8 @@
 package com.example.gooddeedfeed.domain.repository
 
+import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.CreateEventData
+import com.example.gooddeedfeed.domain.model.EventVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import kotlinx.coroutines.flow.Flow
@@ -73,4 +75,19 @@ interface EventRepository {
      * Kick volunteer from event
      */
     suspend fun kickVolunteer(eventId: Int, volunteerId: Int): Result<Unit>
+
+    /**
+     * Generate a concise event description suggestion using the provided title.
+     */
+    suspend fun generateDescriptionSuggestion(title: String): Result<String>
+
+    /**
+     * Get volunteers for attendance tracking
+     */
+    suspend fun getEventVolunteersForAttendance(eventId: Int): Result<List<EventVolunteer>>
+
+    /**
+     * Submit volunteer attendance
+     */
+    suspend fun submitAttendance(attendanceData: AttendanceSubmission): Result<Map<String, Int>>
 } 

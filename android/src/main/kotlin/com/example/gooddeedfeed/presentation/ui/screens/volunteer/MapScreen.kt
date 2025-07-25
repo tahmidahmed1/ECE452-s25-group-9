@@ -19,10 +19,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.presentation.ui.components.base.EnhancedLocationPermissionManager
+import com.example.gooddeedfeed.presentation.ui.screens.organizer.OrganizerEventDetailScreen
+import com.example.gooddeedfeed.presentation.ui.screens.volunteer.VolunteerOpportunityDetailScreen
+import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import com.example.gooddeedfeed.presentation.viewmodel.volunteer.MapViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlin.math.ln
+import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.volunteer.OpportunitiesViewModel
+import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
+import com.example.gooddeedfeed.presentation.common.UiState
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -33,9 +42,10 @@ fun MapScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
+    var detailEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
 
-    val initialZoomLevel = calculateZoomForRadius(uiState.radiusKm)
-    var zoomLevel by remember { mutableStateOf(initialZoomLevel) }
+    // ViewModel to handle join/leave actions
+    val oppViewModel: OpportunitiesViewModel = hiltViewModel()
 
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted() else viewModel.onLocationPermissionDenied()
@@ -54,46 +64,71 @@ fun MapScreen(
                         uiState = uiState,
                         locationPermissionState = locationPermissionState,
                         modifier = Modifier.fillMaxSize(),
-                        zoomLevel = zoomLevel,
+                        // fixed zoom handled internally
                         onEventSelected = { selectedEvent = it },
+                        onNavigateToDetails = { event ->
+                            selectedEvent = null
+                            detailEvent = event
+                        },
                     )
 
-                    LegendPanel(
-                        filteredEvents = uiState.filteredEvents,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
-                    )
+                    // Legend panel removed in new design
                 }
 
-                RadiusSlider(
-                    radiusKm = uiState.radiusKm,
-                    onRadiusChange = viewModel::updateRadius,
-                    onZoomChange = { newZoom -> zoomLevel = newZoom },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+
             }
 
-            selectedEvent?.let { event ->
-                EventDetailDialog(event, uiState.currentLocation) { selectedEvent = null }
+            // Only show popup if no detail event is open
+            if (detailEvent == null) {
+                selectedEvent?.let { event ->
+                    EventDetailDialog(event, uiState.currentLocation, onDismiss = { selectedEvent = null }, onNavigateToDetails = { 
+                        detailEvent = event
+                        selectedEvent = null  // Clear popup when opening details
+                    })
+                }
+            }
+
+            detailEvent?.let { ev ->
+                val oppUiState by oppViewModel.uiState.collectAsStateWithLifecycle()
+                val currentState = oppUiState
+                val isJoined = when (currentState) {
+                    is UiState.Success -> currentState.data.opportunities.any { it.id == ev.id && it.isJoined }
+                    else -> false
+                }
+                
+                val opp = VolunteerOpportunity(
+                    id = ev.id,
+                    title = ev.title,
+                    organizationName = ev.organizationName,
+                    location = ev.location,
+                    date = ev.date,
+                    startTime = ev.startTime,
+                    endTime = ev.endTime,
+                    description = ev.description,
+                    requiredVolunteers = ev.maxVolunteers,
+                    currentVolunteers = ev.currentVolunteers,
+                    category = ev.category,
+                    latitude = ev.latitude,
+                    longitude = ev.longitude,
+                    karmaPoints = ev.karmaPoints,
+                    imageUrl = ev.imageUrl,
+                    isJoined = isJoined,
+                    images = ev.images,
+                )
+
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    VolunteerOpportunityDetailScreen(
+                        opportunity = opp,
+                        onBack = { detailEvent = null },
+                        onJoin = { id -> oppViewModel.joinOpportunity(id) },
+                        onLeave = { id -> oppViewModel.leaveOpportunity(id) },
+                    )
+                }
             }
         },
         modifier = Modifier.fillMaxSize(),
     )
-}
-
-/**
- * Calculate zoom level to ensure the radius circle fits within the screen bounds
- * This uses the approximate relationship between Google Maps zoom levels and visible distance
- */
-private fun calculateZoomForRadius(radiusKm: Float): Float {
-    val radiusMeters = radiusKm * 1000.0
-    val paddingFactor = 1.8 // This ensures the circle fits comfortably with some padding
-    val requiredViewDistance = radiusMeters * paddingFactor
-
-    val metersPerPixelAtZoom0 = 156543.03392 * 0.7071
-    val screenWidthPixels = 1000.0
-    val requiredMetersPerPixel = requiredViewDistance / screenWidthPixels
-
-    val zoomLevel = ln(metersPerPixelAtZoom0 / requiredMetersPerPixel) / ln(2.0)
-
-    return zoomLevel.toFloat().coerceIn(8f, 18f)
 } 

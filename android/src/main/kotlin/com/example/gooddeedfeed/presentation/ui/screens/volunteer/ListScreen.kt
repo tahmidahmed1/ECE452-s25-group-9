@@ -156,19 +156,25 @@ fun ListScreen(
         }
     }
 
-    // TEMPORARILY DISABLED: Apply filters only when explicitly requested after initial load
-    // fun applyCurrentFilters() {
-    //     if (!isInitialLoad) {
-    //         Log.d("ListScreen", "🎯 Applying filters: ${filters}")
-    //         Log.d("ListScreen", "  - Selected categories: ${filters.selectedCategories}")
-    //         Log.d("ListScreen", "  - Only available: ${filters.onlyAvailable}")
-    //         Log.d("ListScreen", "  - Use distance filter: ${filters.useDistanceFilter}")
-    //         Log.d("ListScreen", "  - Date filter: ${filters.dateFilter}")
-    //         viewModel.applyFilters(filters)
-    //     } else {
-    //         Log.d("ListScreen", "⏭️ Skipping filter application during initial load")
-    //     }
-    // }
+    // Apply filters only when explicitly requested after initial load
+    fun applyCurrentFilters() {
+        if (!isInitialLoad) {
+            Log.d("ListScreen", "🎯 Applying filters: ${filters}")
+            Log.d("ListScreen", "  - Selected categories: ${filters.selectedCategories}")
+            Log.d("ListScreen", "  - Only available: ${filters.onlyAvailable}")
+            Log.d("ListScreen", "  - Use distance filter: ${filters.useDistanceFilter}")
+            Log.d("ListScreen", "  - Date filter: ${filters.dateFilter}")
+            viewModel.applyFilters(filters)
+        } else {
+            Log.d("ListScreen", "⏭️ Skipping filter application during initial load")
+        }
+    }
+
+    // Apply filters when they change
+    LaunchedEffect(filters) {
+        Log.d("ListScreen", "🎯 Filters changed: $filters")
+        applyCurrentFilters()
+    }
 
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted() else viewModel.onLocationPermissionDenied()

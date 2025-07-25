@@ -8,12 +8,14 @@ import com.example.gooddeedfeed.data.remote.dto.UserBadgeDto
 import com.example.gooddeedfeed.data.remote.dto.UserDto
 import com.example.gooddeedfeed.data.remote.dto.UserType
 import com.example.gooddeedfeed.data.remote.dto.UserUpdateDto
+import com.example.gooddeedfeed.data.remote.dto.VolunteerHistoryEntryDto
 import com.example.gooddeedfeed.domain.model.DomainBadge
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserBadge
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.DomainVolunteerHistoryEntry
 import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 
@@ -108,4 +110,15 @@ fun BadgeDto.toDomain(): DomainBadge = DomainBadge(
 fun UserBadgeDto.toDomain(): DomainUserBadge = DomainUserBadge(
     badge = badge.toDomain(),
     earnedAt = earnedAt,
+)
+
+fun VolunteerHistoryEntryDto.toDomain(): DomainVolunteerHistoryEntry = DomainVolunteerHistoryEntry(
+    eventId = event_id,
+    eventTitle = event_title,
+    eventDate = event_date,
+    hoursWorked = hours_worked,
+    isApproved = is_approved,
+    rejectionReason = rejection_reason,
+    karmaPointsEarned = karma_points_earned,
+    status = status
 )

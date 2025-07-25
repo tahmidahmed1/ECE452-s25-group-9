@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Emergency
 import androidx.compose.material.icons.filled.Fastfood
@@ -29,7 +30,11 @@ import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Nature
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.*
 import androidx.compose.material3.DatePicker
@@ -80,6 +85,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.CircularProgressIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,16 +178,9 @@ fun CreateEventScreen(
         if (dateStr.isBlank() || timeStr.isBlank()) return false
 
         val eventDateTime = parseEventDateTime(dateStr, timeStr) ?: return false
-        val now = Date()
-        val oneHourFromNow = Date(now.time + 60 * 60 * 1000) // Add 1 hour in milliseconds
-
-        if (isEditing && eventToEdit != null) {
-            val originalDateTime = parseEventDateTime(eventToEdit.date, eventToEdit.startTime)
-            return eventDateTime.after(oneHourFromNow) ||
-                (originalDateTime != null && !eventDateTime.before(originalDateTime))
-        }
-
-        return eventDateTime.after(oneHourFromNow)
+        
+        // Always allow any valid date/time - no minimum time restriction
+        return true
     }
 
     fun isEndTimeAfterStartTime(dateStr: String, startTimeStr: String, endTimeStr: String): Boolean {
@@ -206,6 +205,7 @@ fun CreateEventScreen(
         endTime.isNotBlank() &&
         maxVolunteersText.isNotBlank() &&
         (maxVolunteersText.toIntOrNull() ?: 0) > 0 &&
+        (!isEditing || eventToEdit == null || (maxVolunteersText.toIntOrNull() ?: 0) >= eventToEdit.currentVolunteers) &&
         isStartDateTimeValid &&
         isEndTimeValid
 
@@ -215,7 +215,7 @@ fun CreateEventScreen(
     val dateError = hasAttemptedSubmit && date.isBlank()
     val startTimeError = hasAttemptedSubmit && (startTime.isBlank() || (date.isNotBlank() && startTime.isNotBlank() && !isStartDateTimeValid))
     val endTimeError = hasAttemptedSubmit && (endTime.isBlank() || (date.isNotBlank() && startTime.isNotBlank() && endTime.isNotBlank() && !isEndTimeValid))
-    val maxVolunteersError = hasAttemptedSubmit && (maxVolunteersText.isBlank() || (maxVolunteersText.toIntOrNull() ?: 0) <= 0)
+    val maxVolunteersError = hasAttemptedSubmit && (maxVolunteersText.isBlank() || (maxVolunteersText.toIntOrNull() ?: 0) <= 0 || (isEditing && eventToEdit != null && (maxVolunteersText.toIntOrNull() ?: 0) < eventToEdit.currentVolunteers))
 
     val formErrorMessage: String? = when {
         title.isBlank() -> "Title is required"
@@ -223,10 +223,11 @@ fun CreateEventScreen(
         !isLocationSelected -> "Select a location from the dropdown or map"
         date.isBlank() -> "Date is required"
         startTime.isBlank() -> "Start time is required"
-        !isStartDateTimeValid -> "Start time must be at least 1 hour from now"
+        !isStartDateTimeValid -> "Invalid start time"
         endTime.isBlank() -> "End time is required"
         !isEndTimeValid -> "End time must be after start time"
         maxVolunteersText.isBlank() || (maxVolunteersText.toIntOrNull() ?: 0) <= 0 -> "Enter a valid max volunteers (> 0)"
+        isEditing && eventToEdit != null && (maxVolunteersText.toIntOrNull() ?: 0) < eventToEdit.currentVolunteers -> "Max volunteers cannot be less than current volunteers (${eventToEdit.currentVolunteers})"
         else -> null
     }
 
@@ -338,6 +339,33 @@ fun CreateEventScreen(
                 isError = titleError,
                 supportingText = if (titleError) { { Text("Title is required", color = MaterialTheme.colorScheme.error) } } else null,
             )
+
+            // Suggestion Button
+            val descriptionSuggestion by viewModel.descriptionSuggestion.collectAsState()
+            val isGeneratingDescription by viewModel.isGeneratingDescription.collectAsState()
+
+            LaunchedEffect(descriptionSuggestion) {
+                descriptionSuggestion?.let { generated ->
+                    if (generated.isNotBlank()) {
+                        description = generated
+                    }
+                }
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(
+                    onClick = { viewModel.generateDescriptionSuggestion(title) },
+                    enabled = title.isNotBlank() && !isGeneratingDescription,
+                ) {
+                    if (isGeneratingDescription) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                    } else {
+                        Icon(imageVector = Icons.Default.MoreHoriz, contentDescription = "Suggest Description")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Suggest Description")
+                    }
+                }
+            }
 
             OutlinedTextField(
                 value = description,
@@ -502,7 +530,7 @@ fun CreateEventScreen(
                             Text(
                                 text = when {
                                     startTime.isBlank() -> "Start time is required"
-                                    !isStartDateTimeValid -> "Event must be scheduled at least 1 hour from now"
+                                    !isStartDateTimeValid -> "Invalid start time"
                                     else -> "Invalid start time"
                                 },
                                 color = MaterialTheme.colorScheme.error,
@@ -566,7 +594,19 @@ fun CreateEventScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 isError = maxVolunteersError,
-                supportingText = if (maxVolunteersError) { { Text("Max volunteers is required (1-100)", color = MaterialTheme.colorScheme.error) } } else null,
+                supportingText = if (maxVolunteersError) { 
+                    { 
+                        Text(
+                            text = when {
+                                maxVolunteersText.isBlank() -> "Max volunteers is required (1-100)"
+                                (maxVolunteersText.toIntOrNull() ?: 0) <= 0 -> "Max volunteers must be greater than 0"
+                                isEditing && eventToEdit != null && (maxVolunteersText.toIntOrNull() ?: 0) < eventToEdit.currentVolunteers -> "Cannot be less than current volunteers (${eventToEdit.currentVolunteers})"
+                                else -> "Max volunteers is required (1-100)"
+                            },
+                            color = MaterialTheme.colorScheme.error
+                        ) 
+                    } 
+                } else null,
             )
 
             var expanded by remember { mutableStateOf(false) }
@@ -585,6 +625,11 @@ fun CreateEventScreen(
                     OpportunityCategory.SOCIAL_SERVICES -> Icons.Default.VolunteerActivism
                     OpportunityCategory.DISASTER_RELIEF -> Icons.Default.Emergency
                     OpportunityCategory.FOOD_SECURITY -> Icons.Default.Fastfood
+                    OpportunityCategory.ANIMAL_WELFARE -> Icons.Default.Pets
+                    OpportunityCategory.ARTS_CULTURE -> Icons.Default.Palette
+                    OpportunityCategory.YOUTH_MENTORING -> Icons.Default.School
+                    OpportunityCategory.ELDERLY_CARE -> Icons.Default.SentimentSatisfied
+                    OpportunityCategory.TECHNOLOGY -> Icons.Default.Computer
                     OpportunityCategory.OTHER -> Icons.Default.MoreHoriz
                 }
             }

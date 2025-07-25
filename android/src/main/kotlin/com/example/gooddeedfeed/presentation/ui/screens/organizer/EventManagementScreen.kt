@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -40,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,10 +52,17 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.data.mapper.toEmulatorAccessibleUrl
+import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.VolunteerAttendanceRecord
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +76,9 @@ fun EventManagementScreen(
     var creatingEvent by remember { mutableStateOf(false) }
     var editingEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
     var eventToDelete by remember { mutableStateOf<VolunteerEvent?>(null) }
+    var attendanceEvent by remember { mutableStateOf<VolunteerEvent?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     if (creatingEvent) {
         CreateEventScreen(onBack = { creatingEvent = false })
@@ -84,6 +95,41 @@ fun EventManagementScreen(
 
     if (selectedEvent != null) {
         OrganizerEventDetailScreen(event = selectedEvent!!, onBack = { selectedEvent = null })
+        return
+    }
+
+    if (attendanceEvent != null) {
+        VolunteerAttendanceScreen(
+            event = attendanceEvent!!,
+            onBack = { attendanceEvent = null },
+            onSubmit = { attendance ->
+                scope.launch {
+                    val attendanceRecords = attendance.map { volunteerAttendance ->
+                        VolunteerAttendanceRecord(
+                            volunteerId = volunteerAttendance.volunteer.id,
+                            hoursWorked = if (volunteerAttendance.isRejected) null else volunteerAttendance.hoursWorked.toDoubleOrNull(),
+                            isApproved = !volunteerAttendance.isRejected,
+                            rejectionReason = if (volunteerAttendance.isRejected) volunteerAttendance.rejectionReason else null
+                        )
+                    }
+                    
+                    val attendanceSubmission = AttendanceSubmission(
+                        eventId = attendanceEvent!!.id,
+                        attendanceRecords = attendanceRecords
+                    )
+                    
+                    viewModel.submitAttendance(attendanceSubmission).fold(
+                        onSuccess = { karmaAwarded ->
+                            Log.d("EventManagement", "✅ Attendance submitted successfully. Karma awarded: $karmaAwarded")
+                            attendanceEvent = null
+                        },
+                        onFailure = { error ->
+                            Log.e("EventManagement", "❌ Failed to submit attendance: ${error.message}")
+                        }
+                    )
+                }
+            }
+        )
         return
     }
 
@@ -204,6 +250,7 @@ fun EventManagementScreen(
                                 onEditClick = { editingEvent = event },
                                 onDeleteClick = { eventToDelete = event },
                                 onViewClick = { selectedEvent = event },
+                                onAttendanceClick = { attendanceEvent = event },
                             )
                         }
                     }
@@ -263,9 +310,74 @@ private fun EventCard(
     onEditClick: (VolunteerEvent) -> Unit,
     onDeleteClick: (VolunteerEvent) -> Unit,
     onViewClick: (VolunteerEvent) -> Unit,
+    onAttendanceClick: (VolunteerEvent) -> Unit,
 ) {
+    fun hasEventStarted(event: VolunteerEvent): Boolean {
+        return try {
+            Log.d("EventManagementDebug", "=== CHECKING IF EVENT HAS STARTED ===")
+            Log.d("EventManagementDebug", "Event ID: ${event.id}")
+            Log.d("EventManagementDebug", "Event Title: ${event.title}")
+            Log.d("EventManagementDebug", "Raw event date: '${event.date}'")
+            Log.d("EventManagementDebug", "Raw event startTime: '${event.startTime}'")
+            
+            // Parse date using multiple formats (same as OrganizerEventDetailScreen)
+            fun parseDate(dateStr: String): LocalDate? {
+                val patterns = listOf("yyyy-MM-dd", "MMM d, yyyy", "MMMM d, yyyy")
+                for (p in patterns) {
+                    runCatching {
+                        return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(p, java.util.Locale.ENGLISH))
+                    }
+                }
+                return null
+            }
+
+            // Parse time using multiple formats (same as OrganizerEventDetailScreen)
+            fun parseTime(timeStr: String): LocalTime? {
+                val patterns = listOf("H:mm", "H:mm:ss", "h:mm a", "hh:mm a")
+                for (p in patterns) {
+                    runCatching {
+                        return LocalTime.parse(timeStr.trim(), DateTimeFormatter.ofPattern(p, java.util.Locale.ENGLISH))
+                    }
+                }
+                return null
+            }
+            
+            val eventDate = parseDate(event.date)
+            val eventStartTime = parseTime(event.startTime)
+            
+            if (eventDate == null || eventStartTime == null) {
+                Log.e("EventManagementDebug", "Failed to parse date or time - eventDate: $eventDate, eventStartTime: $eventStartTime")
+                return false // Default to not started if parsing fails
+            }
+            
+            val currentDateTime = LocalDateTime.now()
+            val eventStartDateTime = LocalDateTime.of(eventDate, eventStartTime)
+            
+            Log.d("EventManagementDebug", "Parsed event date: $eventDate")
+            Log.d("EventManagementDebug", "Parsed event start time: $eventStartTime")
+            Log.d("EventManagementDebug", "Event start date-time: $eventStartDateTime")
+            Log.d("EventManagementDebug", "Current date-time: $currentDateTime")
+            
+            val hasStarted = currentDateTime.isAfter(eventStartDateTime) || currentDateTime.isEqual(eventStartDateTime)
+            Log.d("EventManagementDebug", "Has event started? $hasStarted")
+            Log.d("EventManagementDebug", "currentDateTime >= eventStartDateTime: $hasStarted")
+            Log.d("EventManagementDebug", "=== END EVENT START CHECK ===")
+            
+            hasStarted
+        } catch (e: Exception) {
+            Log.e("EventManagementDebug", "Error checking if event has started", e)
+            Log.e("EventManagementDebug", "Event date format: '${event.date}', startTime format: '${event.startTime}'")
+            false // Default to not started if parsing fails
+        }
+    }
+
+    val eventHasStarted = hasEventStarted(event)
+
     Log.d("EventCard", "=== EVENT CARD DEBUGGING ===")
     Log.d("EventCard", "Event ID: ${event.id}, Title: ${event.title}")
+    Log.d("EventCard", "Event Date: ${event.date}, Start Time: ${event.startTime}, End Time: ${event.endTime}")
+    Log.d("EventCard", "Event Has Started: $eventHasStarted")
+    Log.d("EventCard", "Will show ${if (eventHasStarted) "CHECKMARK (attendance)" else "PENCIL (edit)"} icon")
     Log.d("EventCard", "Event imageUrl: ${event.imageUrl}")
     Log.d("EventCard", "Event images count: ${event.images.size}")
 
@@ -330,11 +442,22 @@ private fun EventCard(
 
                     Row {
                         IconButton(
-                            onClick = { onEditClick(event) },
+                            onClick = {
+                                Log.d("EventCard", "=== ICON BUTTON CLICKED ===")
+                                Log.d("EventCard", "Event: ${event.title} (ID: ${event.id})")
+                                Log.d("EventCard", "Event has started: $eventHasStarted")
+                                if (eventHasStarted) {
+                                    Log.d("EventCard", "Navigating to attendance screen")
+                                    onAttendanceClick(event)
+                                } else {
+                                    Log.d("EventCard", "Navigating to edit screen")
+                                    onEditClick(event)
+                                }
+                            },
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Event",
+                                imageVector = if (eventHasStarted) Icons.Default.Check else Icons.Default.Edit,
+                                contentDescription = if (eventHasStarted) "Volunteer Attendance" else "Edit Event",
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }

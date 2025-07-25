@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -73,6 +74,8 @@ fun AppTopBar(
 
     val notifications by notificationViewModel.notifications.collectAsState()
     val unreadCount by notificationViewModel.unreadCount.collectAsState()
+    val isLoading by notificationViewModel.isLoading.collectAsState()
+    val error by notificationViewModel.error.collectAsState()
 
     val density = LocalDensity.current
     val statusBarHeight = with(density) {
@@ -136,7 +139,10 @@ fun AppTopBar(
                         Surface(
                             modifier = Modifier
                                 .size(44.dp)
-                                .clickable { showNotifMenu = true },
+                                .clickable { 
+                                    showNotifMenu = true
+                                    notificationViewModel.loadNotifications()
+                                },
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                             shadowElevation = 2.dp,
@@ -157,18 +163,32 @@ fun AppTopBar(
                         if (unreadCount > 0) {
                             Surface(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(if (unreadCount > 9) 18.dp else 16.dp)
                                     .align(Alignment.TopEnd)
                                     .offset((-2).dp, 2.dp),
-                                shape = RoundedCornerShape(4.dp),
+                                shape = CircleShape,
                                 color = MaterialTheme.colorScheme.error,
-                            ) {}
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Text(
+                                        text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onError,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
                         }
 
                         NotificationDropdownMenu(
                             expanded = showNotifMenu,
                             onDismissRequest = { showNotifMenu = false },
                             notifications = notifications,
+                            isLoading = isLoading,
+                            error = error,
                             onNotificationClick = { notification ->
                                 if (!notification.isRead) {
                                     notificationViewModel.markNotificationAsRead(notification.id)
@@ -178,6 +198,9 @@ fun AppTopBar(
                             onClearAll = {
                                 notificationViewModel.clearAllNotifications()
                                 showNotifMenu = false
+                            },
+                            onRetry = {
+                                notificationViewModel.loadNotifications()
                             },
                         )
                     }
@@ -342,8 +365,11 @@ fun NotificationDropdownMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     notifications: List<DomainInAppNotification>,
+    isLoading: Boolean,
+    error: String?,
     onNotificationClick: (DomainInAppNotification) -> Unit,
     onClearAll: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     DropdownMenu(
@@ -388,39 +414,80 @@ fun NotificationDropdownMenu(
             )
         }
 
-        if (notifications.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.outline,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "No new notifications",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-            ) {
-                items(notifications) { notification ->
-                    NotificationItem(
-                        notification = notification,
-                        onClick = { onNotificationClick(notification) },
-                    )
+            error != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "Failed to load notifications",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Retry",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable { onRetry() },
+                        )
+                    }
+                }
+            }
+            notifications.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "No new notifications",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    items(notifications) { notification ->
+                        NotificationItem(
+                            notification = notification,
+                            onClick = { onNotificationClick(notification) },
+                        )
+                    }
                 }
             }
         }

@@ -2,7 +2,9 @@ package com.example.gooddeedfeed.presentation.viewmodel.organizer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.CreateEventData
+import com.example.gooddeedfeed.domain.model.EventVolunteer
 import com.example.gooddeedfeed.domain.model.JoinedVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.usecase.organizer.ManageEventsUseCase
@@ -33,6 +35,24 @@ class EventManagementViewModel @Inject constructor(
 
     private val _searchResults = MutableStateFlow<List<VolunteerEvent>>(emptyList())
     val searchResults: StateFlow<List<VolunteerEvent>> = _searchResults.asStateFlow()
+
+    // Description suggestion state
+    private val _descriptionSuggestion = MutableStateFlow<String?>(null)
+    val descriptionSuggestion: StateFlow<String?> = _descriptionSuggestion.asStateFlow()
+
+    private val _isGeneratingDescription = MutableStateFlow(false)
+    val isGeneratingDescription: StateFlow<Boolean> = _isGeneratingDescription.asStateFlow()
+
+    fun generateDescriptionSuggestion(title: String) {
+        if (title.isBlank()) return
+        viewModelScope.launch {
+            _isGeneratingDescription.value = true
+            val result = manageEventsUseCase.generateDescriptionSuggestion(title)
+            result.onSuccess { desc -> _descriptionSuggestion.value = desc }
+                .onFailure { e -> _uiState.value = UiState.Error("Failed to generate description: ${e.message}") }
+            _isGeneratingDescription.value = false
+        }
+    }
 
     init {
         loadEvents()
@@ -152,5 +172,16 @@ class EventManagementViewModel @Inject constructor(
                 .catch { /* ignore */ }
                 .collect { list -> _searchResults.value = list }
         }
+    }
+
+    suspend fun getEventVolunteersForAttendance(eventId: Int): Result<List<EventVolunteer>> {
+        return manageEventsUseCase.getEventVolunteersForAttendance(eventId)
+    }
+
+    suspend fun submitAttendance(attendanceData: AttendanceSubmission): Result<Map<String, Int>> {
+        return manageEventsUseCase.submitAttendance(attendanceData)
+            .onSuccess {
+                loadEvents() // Refresh events list after attendance submission
+            }
     }
 } 

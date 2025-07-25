@@ -5,10 +5,16 @@ from datetime import timedelta, datetime, timezone
 import logging
 from typing import List, Dict, Optional
 from sqlalchemy import text, select
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import or_
 import math
 from sqlalchemy import func
+from openai import OpenAI
+from dotenv import load_dotenv
+from pathlib import Path
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 from .database import get_db
 from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, volunteer_events, InAppNotification, LostFoundItem, LostFoundImage
@@ -18,7 +24,7 @@ from .schemas import (
     UserCreate, User as UserSchema, SessionResponse, OnboardingStepOne, OnboardingStepTwoOrganizer,
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
     UserUpdate, EventCreate, EventImageOut,
-    MessageCreate, MessageOut,
+    MessageCreate, MessageOut, ChatSummary,
     ProfileBannerUploadResponse,
     LeaderboardResponse, LeaderboardEntry,
     Badge as BadgeSchema, UserBadge, BadgeCheckResponse, BadgeAchievement,
@@ -29,6 +35,8 @@ from .schemas import (
     InAppNotificationCreate, InAppNotificationOut, InAppNotificationUpdate,
     InAppNotificationsResponse,
     LostFoundItemCreate, LostFoundItemOut, LostFoundItemUpdate, LostFoundItemsResponse,
+    EventVolunteer, VolunteerAttendanceRecord, AttendanceSubmission, AttendanceResponse,
+    VolunteerHistoryEntry,
 )
 from .session_auth import (
     authenticate_user, get_password_hash, get_current_active_user, get_current_user,
@@ -37,12 +45,45 @@ from .session_auth import (
 from fastapi.security import HTTPAuthorizationCredentials
 from .storage import storage_service
 from .firebase_service import firebase_service
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Load environment variables from .env file located in the same directory (if present)
+env_path = Path(__file__).parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+
+# Initialize OpenAI client (optional)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if OPENAI_API_KEY:
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    logger.info("OpenAI client initialized – dynamic suggestions enabled")
+else:
+    openai_client = None
+    logger.warning("OPENAI_API_KEY not set – suggestion endpoints will use static samples")
+
+# Helper to call OpenAI Chat Completion
+def _call_openai(prompt: str, model: str = "gpt-3.5-turbo", max_tokens: int = 200) -> str:
+    """Call OpenAI ChatCompletion and return the assistant message content."""
+    try:
+        completion = openai_client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant for a volunteering platform."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.7,
+            max_tokens=max_tokens,
+        )
+        return completion.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"OpenAI API call failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate suggestion")
 
 # -------------------- Banner Upload --------------------
 
@@ -457,9 +498,10 @@ def list_events_nearby(
     if category:
         try:
             from .models import OpportunityCategory
-            category_enum = OpportunityCategory[category.upper()]
+            # Convert category value to enum by value (not by name)
+            category_enum = OpportunityCategory(category)
             query = query.filter(Event.category == category_enum)
-        except KeyError:
+        except ValueError:
             pass  # Invalid category, ignore filter
     
     # Availability filters
@@ -585,10 +627,58 @@ async def update_event(event_id: int, payload: EventCreate, current_user: User =
         raise HTTPException(status_code=404, detail="Event not found")
     if event.organizer_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
-    for k, v in payload.dict(exclude_unset=True).items():
+    
+    # Store original values to check for important changes
+    original_date = event.date
+    original_start_time = event.start_time
+    original_end_time = event.end_time
+    original_location = event.location
+    
+    # Update event fields
+    update_data = payload.dict(exclude_unset=True)
+    for k, v in update_data.items():
         setattr(event, k, v)
+    
+    # Check if important fields changed (date, time, location)
+    important_changes = []
+    if update_data.get('date') and update_data['date'] != original_date:
+        important_changes.append(f"Date changed to {update_data['date']}")
+    if update_data.get('start_time') and update_data['start_time'] != original_start_time:
+        important_changes.append(f"Start time changed to {update_data['start_time']}")
+    if update_data.get('end_time') and update_data['end_time'] != original_end_time:
+        important_changes.append(f"End time changed to {update_data['end_time']}")
+    if update_data.get('location') and update_data['location'] != original_location:
+        important_changes.append(f"Location changed to {update_data['location']}")
+    
     db.commit()
     db.refresh(event)
+    
+    # Send notifications to joined volunteers if important fields changed
+    if important_changes:
+        try:
+            await send_event_update_notification(
+                event_id=event.id,
+                event_title=event.title,
+                organizer_name=current_user.full_name or current_user.username,
+                changes=important_changes,
+                db=db
+            )
+        except Exception as e:
+            # Don't fail event update if notification fails
+            logger.error(f"Failed to send event update notification: {e}")
+        
+        try:
+            await create_event_update_in_app_notifications(
+                event_id=event.id,
+                event_title=event.title,
+                organizer_name=current_user.full_name or current_user.username,
+                changes=important_changes,
+                db=db
+            )
+        except Exception as e:
+            # Don't fail event update if in-app notification fails
+            logger.error(f"Failed to create event update in-app notifications: {e}")
+    
     return event
 
 @router.delete("/events/{event_id}")
@@ -609,22 +699,26 @@ async def join_event(
     db: Session = Depends(get_db)
 ):
     """Join an event as a volunteer"""
-    logger.info(f"User {current_user.username} (ID: {current_user.id}) attempting to join event {event_id}")
+    logger.info(f"🎯 JOIN EVENT - User {current_user.username} (ID: {current_user.id}) attempting to join event {event_id}")
     
-    # Check if event exists
-    event = db.get(Event, event_id)
+    # Check if event exists (with organizer relationship loaded)
+    from sqlalchemy.orm import selectinload
+    event = db.query(Event).options(selectinload(Event.organizer)).filter(Event.id == event_id).first()
     if not event:
-        logger.error(f"Event {event_id} not found")
+        logger.error(f"❌ JOIN EVENT - Event {event_id} not found")
         raise HTTPException(status_code=404, detail="Event not found")
+    
+    logger.info(f"📋 JOIN EVENT - Event details: '{event.title}' on {event.date} from {event.start_time} to {event.end_time}")
+    logger.info(f"📋 JOIN EVENT - Event organizer: {event.organizer.username}, category: {event.category}")
     
     # Check if user is a volunteer
     if current_user.user_type != UserType.VOLUNTEER:
-        logger.error(f"User {current_user.username} is not a volunteer")
+        logger.error(f"❌ JOIN EVENT - User {current_user.username} is not a volunteer (type: {current_user.user_type})")
         raise HTTPException(status_code=403, detail="Only volunteers can join events")
     
     # Check if event is full
     if event.max_volunteers and event.current_volunteers >= event.max_volunteers:
-        logger.error(f"Event {event_id} is full ({event.current_volunteers}/{event.max_volunteers})")
+        logger.error(f"❌ JOIN EVENT - Event {event_id} is full ({event.current_volunteers}/{event.max_volunteers})")
         raise HTTPException(status_code=400, detail="Event is full")
     
     # Check if user is already joined
@@ -636,11 +730,24 @@ async def join_event(
     ).first()
     
     if existing_join:
-        logger.warning(f"User {current_user.username} already joined event {event_id}")
+        logger.warning(f"⚠️ JOIN EVENT - User {current_user.username} already joined event {event_id}")
         raise HTTPException(status_code=400, detail="Already joined this event")
+    
+    # Check if event has started
+    from datetime import datetime
+    try:
+        event_start_dt = datetime.strptime(f"{event.date} {event.start_time}", "%Y-%m-%d %H:%M")
+        current_time = datetime.utcnow()
+        logger.info(f"⏰ JOIN EVENT - Event start time: {event_start_dt}, Current time: {current_time}")
+        if current_time >= event_start_dt:
+            logger.error(f"❌ JOIN EVENT - Event {event_id} already started")
+            raise HTTPException(status_code=400, detail="Event has already started")
+    except Exception as e:
+        logger.warning(f"⚠️ JOIN EVENT - Could not parse event start datetime for event {event_id}: {e}")
     
     # Join the event
     try:
+        logger.info(f"📝 JOIN EVENT - Adding user {current_user.id} to volunteer_events table for event {event_id}")
         db.execute(
             volunteer_events.insert().values(
                 volunteer_id=current_user.id,
@@ -650,24 +757,29 @@ async def join_event(
         )
         
         # Update volunteer count
+        old_count = event.current_volunteers
         event.current_volunteers += 1
+        logger.info(f"📊 JOIN EVENT - Updated event volunteer count from {old_count} to {event.current_volunteers}")
         
         db.commit()
+        logger.info(f"✅ JOIN EVENT - Database transaction committed successfully")
         
-        logger.info(f"User {current_user.username} successfully joined event {event_id}")
-        logger.info(f"Event {event_id} now has {event.current_volunteers}/{event.max_volunteers or 'unlimited'} volunteers")
+        logger.info(f"🎉 JOIN EVENT - User {current_user.username} successfully joined event {event_id} ('{event.title}')")
+        logger.info(f"📊 JOIN EVENT - Event {event_id} now has {event.current_volunteers}/{event.max_volunteers or 'unlimited'} volunteers")
         
         return {"message": "Successfully joined event", "current_volunteers": event.current_volunteers}
         
     except Exception as e:
-        logger.error(f"Failed to join event {event_id}: {e}")
+        logger.error(f"❌ JOIN EVENT - Failed to join event {event_id}: {e}")
+        logger.error(f"❌ JOIN EVENT - Exception details: {str(e)}")
+        logger.error(f"❌ JOIN EVENT - Exception type: {type(e).__name__}")
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to join event")
 
 @router.post("/events/{event_id}/leave")
 async def leave_event(
     event_id: int, 
-    current_user: User = Depends(get_current_active_user), 
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Leave an event as a volunteer"""
@@ -690,6 +802,15 @@ async def leave_event(
     if not existing_join:
         logger.warning(f"User {current_user.username} not joined to event {event_id}")
         raise HTTPException(status_code=400, detail="Not joined to this event")
+    
+    # Check if event has started
+    from datetime import datetime
+    try:
+        event_start_dt = datetime.strptime(f"{event.date} {event.start_time}", "%Y-%m-%d %H:%M")
+        if datetime.utcnow() >= event_start_dt:
+            raise HTTPException(status_code=400, detail="Cannot leave event that has already started")
+    except Exception:
+        logger.warning("Could not parse event start datetime for event %s", event_id)
     
     # Leave the event
     try:
@@ -747,23 +868,356 @@ async def get_event_volunteers(
     logger.info(f"Event {event_id} has {len(volunteer_list)} volunteers")
     return {"volunteers": volunteer_list, "total_count": len(volunteer_list)}
 
+@router.get("/events/{event_id}/volunteers/attendance", response_model=List[EventVolunteer])
+async def get_event_volunteers_for_attendance(
+    event_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get list of volunteers for attendance tracking"""
+    logger.info(f"Getting volunteers for attendance for event {event_id}")
+    
+    # Check if event exists and user is the organizer
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only event organizer can track attendance")
+    
+    # Get volunteers with join timestamps
+    volunteers_query = db.query(User, volunteer_events.c.joined_at).join(
+        volunteer_events, User.id == volunteer_events.c.volunteer_id
+    ).filter(volunteer_events.c.event_id == event_id)
+    
+    volunteer_list = []
+    for volunteer, joined_at in volunteers_query:
+        volunteer_list.append(EventVolunteer(
+            id=volunteer.id,
+            user_id=volunteer.id,
+            name=volunteer.full_name or volunteer.username,
+            username=volunteer.username,
+            email=volunteer.email,
+            profile_picture_url=volunteer.profile_picture_url,
+            joined_at=joined_at
+        ))
+    
+    logger.info(f"Event {event_id} has {len(volunteer_list)} volunteers for attendance")
+    return volunteer_list
+
+# Helper functions for attendance notifications
+async def send_karma_earned_notification(volunteer: User, event: Event, karma_earned: int, db: Session):
+    """Send notification to volunteer about karma points earned"""
+    try:
+        # Create in-app notification
+        notification_data = {
+            "user_id": volunteer.id,
+            "title": "Karma Points Earned!",
+            "message": f"You earned {karma_earned} karma points for completing '{event.title}'",
+            "data": {
+                "type": "karma_earned",
+                "event_id": str(event.id),
+                "karma_points": str(karma_earned)
+            }
+        }
+        
+        in_app_notification = InAppNotification(**notification_data)
+        db.add(in_app_notification)
+        db.flush()
+        
+        # Send FCM notification if volunteer has notifications enabled
+        if volunteer.fcm_token and volunteer.notifications_enabled:
+            await firebase_service.send_notification(
+                token=volunteer.fcm_token,
+                title="Karma Points Earned!",
+                body=f"You earned {karma_earned} karma points for completing '{event.title}'",
+                data={
+                    "type": "karma_earned",
+                    "event_id": str(event.id),
+                    "karma_points": str(karma_earned)
+                }
+            )
+            
+        logger.info(f"Karma earned notification sent to volunteer {volunteer.username}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send karma earned notification to {volunteer.username}: {e}")
+
+async def send_volunteer_rejected_notification(volunteer: User, event: Event, rejection_reason: str, db: Session):
+    """Send notification to volunteer about event rejection"""
+    try:
+        # Create in-app notification
+        notification_data = {
+            "user_id": volunteer.id,
+            "title": "Event Participation Update",
+            "message": f"Your participation in '{event.title}' was not approved. Reason: {rejection_reason}",
+            "data": {
+                "type": "volunteer_rejected",
+                "event_id": str(event.id),
+                "rejection_reason": rejection_reason
+            }
+        }
+        
+        in_app_notification = InAppNotification(**notification_data)
+        db.add(in_app_notification)
+        db.flush()
+        
+        # Send FCM notification if volunteer has notifications enabled
+        if volunteer.fcm_token and volunteer.notifications_enabled:
+            await firebase_service.send_notification(
+                token=volunteer.fcm_token,
+                title="Event Participation Update",
+                body=f"Your participation in '{event.title}' was not approved",
+                data={
+                    "type": "volunteer_rejected",
+                    "event_id": str(event.id),
+                    "rejection_reason": rejection_reason
+                }
+            )
+            
+        logger.info(f"Volunteer rejection notification sent to {volunteer.username}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send volunteer rejection notification to {volunteer.username}: {e}")
+
+@router.post("/events/{event_id}/attendance", response_model=AttendanceResponse)
+async def submit_attendance(
+    event_id: int,
+    attendance_data: AttendanceSubmission,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Submit volunteer attendance for an event"""
+    logger.info(f"Submitting attendance for event {event_id} by organizer {current_user.username}")
+    
+    # Check if event exists and user is the organizer
+    event = db.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    if event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only event organizer can submit attendance")
+    
+    # Verify event_id matches
+    if attendance_data.event_id != event_id:
+        raise HTTPException(status_code=400, detail="Event ID mismatch")
+    
+    karma_points_awarded = {}
+    approved_count = 0
+    
+    for record in attendance_data.attendance_records:
+        # Get volunteer user
+        volunteer = db.get(User, record.volunteer_id)
+        if not volunteer:
+            logger.warning(f"Volunteer {record.volunteer_id} not found, skipping")
+            continue
+        
+        if record.is_approved and record.hours_worked and record.hours_worked > 0:
+            # Calculate karma points (event karma points per hour worked)
+            karma_earned = int(event.karma_points * record.hours_worked)
+            
+            # Award karma points
+            volunteer.karma_points = (volunteer.karma_points or 0) + karma_earned
+            karma_points_awarded[volunteer.username] = karma_earned
+            approved_count += 1
+            
+            # Persist attendance details in association table
+            db.execute(
+                volunteer_events.update().where(
+                    (volunteer_events.c.volunteer_id == volunteer.id) &
+                    (volunteer_events.c.event_id == event_id)
+                ).values(
+                    hours_worked=record.hours_worked,
+                    is_approved=True,
+                    rejection_reason=None,
+                    karma_points_earned=karma_earned,
+                    status='completed',
+                    karma_awarded=True
+                )
+            )
+            
+            # Send notification to volunteer about karma earned
+            await send_karma_earned_notification(volunteer, event, karma_earned, db)
+            
+            logger.info(f"Awarded {karma_earned} karma points to volunteer {volunteer.username}")
+        
+        elif not record.is_approved and record.rejection_reason:
+            # Persist rejection details in association table
+            db.execute(
+                volunteer_events.update().where(
+                    (volunteer_events.c.volunteer_id == volunteer.id) &
+                    (volunteer_events.c.event_id == event_id)
+                ).values(
+                    hours_worked=None,
+                    is_approved=False,
+                    rejection_reason=record.rejection_reason,
+                    karma_points_earned=0,
+                    status='rejected',
+                    karma_awarded=False
+                )
+            )
+            
+            # Send notification to volunteer about rejection
+            await send_volunteer_rejected_notification(volunteer, event, record.rejection_reason, db)
+            
+            logger.info(f"Volunteer {volunteer.username} rejected for event {event.title}")
+    
+    db.commit()
+    
+    message = f"Attendance submitted successfully. {approved_count} volunteers approved."
+    if karma_points_awarded:
+        message += f" Total karma awarded: {sum(karma_points_awarded.values())} points."
+    
+    return AttendanceResponse(
+        success=True,
+        message=message,
+        karma_points_awarded=karma_points_awarded
+    )
+
+@router.get("/users/me/volunteer-history", response_model=List[VolunteerHistoryEntry])
+async def get_volunteer_history(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get volunteer history for the current user"""
+    logger.info(f"Getting volunteer history for user {current_user.username}")
+    
+    if current_user.user_type != UserType.VOLUNTEER:
+        raise HTTPException(status_code=403, detail="Only volunteers can access volunteer history")
+    
+    # Get volunteer attendance records with joined event info
+    history_entries = []
+    attendance_rows = db.query(
+        Event,
+        volunteer_events.c.hours_worked,
+        volunteer_events.c.is_approved,
+        volunteer_events.c.rejection_reason,
+        volunteer_events.c.karma_points_earned
+    ).join(
+        volunteer_events, Event.id == volunteer_events.c.event_id
+    ).filter(
+        volunteer_events.c.volunteer_id == current_user.id
+    ).all()
+
+    for event, hours_worked, is_approved, rejection_reason, karma_points_earned in attendance_rows:
+        # Determine status based on is_approved value
+        if is_approved is None:
+            status = "pending"
+            is_approved_bool = False
+        elif is_approved is True:
+            status = "approved"
+            is_approved_bool = True
+        else:  # is_approved is False
+            status = "rejected"
+            is_approved_bool = False
+            
+        history_entries.append(VolunteerHistoryEntry(
+            event_id=event.id,
+            event_title=event.title,
+            event_date=event.date,
+            hours_worked=hours_worked,
+            is_approved=is_approved_bool,
+            rejection_reason=rejection_reason,
+            karma_points_earned=karma_points_earned or 0,
+            status=status
+        ))
+
+    logger.info(f"Found {len(history_entries)} volunteer history entries for user {current_user.username}")
+    return history_entries
+
+@router.get("/users/me/volunteer-history/pdf")
+async def download_volunteer_history_pdf(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Generate and return a PDF summary of the volunteer's history."""
+    # Reuse logic from get_volunteer_history to build data
+    attendance_rows = db.query(
+        Event,
+        volunteer_events.c.hours_worked,
+        volunteer_events.c.is_approved,
+        volunteer_events.c.rejection_reason,
+        volunteer_events.c.karma_points_earned
+    ).join(
+        volunteer_events, Event.id == volunteer_events.c.event_id
+    ).filter(
+        volunteer_events.c.volunteer_id == current_user.id,
+        volunteer_events.c.is_approved == True  # Only include verified/approved events in PDF
+    ).all()
+
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    y = height - 40
+
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(40, y, "Volunteer History Report")
+    y -= 30
+
+    p.setFont("Helvetica", 11)
+    if not attendance_rows:
+        p.drawString(40, y, "No volunteer events completed yet.")
+    else:
+        for event, hours_worked, is_approved, rejection_reason, karma_points_earned in attendance_rows:
+            if y < 60:
+                p.showPage()
+                y = height - 40
+            p.setFont("Helvetica-Bold", 12)
+            p.drawString(40, y, f"Event: {event.title}")
+            y -= 16
+            p.setFont("Helvetica", 11)
+            p.drawString(40, y, f"Date: {event.date}")
+            y -= 14
+            # Since we're only showing approved events in PDF, status is always "Verified"
+            p.drawString(40, y, f"Status: Verified")
+            y -= 14
+            if hours_worked is not None:
+                p.drawString(40, y, f"Hours Worked: {hours_worked}")
+                y -= 14
+            if karma_points_earned:
+                p.drawString(40, y, f"Karma Points Earned: {karma_points_earned}")
+                y -= 14
+            y -= 10
+    p.save()
+
+    buffer.seek(0)
+    return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=volunteer_history.pdf"})
+
 @router.get("/users/me/joined-events", response_model=List[EventSchema])
 async def get_my_joined_events(
     current_user: User = Depends(get_current_active_user), 
     db: Session = Depends(get_db)
 ):
     """Get events that the current user has joined"""
-    logger.info(f"Getting joined events for user {current_user.username}")
+    logger.info(f"📅 GET JOINED EVENTS - Getting joined events for user {current_user.username} (ID: {current_user.id})")
     
     if current_user.user_type != UserType.VOLUNTEER:
+        logger.error(f"❌ GET JOINED EVENTS - User {current_user.username} is not a volunteer (type: {current_user.user_type})")
         raise HTTPException(status_code=403, detail="Only volunteers can have joined events")
+    
+    # First, let's check what entries exist in volunteer_events for this user
+    volunteer_registrations = db.execute(
+        select(volunteer_events).where(volunteer_events.c.volunteer_id == current_user.id)
+    ).fetchall()
+    
+    logger.info(f"📊 GET JOINED EVENTS - Found {len(volunteer_registrations)} volunteer_events entries for user {current_user.id}")
+    for reg in volunteer_registrations:
+        logger.info(f"  📝 Event ID: {reg.event_id}, Status: {getattr(reg, 'status', 'N/A')}, Joined At: {getattr(reg, 'joined_at', 'N/A')}")
     
     # Get joined events
     events = db.query(Event).join(volunteer_events).filter(
         volunteer_events.c.volunteer_id == current_user.id
     ).options(selectinload(Event.images)).all()
     
-    logger.info(f"User {current_user.username} has joined {len(events)} events")
+    logger.info(f"📊 GET JOINED EVENTS - User {current_user.username} has joined {len(events)} events")
+    
+    # Log details about each joined event
+    for event in events:
+        logger.info(f"  🗓️ Event '{event.title}' (ID: {event.id}) on {event.date} from {event.start_time} to {event.end_time}")
+        logger.info(f"    📍 Location: {event.location}, Category: {event.category}")
+        logger.info(f"    👥 Volunteers: {event.current_volunteers}/{event.max_volunteers or 'unlimited'}")
+    
+    logger.info(f"✅ GET JOINED EVENTS - Returning {len(events)} events for user {current_user.username}")
     return events
 
 @router.get("/organizers/{organizer_id}/events", response_model=List[EventSchema])
@@ -1246,20 +1700,100 @@ def get_messages_with_user(other_user_id: int, current_user: User = Depends(get_
         ((Message.sender_id == current_user.id) & (Message.receiver_id == other_user_id)) |
         ((Message.sender_id == other_user_id) & (Message.receiver_id == current_user.id))
     ).order_by(Message.created_at).all()
-    return msgs
+    
+    # Populate usernames for each message
+    result = []
+    for msg in msgs:
+        sender = db.query(User).filter(User.id == msg.sender_id).first()
+        receiver = db.query(User).filter(User.id == msg.receiver_id).first()
+        
+        msg_data = MessageOut(
+            id=msg.id,
+            sender_id=msg.sender_id,
+            receiver_id=msg.receiver_id,
+            content=msg.content,
+            sender_username=sender.username if sender else "Unknown",
+            receiver_username=receiver.username if receiver else "Unknown",
+            created_at=msg.created_at,
+            is_read=msg.is_read,
+            is_important_sender=msg.is_important_sender,
+            is_important_receiver=msg.is_important_receiver,
+            is_deleted_sender=msg.is_deleted_sender,
+            is_deleted_receiver=msg.is_deleted_receiver,
+            reactions=[],
+        )
+        result.append(msg_data)
+    
+    return result
 
 @router.post("/messages", response_model=MessageOut)
-def send_message(payload: MessageCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+async def send_message(payload: MessageCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    # Validate receiver exists to avoid FK errors
+    receiver = db.get(User, payload.receiver_id)
+    if not receiver:
+        raise HTTPException(status_code=404, detail="Receiver user not found")
+ 
     # Create message with current user as sender
     msg = Message(
         sender_id=current_user.id,
         receiver_id=payload.receiver_id,
         content=payload.content
     )
-    db.add(msg)
-    db.commit()
+    try:
+        db.add(msg)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        # Log and re-raise as proper HTTPException to ensure JSON error response
+        logger.error(f"Failed to create message: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create message")
+
     db.refresh(msg)
-    return msg
+    
+    # Send push notification to receiver if they have notifications enabled
+    try:
+        await send_message_notification(
+            sender_name=current_user.full_name or current_user.username,
+            sender_id=current_user.id,
+            receiver_id=receiver.id,
+            message_content=msg.content,
+            db=db
+        )
+    except Exception as e:
+        # Don't fail message sending if notification fails
+        logger.error(f"Failed to send message notification: {e}")
+    
+    # Create in-app notification for receiver
+    try:
+        await create_message_in_app_notification(
+            sender_name=current_user.full_name or current_user.username,
+            sender_id=current_user.id,
+            receiver_id=receiver.id,
+            message_content=msg.content,
+            message_id=msg.id,
+            db=db
+        )
+    except Exception as e:
+        # Don't fail message sending if in-app notification fails
+        logger.error(f"Failed to create message in-app notification: {e}")
+    
+    return MessageOut(
+        id=msg.id,
+        sender_id=msg.sender_id,
+        receiver_id=msg.receiver_id,
+        content=msg.content,
+        sender_username=current_user.username,
+        receiver_username=receiver.username,
+        created_at=msg.created_at,
+        is_read=msg.is_read,
+        is_important_sender=msg.is_important_sender,
+        is_important_receiver=msg.is_important_receiver,
+        is_deleted_sender=msg.is_deleted_sender,
+        is_deleted_receiver=msg.is_deleted_receiver,
+        reactions=[],
+    )
+
+
 
 # ------------------ Leaderboard Endpoints ------------------
 
@@ -1746,6 +2280,198 @@ async def create_event_in_app_notifications(
         
     except Exception as e:
         logger.error(f"Failed to create in-app notifications for event: {e}")
+        db.rollback()
+
+async def send_event_update_notification(
+    event_id: int,
+    event_title: str,
+    organizer_name: str,
+    changes: List[str],
+    db: Session
+):
+    """Helper function to send notifications when an event is updated"""
+    try:
+        # Get all volunteers who joined this event with FCM tokens and notifications enabled
+        joined_volunteers = db.query(User).join(
+            volunteer_events,
+            User.id == volunteer_events.c.volunteer_id
+        ).filter(
+            volunteer_events.c.event_id == event_id,
+            User.fcm_token.isnot(None),
+            User.notifications_enabled == True
+        ).all()
+        
+        if not joined_volunteers:
+            logger.info(f"No joined volunteers with notifications found for event {event_id}")
+            return
+        
+        # Extract FCM tokens
+        fcm_tokens = [user.fcm_token for user in joined_volunteers if user.fcm_token]
+        
+        if not fcm_tokens:
+            logger.info(f"No valid FCM tokens found for joined volunteers of event {event_id}")
+            return
+        
+        # Create notification message
+        change_summary = ", ".join(changes[:2])  # Show first 2 changes
+        if len(changes) > 2:
+            change_summary += f" and {len(changes) - 2} more"
+        
+        # Send notifications
+        results = firebase_service.send_notification_to_multiple_tokens(
+            tokens=fcm_tokens,
+            title="Event Update",
+            body=f"{event_title} has been updated: {change_summary}",
+            data={
+                "type": "event_update",
+                "eventId": str(event_id),
+                "organizerName": organizer_name,
+                "eventTitle": event_title,
+                "changes": "; ".join(changes)
+            }
+        )
+        
+        # Count successful sends
+        successful_sends = sum(1 for success in results.values() if success)
+        total_attempts = len(fcm_tokens)
+        
+        logger.info(f"Event update notification sent: {successful_sends}/{total_attempts} successful for event {event_id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send event update notification: {e}")
+
+async def create_event_update_in_app_notifications(
+    event_id: int,
+    event_title: str,
+    organizer_name: str,
+    changes: List[str],
+    db: Session
+):
+    """Helper function to create in-app notifications when an event is updated"""
+    try:
+        # Get all volunteers who joined this event
+        joined_volunteers = db.query(User).join(
+            volunteer_events,
+            User.id == volunteer_events.c.volunteer_id
+        ).filter(
+            volunteer_events.c.event_id == event_id
+        ).all()
+        
+        if not joined_volunteers:
+            logger.info(f"No joined volunteers found for event {event_id}")
+            return
+        
+        # Create notification message
+        change_summary = ", ".join(changes[:2])  # Show first 2 changes
+        if len(changes) > 2:
+            change_summary += f" and {len(changes) - 2} more"
+        
+        # Create in-app notifications for each joined volunteer
+        notifications_created = 0
+        for volunteer in joined_volunteers:
+            try:
+                in_app_notification = InAppNotification(
+                    user_id=volunteer.id,
+                    title="Event Update",
+                    message=f"{event_title} has been updated: {change_summary}",
+                    data={
+                        "type": "event_update",
+                        "eventId": str(event_id),
+                        "organizerName": organizer_name,
+                        "eventTitle": event_title,
+                        "changes": "; ".join(changes)
+                    }
+                )
+                db.add(in_app_notification)
+                notifications_created += 1
+            except Exception as e:
+                logger.error(f"Failed to create event update in-app notification for user {volunteer.id}: {e}")
+        
+        db.commit()
+        logger.info(f"Created {notifications_created} event update in-app notifications for event {event_id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to create event update in-app notifications: {e}")
+        db.rollback()
+
+async def send_message_notification(
+    sender_name: str,
+    sender_id: int,
+    receiver_id: int,
+    message_content: str,
+    db: Session
+):
+    """Helper function to send notifications when a message is sent"""
+    try:
+        # Get receiver with FCM token and notification preferences
+        receiver = db.query(User).filter(
+            User.id == receiver_id,
+            User.fcm_token.isnot(None),
+            User.notifications_enabled == True
+        ).first()
+        
+        if not receiver or not receiver.fcm_token:
+            logger.info(f"Receiver {receiver_id} has no FCM token or notifications disabled")
+            return
+        
+        # Truncate message content for notification preview
+        preview = message_content[:50] + "..." if len(message_content) > 50 else message_content
+        
+        # Send notification
+        success = firebase_service.send_notification_to_token(
+            token=receiver.fcm_token,
+            title=f"Message from {sender_name}",
+            body=preview,
+            data={
+                "type": "new_message",
+                "senderId": str(sender_id),
+                "senderName": sender_name,
+                "messagePreview": preview
+            }
+        )
+        
+        if success:
+            logger.info(f"Message notification sent successfully to user {receiver_id}")
+        else:
+            logger.warning(f"Failed to send message notification to user {receiver_id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send message notification: {e}")
+
+async def create_message_in_app_notification(
+    sender_name: str,
+    sender_id: int,
+    receiver_id: int,
+    message_content: str,
+    message_id: int,
+    db: Session
+):
+    """Helper function to create in-app notifications when a message is sent"""
+    try:
+        # Truncate message content for notification preview
+        preview = message_content[:100] + "..." if len(message_content) > 100 else message_content
+        
+        # Create in-app notification for receiver
+        in_app_notification = InAppNotification(
+            user_id=receiver_id,
+            title=f"Message from {sender_name}",
+            message=preview,
+            data={
+                "type": "new_message",
+                "senderId": str(sender_id),
+                "senderName": sender_name,
+                "messageId": str(message_id),
+                "messagePreview": preview
+            }
+        )
+        
+        db.add(in_app_notification)
+        db.commit()
+        
+        logger.info(f"Created message in-app notification for user {receiver_id}")
+        
+    except Exception as e:
+        logger.error(f"Failed to create message in-app notification: {e}")
         db.rollback()
 
 # ==================== IN-APP NOTIFICATION ROUTES ====================
@@ -2700,3 +3426,47 @@ async def kick_volunteer_from_event(
         logger.error(f"Failed to remove volunteer {volunteer_id} from event {event_id}: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to remove volunteer from event")
+
+# -------------------- Event Description Suggestion --------------------
+
+@router.get("/events/description/suggestion")
+async def get_event_description_suggestion(
+    title: str,
+    current_user: User = Depends(get_current_active_user),
+):
+    """Generate a concise, structured event description using OpenAI GPT."""
+
+    if not title or not title.strip():
+        raise HTTPException(status_code=400, detail="Event title is required")
+
+    prompt = (
+        "Generate a concise (80–120 words) volunteer-event description titled '" + title + "'. "
+        "Structure: Overview, Objectives, Volunteer Tasks, Impact, Call to Action. "
+        "Write in plain language, no numbering, persuasive tone."
+    )
+
+    suggested = _call_openai(prompt, max_tokens=160)
+    return {"suggested_description": suggested}
+
+# -------------------- Opportunity Idea Suggestion --------------------
+
+@router.get("/events/idea/suggestion")
+async def get_opportunity_idea_suggestion(
+    current_user: User = Depends(get_current_active_user),
+):
+    """Generate creative volunteer opportunity ideas using OpenAI GPT."""
+    
+    prompt = (
+        "Suggest three unique, engaging volunteer opportunity ideas for community organizers. "
+        "Respond as a simple bullet list (no numbering). Keep each idea less than 10 words."
+    )
+
+    ideas_text = _call_openai(prompt, max_tokens=120)
+
+    # Split into list, keep non-empty lines
+    ideas = [line.lstrip("-•* ").strip() for line in ideas_text.split("\n") if line.strip()]
+
+    # Ensure max 3 ideas
+    ideas = ideas[:3]
+
+    return {"ideas": ideas}

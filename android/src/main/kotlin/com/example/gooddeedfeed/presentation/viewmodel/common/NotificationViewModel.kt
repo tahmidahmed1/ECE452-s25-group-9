@@ -41,6 +41,7 @@ class NotificationViewModel @Inject constructor(
                 .onSuccess { response ->
                     _notifications.value = response.notifications
                     _unreadCount.value = response.unreadCount
+                    _error.value = null // Clear error on success
                 }
                 .onFailure { exception ->
                     _error.value = exception.message ?: "Failed to load notifications"

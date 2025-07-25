@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainVolunteerHistoryEntry
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.repository.LeaderboardRepository
+import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +34,9 @@ class LeaderboardViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(LeaderboardUiState())
     val uiState: StateFlow<LeaderboardUiState> = _uiState.asStateFlow()
+
+    private val _volunteerHistoryState = MutableStateFlow<UiState<List<DomainVolunteerHistoryEntry>>>(UiState.Idle)
+    val volunteerHistoryState: StateFlow<UiState<List<DomainVolunteerHistoryEntry>>> = _volunteerHistoryState.asStateFlow()
 
     private val pageSize = 20
 
@@ -140,6 +145,21 @@ class LeaderboardViewModel @Inject constructor(
                     errorMessage = e.message ?: "Failed to increase karma points",
                 )
             }
+        }
+    }
+
+    fun loadVolunteerHistory() {
+        viewModelScope.launch {
+            _volunteerHistoryState.value = UiState.Loading
+            
+            authRepository.getVolunteerHistory().fold(
+                onSuccess = { historyEntries ->
+                    _volunteerHistoryState.value = UiState.Success(historyEntries)
+                },
+                onFailure = { error ->
+                    _volunteerHistoryState.value = UiState.Error(error.message ?: "Failed to load volunteer history")
+                }
+            )
         }
     }
 } 

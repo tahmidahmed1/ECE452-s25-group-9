@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.gooddeedfeed.domain.model.DateFilter
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
+import com.example.gooddeedfeed.domain.model.toDisplayString
 import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 
@@ -145,7 +147,7 @@ fun OpportunityCard(
 
                         OpportunityDetailRow(
                             icon = Icons.Default.AccessTime,
-                            text = "All Day",
+                            text = formatEventTime(opportunity.startTime, opportunity.endTime),
                         )
                     }
 
@@ -419,13 +421,12 @@ fun FiltersDrawer(
                         title = "Category",
                         icon = Icons.Default.Category,
                     ) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
+                        // Use a scrollable row for better space efficiency
+                        LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.height(120.dp),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            items(OpportunityCategory.values()) { category ->
+                            items(OpportunityCategory.values().toList()) { category ->
                                 FilterChip(
                                     selected = filters.selectedCategories.contains(category),
                                     onClick = {
@@ -438,13 +439,22 @@ fun FiltersDrawer(
                                     },
                                     label = {
                                         Text(
-                                            text = category.name.replace("_", " ").lowercase()
-                                                .split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } },
+                                            text = category.toDisplayString(),
                                             style = MaterialTheme.typography.bodySmall,
                                         )
                                     },
                                 )
                             }
+                        }
+                        
+                        // Show selected categories count
+                        if (filters.selectedCategories.isNotEmpty()) {
+                            Text(
+                                text = "${filters.selectedCategories.size} categories selected",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
                         }
                     }
 
@@ -616,5 +626,20 @@ private fun FilterSection(
             )
         }
         content()
+    }
+}
+
+/**
+ * Formats event time display showing start and end times, or fallback to "All Day"
+ */
+private fun formatEventTime(startTime: String?, endTime: String?): String {
+    return when {
+        startTime != null && endTime != null && startTime.isNotBlank() && endTime.isNotBlank() -> {
+            "$startTime - $endTime"
+        }
+        startTime != null && startTime.isNotBlank() -> {
+            startTime
+        }
+        else -> "All Day"
     }
 }

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.remote.AuthApiService
 import com.example.gooddeedfeed.data.remote.ChatApiService
+import com.example.gooddeedfeed.data.repository.ConversationPreferencesRepository
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -70,6 +71,7 @@ class ChatViewModel @Inject constructor(
     private val chatApiService: ChatApiService,
     private val authApiService: AuthApiService,
     private val dataStore: DataStore<Preferences>,
+    private val conversationPreferencesRepository: ConversationPreferencesRepository,
 ) : ViewModel() {
 
     companion object {
@@ -116,7 +118,19 @@ class ChatViewModel @Inject constructor(
                         return@launch
                     }
                     val conversations = response.body<List<ChatConversation>>()
-                    _conversationsState.value = UiState.Success(conversations)
+                    
+                    // Apply user preferences for starring and filtering deleted conversations
+                    val filteredConversations = conversations.mapNotNull { conversation ->
+                        val isDeleted = conversationPreferencesRepository.isConversationDeleted(currentUser.id, conversation.id)
+                        if (isDeleted) {
+                            null // Filter out deleted conversations
+                        } else {
+                            val isStarred = conversationPreferencesRepository.isConversationStarred(currentUser.id, conversation.id)
+                            conversation.copy(isStarred = isStarred)
+                        }
+                    }
+                    
+                    _conversationsState.value = UiState.Success(filteredConversations)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load conversations", e)
@@ -286,6 +300,44 @@ class ChatViewModel @Inject constructor(
 
     fun clearSendMessageState() {
         _sendMessageState.value = UiState.Idle
+    }
+
+    fun deleteConversation(conversationId: String, currentUser: DomainUser) {
+        viewModelScope.launch {
+            try {
+                // Store the deletion preference
+                conversationPreferencesRepository.deleteConversation(currentUser.id, conversationId)
+                
+                // Update the UI state by filtering out the deleted conversation
+                val currentConversations = (_conversationsState.value as? UiState.Success)?.data ?: return@launch
+                val updatedConversations = currentConversations.filter { it.id != conversationId }
+                _conversationsState.value = UiState.Success(updatedConversations)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to delete conversation", e)
+            }
+        }
+    }
+
+    fun toggleConversationStar(conversationId: String, currentUser: DomainUser) {
+        viewModelScope.launch {
+            try {
+                // Toggle the star preference and get the new state
+                val isStarred = conversationPreferencesRepository.toggleConversationStar(currentUser.id, conversationId)
+                
+                // Update the UI state
+                val currentConversations = (_conversationsState.value as? UiState.Success)?.data ?: return@launch
+                val updatedConversations = currentConversations.map { conversation ->
+                    if (conversation.id == conversationId) {
+                        conversation.copy(isStarred = isStarred)
+                    } else {
+                        conversation
+                    }
+                }
+                _conversationsState.value = UiState.Success(updatedConversations)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to toggle conversation star", e)
+            }
+        }
     }
 }
 

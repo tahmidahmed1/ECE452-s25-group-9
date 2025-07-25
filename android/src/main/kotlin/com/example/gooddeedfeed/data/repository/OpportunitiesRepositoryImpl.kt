@@ -9,12 +9,17 @@ import com.example.gooddeedfeed.domain.model.OpportunityCategory
 import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
+import com.example.gooddeedfeed.domain.model.hasPassed
 import com.example.gooddeedfeed.domain.model.toApiValue
 import com.example.gooddeedfeed.domain.repository.OpportunitiesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,7 +35,22 @@ private fun EventDto.toOpportunity(isJoined: Boolean = false): VolunteerOpportun
     requiredVolunteers = max_volunteers ?: 0,
     currentVolunteers = current_volunteers ?: 0,
     category = try {
-        OpportunityCategory.valueOf(category.uppercase())
+        // Convert from backend format (e.g., "community_service") to enum
+        when (category) {
+            "community_service" -> OpportunityCategory.COMMUNITY_SERVICE
+            "education" -> OpportunityCategory.EDUCATION
+            "environmental" -> OpportunityCategory.ENVIRONMENTAL
+            "healthcare" -> OpportunityCategory.HEALTHCARE
+            "social_services" -> OpportunityCategory.SOCIAL_SERVICES
+            "disaster_relief" -> OpportunityCategory.DISASTER_RELIEF
+            "food_security" -> OpportunityCategory.FOOD_SECURITY
+            "animal_welfare" -> OpportunityCategory.ANIMAL_WELFARE
+            "arts_culture" -> OpportunityCategory.ARTS_CULTURE
+            "youth_mentoring" -> OpportunityCategory.YOUTH_MENTORING
+            "elderly_care" -> OpportunityCategory.ELDERLY_CARE
+            "technology" -> OpportunityCategory.TECHNOLOGY
+            else -> OpportunityCategory.OTHER
+        }
     } catch (e: Exception) {
         OpportunityCategory.OTHER
     },
@@ -39,7 +59,9 @@ private fun EventDto.toOpportunity(isJoined: Boolean = false): VolunteerOpportun
     imageUrl = image_url?.toEmulatorAccessibleUrl(),
     karmaPoints = karma_points,
     isJoined = isJoined,
+    images = images.map { it.copy(image_url = it.image_url.toEmulatorAccessibleUrl()) },
 )
+
 
 @Singleton
 class OpportunitiesRepositoryImpl @Inject constructor(
@@ -55,7 +77,20 @@ class OpportunitiesRepositoryImpl @Inject constructor(
             Log.d("OpportunitiesRepo", "📞 API returned ${events.size} events")
             val opportunities = events.map { it.toOpportunity() }
             Log.d("OpportunitiesRepo", "📞 Mapped to ${opportunities.size} opportunities")
-            opportunities
+            
+            // Log all opportunities with their date/time data before filtering
+            opportunities.forEach { opp ->
+                Log.d("OpportunitiesRepo", "  📊 Event: '${opp.title}' | Date: ${opp.date} | Start: ${opp.startTime} | End: ${opp.endTime}")
+            }
+            
+            val futureOpportunities = opportunities.filterNot { it.hasPassed() }
+            Log.d("OpportunitiesRepo", "📞 Filtered to ${futureOpportunities.size} future opportunities (removed ${opportunities.size - futureOpportunities.size} past events)")
+            
+            // Log remaining opportunities after filtering
+            futureOpportunities.forEach { opp ->
+                Log.d("OpportunitiesRepo", "  ✅ Remaining: '${opp.title}' | Date: ${opp.date} | Start: ${opp.startTime} | End: ${opp.endTime}")
+            }
+            futureOpportunities
         } catch (e: Exception) {
             Log.e("OpportunitiesRepo", "❌ Error in fetchAll()", e)
             emptyList()
@@ -119,10 +154,28 @@ class OpportunitiesRepositoryImpl @Inject constructor(
 
     override suspend fun joinEvent(eventId: Int): Result<Unit> {
         return runCatching {
+            Log.i("OpportunitiesRepo", "🎯 JOIN EVENT - Attempting to join event $eventId")
+            
+            // Join the event first
             apiService.joinEvent(eventId)
+            Log.i("OpportunitiesRepo", "✅ JOIN EVENT - Successfully joined event $eventId")
+            
+            // Send notification to organizer about volunteer joining
+            try {
+                apiService.notifyOrganizerOfVolunteerJoin(eventId)
+                Log.i("OpportunitiesRepo", "📢 JOIN EVENT - Notified organizer for event $eventId")
+            } catch (e: Exception) {
+                // Log but don't fail the join if notification fails
+                Log.w("OpportunitiesRepo", "⚠️ JOIN EVENT - Failed to send notification to organizer for event $eventId", e)
+            }
+            
             // Trigger refresh of joined events
-            _joinedEventsRefresh.value = System.currentTimeMillis()
+            val refreshTime = System.currentTimeMillis()
+            _joinedEventsRefresh.value = refreshTime
+            Log.i("OpportunitiesRepo", "🔄 JOIN EVENT - Triggered joined events refresh at $refreshTime")
             Unit
+        }.onFailure { e ->
+            Log.e("OpportunitiesRepo", "❌ JOIN EVENT - Failed to join event $eventId", e)
         }
     }
 
@@ -136,13 +189,28 @@ class OpportunitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>> =
-        _joinedEventsRefresh.flatMapLatest {
+        _joinedEventsRefresh.flatMapLatest { refreshTime ->
             flow {
                 try {
-                    val joinedEvents = apiService.getMyJoinedEvents().map { it.toOpportunity(isJoined = true) }
+                    Log.i("OpportunitiesRepo", "📅 GET JOINED EVENTS - Fetching joined events (refresh time: $refreshTime)")
+                    val joinedEventsDto = apiService.getMyJoinedEvents()
+                    Log.i("OpportunitiesRepo", "📅 GET JOINED EVENTS - API returned ${joinedEventsDto.size} joined events")
+                    
+                    joinedEventsDto.forEach { eventDto ->
+                        Log.i("OpportunitiesRepo", "  📋 Joined Event: '${eventDto.title}' (ID: ${eventDto.id}) on ${eventDto.date} from ${eventDto.start_time} to ${eventDto.end_time}")
+                    }
+                    
+                    val joinedEvents = joinedEventsDto.map { it.toOpportunity(isJoined = true) }
+                    Log.i("OpportunitiesRepo", "📅 GET JOINED EVENTS - Mapped to ${joinedEvents.size} volunteer opportunities")
+                    
+                    joinedEvents.forEach { opportunity ->
+                        Log.i("OpportunitiesRepo", "  ✅ Mapped Opportunity: '${opportunity.title}' (ID: ${opportunity.id}) - isJoined: ${opportunity.isJoined}")
+                    }
+                    
                     emit(joinedEvents)
                 } catch (e: Exception) {
-                    Log.e("OpportunitiesRepo", "❌ Error getting joined events", e)
+                    Log.e("OpportunitiesRepo", "❌ GET JOINED EVENTS - Error getting joined events", e)
+                    Log.e("OpportunitiesRepo", "❌ GET JOINED EVENTS - Exception details: ${e.message}")
                     emit(emptyList())
                 }
             }
@@ -184,22 +252,41 @@ class OpportunitiesRepositoryImpl @Inject constructor(
 
             Log.d("OpportunitiesRepo", "  - API params: category=$categoryParam, onlyAvailable=${filters.onlyAvailable}, almostFull=${filters.almostFull}")
             Log.d("OpportunitiesRepo", "  - API params: minKarmaPoints=${filters.minKarmaPoints}, maxKarmaPoints=${filters.maxKarmaPoints}, dateFilter=$dateFilterParam")
+            Log.d("OpportunitiesRepo", "  - Distance filtering enabled: ${filters.useDistanceFilter}")
+            if (filters.useDistanceFilter) {
+                Log.d("OpportunitiesRepo", "  - Location params: lat=$lat, lon=$lon, radiusKm=${radiusKm ?: 50f}")
+            } else {
+                Log.d("OpportunitiesRepo", "  - Location params: DISABLED (no lat/lon sent to API)")
+            }
 
-            val result = apiService.getAllEvents(
-                lat = lat,
-                lon = lon,
-                radiusKm = radiusKm ?: 50f,
+            val allOpportunities = apiService.getAllEvents(
+                lat = if (filters.useDistanceFilter) lat else null,
+                lon = if (filters.useDistanceFilter) lon else null,
+                radiusKm = if (filters.useDistanceFilter) (radiusKm ?: 50f) else 50f,
                 category = categoryParam,
                 onlyAvailable = filters.onlyAvailable,
                 almostFull = filters.almostFull,
                 minKarmaPoints = filters.minKarmaPoints,
                 maxKarmaPoints = filters.maxKarmaPoints,
                 dateFilter = dateFilterParam,
-            ).map { it.toOpportunity() }
+            ).map { dto ->
+                dto.toOpportunity().copy(isJoined = false)
+            }
 
-            Log.d("OpportunitiesRepo", "🎯 API returned ${result.size} opportunities")
+            // Log all opportunities with their date/time data before filtering
+            allOpportunities.forEach { opp ->
+                Log.d("OpportunitiesRepo", "  🎯 Event: '${opp.title}' | Date: ${opp.date} | Start: ${opp.startTime} | End: ${opp.endTime}")
+            }
+            
+            // Filter out past events
+            val result = allOpportunities.filterNot { it.hasPassed() }
+
+            Log.d("OpportunitiesRepo", "🎯 API returned ${allOpportunities.size} opportunities")
+            Log.d("OpportunitiesRepo", "🎯 Filtered to ${result.size} future opportunities (removed ${allOpportunities.size - result.size} past events)")
+            
+            // Log remaining opportunities after filtering
             result.forEach { opp ->
-                Log.d("OpportunitiesRepo", "  - ${opp.title}: karmaPoints=${opp.karmaPoints}, available=${opp.requiredVolunteers - opp.currentVolunteers}")
+                Log.d("OpportunitiesRepo", "  🎯✅ Remaining: '${opp.title}' | Date: ${opp.date} | Start: ${opp.startTime} | End: ${opp.endTime}")
             }
             result
         } catch (e: Exception) {
@@ -207,5 +294,9 @@ class OpportunitiesRepositoryImpl @Inject constructor(
             emptyList()
         }
         emit(opportunities)
+    }
+
+    override suspend fun generateOpportunityIdeas(): Result<List<String>> = runCatching {
+        apiService.generateOpportunityIdeas()
     }
 } 

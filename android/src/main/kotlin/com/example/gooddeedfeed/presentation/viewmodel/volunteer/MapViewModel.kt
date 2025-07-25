@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.util.Log
 
 interface MapUiContract {
     val currentLocation: Location?
@@ -71,9 +72,7 @@ class MapViewModel @Inject constructor(
                             )
                             val resState = filterEventsByRadius(newState)
 
-                            location?.let { loc ->
-                                loadEvents(loc.latitude, loc.longitude)
-                            }
+                            // No longer re-fetch events on location updates
                             resState
                         }
                     }
@@ -85,18 +84,6 @@ class MapViewModel @Inject constructor(
                     )
                 }
             }
-        }
-    }
-
-    fun updateRadius(radiusKm: Float) {
-        _uiState.update { currentState ->
-            val newState = currentState.copy(radiusKm = radiusKm)
-            val resState = filterEventsByRadius(newState)
-
-            val loc = resState.currentLocation
-            loadEvents(loc?.latitude, loc?.longitude)
-
-            resState
         }
     }
 
@@ -132,11 +119,17 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    private fun loadEvents(lat: Double? = null, lon: Double? = null) {
+    private fun loadEvents() {
         viewModelScope.launch {
             try {
-                val events = getMapEventsUseCase(lat, lon, _uiState.value.radiusKm)
-                _uiState.update { currentState -> filterEventsByRadius(currentState.copy(allEvents = events)) }
+                val events = getMapEventsUseCase()
+                Log.d("MapViewModel", "Loaded events: ${events.size}")
+                events.forEach { ev ->
+                    Log.d("MapViewModel", "Event ${ev.id}: ${ev.title} (${ev.latitude},${ev.longitude})")
+                }
+                _uiState.update { currentState ->
+                    currentState.copy(allEvents = events, filteredEvents = events)
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(errorMessage = "Failed to load events: ${e.message}")
@@ -145,37 +138,7 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    private fun filterEventsByRadius(state: MapUiState): MapUiState {
-        val referenceLocation = state.currentLocation ?: run {
-            if (state.allEvents.isEmpty()) return state.copy(filteredEvents = emptyList())
-
-            val avgLat = state.allEvents.map { it.latitude }.average()
-            val avgLng = state.allEvents.map { it.longitude }.average()
-            android.location.Location("avg").apply {
-                latitude = avgLat
-                longitude = avgLng
-            }
-        }
-
-        return try {
-            var filteredEvents = state.allEvents.filter { event ->
-                val distance = locationService.calculateDistance(
-                    referenceLocation.latitude,
-                    referenceLocation.longitude,
-                    event.latitude,
-                    event.longitude,
-                )
-                distance <= state.radiusKm
-            }
-
-            if (filteredEvents.isEmpty()) filteredEvents = state.allEvents
-
-            state.copy(filteredEvents = filteredEvents)
-        } catch (e: Exception) {
-            state.copy(
-                filteredEvents = state.allEvents,
-                errorMessage = "Error filtering events: ${e.message}",
-            )
-        }
-    }
+    // Radius-based filtering removed – always show all events
+    private fun filterEventsByRadius(state: MapUiState): MapUiState =
+        state.copy(filteredEvents = state.allEvents)
 } 

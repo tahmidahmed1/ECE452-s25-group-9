@@ -178,3 +178,15 @@ data class BannerUploadResponse(
     val banner_url: String,
     val message: String,
 )
+
+@Serializable
+data class VolunteerHistoryEntryDto(
+    val event_id: Int,
+    val event_title: String,
+    val event_date: String,
+    val hours_worked: Double? = null,
+    val is_approved: Boolean,
+    val rejection_reason: String? = null,
+    val karma_points_earned: Int = 0,
+    val status: String, // "pending", "approved", "rejected"
+)

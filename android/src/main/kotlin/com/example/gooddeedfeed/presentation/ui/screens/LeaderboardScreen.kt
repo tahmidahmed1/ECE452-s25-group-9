@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -42,6 +43,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface  
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +65,7 @@ import com.example.gooddeedfeed.BuildConfig
 import com.example.gooddeedfeed.domain.model.DomainBadge
 import com.example.gooddeedfeed.domain.model.DomainLeaderboardEntry
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainVolunteerHistoryEntry
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
@@ -86,6 +89,7 @@ fun StatsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val allBadgesState by badgeViewModel.allBadgesState.collectAsStateWithLifecycle()
     val userBadgesState by badgeViewModel.userBadgesState.collectAsStateWithLifecycle()
+    val volunteerHistoryState by viewModel.volunteerHistoryState.collectAsStateWithLifecycle()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -93,6 +97,7 @@ fun StatsScreen(
     LaunchedEffect(Unit) {
         badgeViewModel.checkBadgeAchievements()
         badgeViewModel.loadUserBadges()
+        viewModel.loadVolunteerHistory()
     }
     uiState.errorMessage?.let { error ->
         LaunchedEffect(error) {
@@ -321,28 +326,125 @@ fun StatsScreen(
 
         VerticalSpacer(SpacingSize.Large)
 
-        SectionCard(title = "Volunteer History", showExport = true) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppConstants.VOLUNTEER_HISTORY_ITEMS.forEach { item ->
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth(),
+        SectionCard(title = "Volunteer History", showExport = true, volunteerHistoryState = volunteerHistoryState) {
+            when (val historyState = volunteerHistoryState) {
+                is UiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
+                        CircularProgressIndicator()
+                    }
+                }
+                is UiState.Success -> {
+                    if (historyState.data.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Column {
-                                Text(item.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                                Text(item.date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
                             Icon(
-                                imageVector = if (item.verified) Icons.Default.Star else Icons.Default.Info,
-                                contentDescription = null,
-                                tint = if (item.verified) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                imageVector = Icons.Default.EmojiEvents,
+                                contentDescription = "No volunteer history yet",
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No volunteer history yet",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Join volunteer events to build your history!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                textAlign = TextAlign.Center,
                             )
                         }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            historyState.data.forEach { historyEntry ->
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = historyEntry.eventTitle,
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = historyEntry.eventDate,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            
+                                            // Status tag based on the status field
+                                            StatusTag(status = historyEntry.status)
+                                        }
+                                        
+                                        if (historyEntry.isApproved) {
+                                            if (historyEntry.hoursWorked != null && historyEntry.hoursWorked > 0) {
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(
+                                                    text = "Hours worked: ${historyEntry.hoursWorked}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                            if (historyEntry.karmaPointsEarned > 0) {
+                                                Text(
+                                                    text = "Karma earned: ${historyEntry.karmaPointsEarned} points",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        } else if (historyEntry.rejectionReason != null) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = "Reason: ${historyEntry.rejectionReason}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.error,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                is UiState.Error -> {
+                    Text(
+                        text = "Failed to load volunteer history: ${historyState.message}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+                is UiState.Idle -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
                     }
                 }
             }
@@ -439,6 +541,67 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
     }
 }
 
+private fun exportVolunteerHistoryPdf(context: android.content.Context, history: List<DomainVolunteerHistoryEntry>) {
+    val doc = PdfDocument()
+    val pageInfo = PdfDocument.PageInfo.Builder(400, 800, 1).create()
+    val page = doc.startPage(pageInfo)
+    val canvas = page.canvas
+    val paint = android.graphics.Paint()
+    paint.textSize = 14f
+    var y = 30f
+    
+    // Title
+    paint.isFakeBoldText = true
+    canvas.drawText("Volunteer History Report", 20f, y, paint)
+    paint.isFakeBoldText = false
+    y += 30f
+    
+    // Filter to only show verified/approved events in PDF
+    val verifiedHistory = history.filter { it.status == "approved" }
+    
+    if (verifiedHistory.isEmpty()) {
+        canvas.drawText("No verified volunteer events yet.", 20f, y, paint)
+    } else {
+        paint.textSize = 12f
+        verifiedHistory.forEach { entry ->
+            // Event title
+            paint.isFakeBoldText = true
+            canvas.drawText("Event: ${entry.eventTitle}", 20f, y, paint)
+            paint.isFakeBoldText = false
+            y += 18f
+            
+            // Date
+            canvas.drawText("Date: ${entry.eventDate}", 20f, y, paint)
+            y += 16f
+            
+            // Status (always "Verified" since we filtered to only approved events)
+            canvas.drawText("Status: Verified", 20f, y, paint)
+            y += 16f
+            
+            // Hours worked
+            if (entry.hoursWorked != null && entry.hoursWorked > 0) {
+                canvas.drawText("Hours Worked: ${entry.hoursWorked}", 20f, y, paint)
+                y += 16f
+            }
+            
+            // Karma points earned
+            if (entry.karmaPointsEarned > 0) {
+                canvas.drawText("Karma Points Earned: ${entry.karmaPointsEarned}", 20f, y, paint)
+                y += 16f
+            }
+            
+            y += 10f // Space between entries
+        }
+    }
+    
+    doc.finishPage(page)
+    val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    val file = File(downloads, "volunteer_history.pdf")
+    FileOutputStream(file).use { doc.writeTo(it) }
+    doc.close()
+}
+
+// Keep the old function for backward compatibility with other sections
 private fun exportHistoryPdf(context: android.content.Context, history: List<AppConstants.HistoryItem>) {
     val doc = PdfDocument()
     val pageInfo = PdfDocument.PageInfo.Builder(300, 600, 1).create()
@@ -466,6 +629,7 @@ private fun exportHistoryPdf(context: android.content.Context, history: List<App
 private fun SectionCard(
     title: String,
     showExport: Boolean = false,
+    volunteerHistoryState: UiState<List<DomainVolunteerHistoryEntry>>? = null,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -485,8 +649,15 @@ private fun SectionCard(
                 if (showExport) {
                     FilledTonalButton(onClick = {
                         scope.launch {
-                            exportHistoryPdf(context, AppConstants.VOLUNTEER_HISTORY_ITEMS)
-                            ToastUtils.showSuccessToast(context, "History exported to Downloads")
+                            when (val historyState = volunteerHistoryState) {
+                                is UiState.Success -> {
+                                    exportVolunteerHistoryPdf(context, historyState.data)
+                                    ToastUtils.showSuccessToast(context, "History exported to Downloads")
+                                }
+                                else -> {
+                                    ToastUtils.showErrorToast(context, "No volunteer history to export")
+                                }
+                            }
                         }
                     }) {
                         Icon(Icons.Default.Download, contentDescription = null)
@@ -764,5 +935,45 @@ private fun SubscriptionCard(
                 Text("Unsubscribe")
             }
         }
+    }
+}
+
+@Composable
+private fun StatusTag(status: String) {
+    val (backgroundColor, textColor, text) = when (status) {
+        "pending" -> Triple(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.onSurface,
+            "Pending"
+        )
+        "approved" -> Triple(
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer,
+            "Verified"
+        )
+        "rejected" -> Triple(
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer,
+            "Rejected"
+        )
+        else -> Triple(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.onSurface,
+            "Unknown"
+        )
+    }
+    
+    Surface(
+        color = backgroundColor,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.padding(horizontal = 4.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = textColor,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
     }
 } 

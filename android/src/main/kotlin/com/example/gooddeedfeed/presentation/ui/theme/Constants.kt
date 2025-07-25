@@ -1,6 +1,20 @@
 package com.example.gooddeedfeed.presentation.ui.theme
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+
+object Constants {
+    object Colors {
+        val primary = Color(0xFF6366F1) // Indigo
+        val secondary = Color(0xFF8B5CF6) // Purple
+        val lightGray = Color(0xFFF3F4F6)
+        val darkGray = Color(0xFF6B7280)
+        val lightBlue = Color(0xFF3B82F6)
+        val starYellow = Color(0xFFFBBF24)
+        val error = Color(0xFFEF4444)
+        val success = Color(0xFF10B981)
+    }
+}
 
 object CornerRadius {
     val small = 8.dp

@@ -25,6 +25,10 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,7 +58,8 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlin.math.ln
+import android.util.Log
+import androidx.compose.material.icons.filled.ArrowForward
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -62,48 +67,31 @@ fun MapView(
     uiState: MapUiContract,
     locationPermissionState: PermissionState,
     modifier: Modifier = Modifier,
-    zoomLevel: Float = 12f,
     onEventSelected: (VolunteerEvent) -> Unit,
+    onNavigateToDetails: (VolunteerEvent) -> Unit,
 ) {
-    val initialLocation = uiState.currentLocation?.let {
-        LatLng(it.latitude, it.longitude)
-    } ?: LatLng(43.6532, -79.3832) // Toronto as fallback only
-
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(initialLocation, zoomLevel)
+        position = CameraPosition.fromLatLngZoom(LatLng(43.6532, -79.3832), 12f)
     }
 
+    // Only center on user location once when first available
+    var hasAnimatedToUserLocation by remember { mutableStateOf(false) }
+    
     LaunchedEffect(uiState.currentLocation) {
-        uiState.currentLocation?.let { loc ->
-            val userLocation = LatLng(loc.latitude, loc.longitude)
-            val currentTarget = cameraPositionState.position.target
-            val distance = FloatArray(1)
-            Location.distanceBetween(
-                currentTarget.latitude,
-                currentTarget.longitude,
-                userLocation.latitude,
-                userLocation.longitude,
-                distance,
-            )
-
-            if (distance[0] > 1000) {
+        uiState.currentLocation?.let { location ->
+            if (!hasAnimatedToUserLocation) {
                 cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel),
-                    1000,
+                    CameraUpdateFactory.newLatLngZoom(
+                        LatLng(location.latitude, location.longitude),
+                        12f
+                    )
                 )
+                hasAnimatedToUserLocation = true
             }
         }
     }
 
-    LaunchedEffect(zoomLevel) {
-        uiState.currentLocation?.let { loc ->
-            val userLocation = LatLng(loc.latitude, loc.longitude)
-            cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(userLocation, zoomLevel),
-                800,
-            )
-        }
-    }
+    // Removed auto recentring to prevent camera jump while user pans
 
     if (locationPermissionState.status.isGranted) {
         GoogleMap(
@@ -116,7 +104,7 @@ fun MapView(
             ),
             uiSettings = MapUiSettings(
                 myLocationButtonEnabled = true,
-                zoomControlsEnabled = false,
+                zoomControlsEnabled = true,
                 compassEnabled = true,
                 rotationGesturesEnabled = true,
                 scrollGesturesEnabled = true,
@@ -127,10 +115,10 @@ fun MapView(
             uiState.currentLocation?.let { loc ->
                 Circle(
                     center = LatLng(loc.latitude, loc.longitude),
-                    radius = (uiState.radiusKm * 1000).toDouble(),
-                    strokeColor = Color(0xFF1976D2).copy(alpha = 0.8f), // More vibrant blue
-                    fillColor = Color(0xFF1976D2).copy(alpha = 0.15f), // Slightly more visible fill
-                    strokeWidth = 3f, // Thicker stroke for better visibility
+                    radius = 1000.0,
+                    strokeColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    strokeWidth = 3f,
                 )
             }
 
@@ -140,6 +128,7 @@ fun MapView(
                     title = event.title,
                     snippet = event.organizationName,
                     onClick = {
+                        Log.d("MapScreen", "Marker clicked: ${event.title}")
                         onEventSelected(event)
                         true
                     },
@@ -158,97 +147,44 @@ fun MapView(
     }
 }
 
-@Composable
-fun LegendPanel(filteredEvents: List<VolunteerEvent>, modifier: Modifier = Modifier) {
-    if (filteredEvents.isEmpty()) return
+// Radius slider removed – we now always show all events.
 
-    Card(modifier = modifier) {
-        Column(Modifier.padding(12.dp)) {
-            Text("Nearby Events", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Spacer(Modifier.height(8.dp))
-            OpportunityCategory.values().forEach { category ->
-                val count = filteredEvents.count { it.category == category }
-                if (count > 0) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(category.color(), CircleShape),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("${category.name.replace("_", " ")} ($count)", fontSize = 12.sp)
+@Composable
+fun EventDetailDialog(event: VolunteerEvent, currentLocation: Location?, onDismiss: () -> Unit, onNavigateToDetails: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = RoundedCornerShape(12.dp)) {
+            Row(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start,
+            ) {
+                // Placeholder organizer image (could replace with real url when available)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                )
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(Modifier.weight(1f)) {
+                    Text(event.title, fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text("${event.date}  ${event.startTime}-${event.endTime}", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+
+                    val desc = if (event.description.length > 120) event.description.take(117).trimEnd() + "…" else event.description
+                    Text(desc, maxLines = 2, fontSize = 12.sp)
+
+                    currentLocation?.let { loc ->
+                        val dist = calculateDistanceKm(loc.latitude, loc.longitude, event.latitude, event.longitude)
+                        Text("${"%.1f".format(dist)} km away", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 }
-            }
-        }
-    }
-}
 
-@Composable
-fun RadiusSlider(radiusKm: Float, onRadiusChange: (Float) -> Unit, onZoomChange: (Float) -> Unit, modifier: Modifier = Modifier) {
-    Card(modifier = modifier) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Search radius", fontWeight = FontWeight.Medium)
-                Text("${radiusKm.toInt()} km", fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.height(8.dp))
-            Slider(
-                value = radiusKm,
-                onValueChange = { newRadius ->
-                    onRadiusChange(newRadius)
-                    val zoomLevel = calculateZoomForRadius(newRadius)
-                    onZoomChange(zoomLevel)
-                },
-                valueRange = 1f..50f,
-                steps = 49,
-            )
-        }
-    }
-}
-
-/**
- * Calculate zoom level to ensure the radius circle fits within the screen bounds
- * This uses the approximate relationship between Google Maps zoom levels and visible distance
- */
-private fun calculateZoomForRadius(radiusKm: Float): Float {
-    val radiusMeters = radiusKm * 1000.0
-    val paddingFactor = 1.8 // This ensures the circle fits comfortably with some padding
-    val requiredViewDistance = radiusMeters * paddingFactor
-
-    val metersPerPixelAtZoom0 = 156543.03392 * 0.7071
-    val screenWidthPixels = 1000.0
-    val requiredMetersPerPixel = requiredViewDistance / screenWidthPixels
-
-    val zoomLevel = ln(metersPerPixelAtZoom0 / requiredMetersPerPixel) / ln(2.0)
-
-    return zoomLevel.toFloat().coerceIn(8f, 18f)
-}
-
-@Composable
-fun EventDetailDialog(event: VolunteerEvent, currentLocation: Location?, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.padding(16.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(event.title, fontWeight = FontWeight.Bold)
-                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, contentDescription = "close") }
+                IconButton(onClick = { onNavigateToDetails() }) {
+                    Icon(Icons.Default.ArrowForward, contentDescription = "details", tint = MaterialTheme.colorScheme.primary)
                 }
-                Spacer(Modifier.height(8.dp))
-                Text(event.organizationName, color = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.height(8.dp))
-                Text(event.description)
-                Spacer(Modifier.height(12.dp))
-                DetailsRow("Date & Time", "${event.date}\n${event.startTime}-${event.endTime}")
-                DetailsRow("Available", "${event.maxVolunteers - event.currentVolunteers}/${event.maxVolunteers}")
-                Spacer(Modifier.height(12.dp))
-                Text("Location: ${event.location}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                currentLocation?.let { loc ->
-                    val dist = calculateDistanceKm(loc.latitude, loc.longitude, event.latitude, event.longitude)
-                    Text("Distance: ${"%.1f".format(dist)} km", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
-                }
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Join Event") }
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,6 +37,8 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -79,10 +83,76 @@ fun OrganizerEventDetailScreen(
         viewModel.loadEventVolunteers(event.id)
     }
 
-    val eventDate = try {
-        LocalDate.parse(event.date, DateTimeFormatter.ISO_LOCAL_DATE)
-    } catch (e: Exception) { null }
-    val showJoinedSection = eventDate == null || LocalDate.now().isBefore(eventDate.plusDays(1))
+    fun isEventCompleted(event: VolunteerEvent): Boolean {
+        return try {
+            Log.d("AttendanceDebug", "=== CHECKING EVENT COMPLETION ===")
+            Log.d("AttendanceDebug", "Event ID: ${event.id}")
+            Log.d("AttendanceDebug", "Event Title: ${event.title}")
+            Log.d("AttendanceDebug", "Raw event date: '${event.date}'")
+            Log.d("AttendanceDebug", "Raw event endTime: '${event.endTime}'")
+            
+            // Parse date using multiple formats (copied from VolunteerOpportunity.hasPassed())
+            fun parseDate(dateStr: String): LocalDate? {
+                val patterns = listOf("yyyy-MM-dd", "MMM d, yyyy", "MMMM d, yyyy")
+                for (p in patterns) {
+                    runCatching {
+                        return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(p, java.util.Locale.ENGLISH))
+                    }
+                }
+                return null
+            }
+
+            // Parse time using multiple formats (copied from VolunteerOpportunity.hasPassed())
+            fun parseTime(timeStr: String): LocalTime? {
+                val patterns = listOf("H:mm", "H:mm:ss", "h:mm a", "hh:mm a")
+                for (p in patterns) {
+                    runCatching {
+                        return LocalTime.parse(timeStr.trim(), DateTimeFormatter.ofPattern(p, java.util.Locale.ENGLISH))
+                    }
+                }
+                return null
+            }
+            
+            val eventDate = parseDate(event.date)
+            val eventEndTime = parseTime(event.endTime)
+            
+            if (eventDate == null || eventEndTime == null) {
+                Log.e("AttendanceDebug", "Failed to parse date or time - eventDate: $eventDate, eventEndTime: $eventEndTime")
+                return false // Default to not completed if parsing fails
+            }
+            
+            val currentDate = LocalDate.now()
+            val currentTime = LocalTime.now()
+            val eventEndDateTime = LocalDateTime.of(eventDate, eventEndTime)
+            val currentDateTime = LocalDateTime.now()
+            
+            Log.d("AttendanceDebug", "Parsed event date: $eventDate")
+            Log.d("AttendanceDebug", "Parsed event end time: $eventEndTime")
+            Log.d("AttendanceDebug", "Current date: $currentDate")
+            Log.d("AttendanceDebug", "Current time: $currentTime")
+            Log.d("AttendanceDebug", "Event end date-time: $eventEndDateTime")
+            Log.d("AttendanceDebug", "Current date-time: $currentDateTime")
+            
+            val isCompleted = eventEndDateTime.isBefore(currentDateTime)
+            Log.d("AttendanceDebug", "Is event completed? $isCompleted")
+            Log.d("AttendanceDebug", "eventEndDateTime.isBefore(currentDateTime): $isCompleted")
+            Log.d("AttendanceDebug", "=== END EVENT COMPLETION CHECK ===")
+            
+            isCompleted
+        } catch (e: Exception) {
+            Log.e("AttendanceDebug", "Error checking event completion", e)
+            Log.e("AttendanceDebug", "Event date format: '${event.date}', endTime format: '${event.endTime}'")
+            false // Default to not completed if parsing fails
+        }
+    }
+    
+    val eventCompleted = isEventCompleted(event)
+    val showAttendanceSection = eventCompleted
+    
+    Log.d("AttendanceDebug", "=== ATTENDANCE SECTION DECISION ===")
+    Log.d("AttendanceDebug", "eventCompleted: $eventCompleted")
+    Log.d("AttendanceDebug", "showAttendanceSection: $showAttendanceSection")
+    Log.d("AttendanceDebug", "=== END ATTENDANCE SECTION DECISION ===")
 
     Column(
         modifier = Modifier
@@ -153,12 +223,19 @@ fun OrganizerEventDetailScreen(
 
             // Volunteers Joined or Attendance
             Spacer(modifier = Modifier.height(24.dp))
+            
+            Log.d("AttendanceDebug", "=== UI SECTION DISPLAY ===")
+            Log.d("AttendanceDebug", "showAttendanceSection in UI: $showAttendanceSection")
+            Log.d("AttendanceDebug", "Section title will be: ${if (showAttendanceSection) "Volunteer Attendance" else "Volunteers Joined"}")
+            
             Text(
-                text = if (showJoinedSection) "Volunteers Joined" else "Volunteer Attendance",
+                text = if (showAttendanceSection) "Volunteer Attendance" else "Volunteers Joined",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            if (showJoinedSection) {
+            if (!showAttendanceSection) {
+                Log.d("AttendanceDebug", "=== DISPLAYING VOLUNTEERS JOINED SECTION ===")
+                Log.d("AttendanceDebug", "Volunteers count: ${volunteers.size}")
                 if (volunteers.isEmpty()) {
                     Text(text = "No volunteers yet", style = MaterialTheme.typography.bodyMedium)
                 } else {
@@ -182,16 +259,29 @@ fun OrganizerEventDetailScreen(
                                 )
                                 Spacer(Modifier.width(12.dp))
                                 Text(v.fullName.ifBlank { v.username }, modifier = Modifier.weight(1f))
-                                IconButton(onClick = { viewModel.kickVolunteer(event.id, v.id) }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Kick", tint = MaterialTheme.colorScheme.error)
+                                OutlinedButton(
+                                    onClick = { viewModel.kickVolunteer(event.id, v.id) },
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.error
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.padding(start = 8.dp)
+                                ) {
+                                    Text("Reject", style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
                     }
                 }
             } else {
-                // Attendance section placeholder
-                Text(text = "Attendance tracking coming soon", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // Attendance section
+                Log.d("AttendanceDebug", "=== DISPLAYING ATTENDANCE SECTION ===")
+                Log.d("AttendanceDebug", "Volunteers count for attendance: ${volunteers.size}")
+                if (volunteers.isEmpty()) {
+                    Text(text = "No volunteers to track attendance for", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    AttendanceSection(volunteers = volunteers, eventId = event.id, viewModel = viewModel)
+                }
             }
         }
     }
@@ -223,5 +313,187 @@ private fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text:
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = text, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun AttendanceSection(
+    volunteers: List<com.example.gooddeedfeed.domain.model.JoinedVolunteer>,
+    eventId: Int,
+    viewModel: EventManagementViewModel
+) {
+    var volunteerHours by remember { mutableStateOf(mutableMapOf<Int, String>()) }
+    var rejectionDialogVolunteer by remember { mutableStateOf<com.example.gooddeedfeed.domain.model.JoinedVolunteer?>(null) }
+    var approvedVolunteers by remember { mutableStateOf(setOf<Int>()) }
+    var rejectedVolunteers by remember { mutableStateOf(setOf<Int>()) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        volunteers.forEach { volunteer ->
+            val isApproved = approvedVolunteers.contains(volunteer.id)
+            val isRejected = rejectedVolunteers.contains(volunteer.id)
+            
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = when {
+                        isApproved -> MaterialTheme.colorScheme.primaryContainer
+                        isRejected -> MaterialTheme.colorScheme.errorContainer
+                        else -> MaterialTheme.colorScheme.surface
+                    }
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        AsyncImage(
+                            model = volunteer.profilePictureUrl?.toEmulatorAccessibleUrl(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape),
+                            contentScale = ContentScale.Crop,
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = volunteer.fullName.ifBlank { volunteer.username },
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "@${volunteer.username}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    if (!isApproved && !isRejected) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Hours input
+                        OutlinedTextField(
+                            value = volunteerHours[volunteer.id] ?: "",
+                            onValueChange = { hours ->
+                                volunteerHours = volunteerHours.toMutableMap().apply {
+                                    put(volunteer.id, hours)
+                                }
+                            },
+                            label = { Text("Hours contributed") },
+                            placeholder = { Text("0.0") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Action buttons
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    val hours = volunteerHours[volunteer.id]?.toDoubleOrNull() ?: 0.0
+                                    if (hours > 0) {
+                                        approvedVolunteers = approvedVolunteers + volunteer.id
+                                        // TODO: Call viewModel to submit attendance with hours
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                enabled = (volunteerHours[volunteer.id]?.toDoubleOrNull() ?: 0.0) > 0
+                            ) {
+                                Text("Approve")
+                            }
+                            
+                            OutlinedButton(
+                                onClick = { rejectionDialogVolunteer = volunteer },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Reject")
+                            }
+                        }
+                    } else if (isApproved) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "✓ Approved - ${volunteerHours[volunteer.id] ?: "0"} hours",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else if (isRejected) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "✗ Rejected",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+    
+    // Rejection dialog
+    rejectionDialogVolunteer?.let { volunteer ->
+        var rejectionReason by remember { mutableStateOf("") }
+        
+        AlertDialog(
+            onDismissRequest = { rejectionDialogVolunteer = null },
+            title = { Text("Reject Volunteer") },
+            text = {
+                Column {
+                    Text("Please provide a reason for rejecting ${volunteer.fullName.ifBlank { volunteer.username }}:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = rejectionReason,
+                        onValueChange = { rejectionReason = it },
+                        placeholder = { Text("Enter reason...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        maxLines = 4
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (rejectionReason.isNotBlank()) {
+                            rejectedVolunteers = rejectedVolunteers + volunteer.id
+                            rejectionDialogVolunteer = null
+                            // TODO: Call viewModel to submit rejection with reason
+                        }
+                    },
+                    enabled = rejectionReason.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Reject")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { rejectionDialogVolunteer = null }) {
+                    Text("Cancel")
+                }
+            },
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 } 

@@ -115,10 +115,40 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    sender_id = Column(Integer, nullable=False)
-    receiver_id = Column(Integer, nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    receiver_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # --- New columns added in migration 009 ---
+    is_read = Column(Boolean, default=False, nullable=False)
+    is_important_sender = Column(Boolean, default=False, nullable=False)
+    is_important_receiver = Column(Boolean, default=False, nullable=False)
+    is_deleted_sender = Column(Boolean, default=False, nullable=False)
+    is_deleted_receiver = Column(Boolean, default=False, nullable=False)
+
+    
+    # Relationships
+    sender = relationship("User", foreign_keys=[sender_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])
+
+    # One-to-many relationship to message reactions (defined below)
+    reactions = relationship("MessageReaction", back_populates="message", cascade="all, delete-orphan")
+
+
+# Separate model for message_reactions table (added via migration 009)
+class MessageReaction(Base):
+    __tablename__ = "message_reactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    emoji = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    message = relationship("Message", back_populates="reactions")
+    user = relationship("User")
 
 
 class OpportunityCategory(enum.Enum):
@@ -128,6 +158,12 @@ class OpportunityCategory(enum.Enum):
     HEALTHCARE = "healthcare"
     SOCIAL_SERVICES = "social_services"
     DISASTER_RELIEF = "disaster_relief"
+    FOOD_SECURITY = "food_security"
+    ANIMAL_WELFARE = "animal_welfare"
+    ARTS_CULTURE = "arts_culture"
+    YOUTH_MENTORING = "youth_mentoring"
+    ELDERLY_CARE = "elderly_care"
+    TECHNOLOGY = "technology"
     OTHER = "other"
 
 
@@ -135,7 +171,10 @@ class Event(Base):
     __tablename__ = "events"
 
     id = Column(Integer, primary_key=True, index=True)
-    organizer_id = Column(Integer, nullable=False)
+    organizer_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+
+    # Organizer relationship
+    organizer = relationship("User", backref="organized_events")
 
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
@@ -198,7 +237,12 @@ volunteer_events = Table(
     Column('event_id', Integer, ForeignKey('events.id'), primary_key=True),     # The event being joined
     Column('joined_at', DateTime(timezone=True), server_default=func.now()),
     Column('status', String, default='joined', nullable=False),  # joined, completed, cancelled
-    Column('karma_awarded', Boolean, default=False, nullable=False)  # Whether karma has been awarded
+    Column('karma_awarded', Boolean, default=False, nullable=False),  # Whether karma has been awarded
+    # Attendance tracking columns (added in migration 011)
+    Column('hours_worked', Float, nullable=True),
+    Column('is_approved', Boolean, nullable=True),
+    Column('rejection_reason', Text, nullable=True),
+    Column('karma_points_earned', Integer, nullable=True, default=0)
 )
 
 

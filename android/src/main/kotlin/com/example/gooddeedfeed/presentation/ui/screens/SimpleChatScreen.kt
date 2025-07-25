@@ -1,6 +1,8 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,7 +25,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,8 +39,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,12 +53,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.gooddeedfeed.data.mapper.toDomain
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
@@ -62,6 +74,7 @@ fun SimpleChatScreen(
     user: DomainUser,
     otherUserId: Int? = null,
     modifier: Modifier = Modifier,
+    onShowProfile: (DomainUser) -> Unit = {},
     viewModel: ChatViewModel = hiltViewModel<ChatViewModel>(),
 ) {
     val conversationsState by viewModel.conversationsState.collectAsStateWithLifecycle()
@@ -110,6 +123,7 @@ fun SimpleChatScreen(
                 showMessages = false
                 selectedConversation = null
             },
+            onShowProfile = onShowProfile,
             viewModel = viewModel,
             modifier = modifier,
         )
@@ -122,6 +136,7 @@ fun SimpleChatScreen(
                 showMessages = true
                 viewModel.loadMessages(conversation.otherUserId, user)
             },
+            viewModel = viewModel,
             modifier = modifier,
         )
     }
@@ -132,6 +147,7 @@ private fun ChatListScreen(
     user: DomainUser,
     conversationsState: UiState<List<ChatConversation>>,
     onConversationClick: (ChatConversation) -> Unit,
+    viewModel: ChatViewModel,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -202,9 +218,11 @@ private fun ChatListScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(conversations) { conversation ->
-                            ConversationItem(
+                            SwipeableConversationItem(
                                 conversation = conversation,
                                 onClick = { onConversationClick(conversation) },
+                                onDelete = { viewModel.deleteConversation(conversation.id, user) },
+                                onToggleStar = { viewModel.toggleConversationStar(conversation.id, user) },
                             )
                         }
                     }
@@ -238,8 +256,79 @@ private fun ChatListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConversationItem(
+private fun SwipeableConversationItem(
+    conversation: ChatConversation,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    onToggleStar: () -> Unit,
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    onToggleStar()
+                    false
+                }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    onDelete()
+                    true
+                }
+                SwipeToDismissBoxValue.Settled -> false
+            }
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val direction = dismissState.dismissDirection
+            val color = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primary
+                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.error
+                SwipeToDismissBoxValue.Settled -> MaterialTheme.colorScheme.surface
+            }
+            val alignment = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                SwipeToDismissBoxValue.Settled -> Alignment.Center
+            }
+            val icon = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> if (conversation.isStarred) Icons.Default.Star else Icons.Default.StarBorder
+                SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+                SwipeToDismissBoxValue.Settled -> Icons.Default.Chat
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = alignment,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = when (direction) {
+                        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onPrimary
+                        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.onError
+                        SwipeToDismissBoxValue.Settled -> MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            }
+        },
+        content = {
+            ConversationItemContent(
+                conversation = conversation,
+                onClick = onClick,
+            )
+        }
+    )
+}
+
+@Composable
+private fun ConversationItemContent(
     conversation: ChatConversation,
     onClick: () -> Unit,
 ) {
@@ -258,13 +347,27 @@ private fun ConversationItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = conversation.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = conversation.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (conversation.isStarred) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Starred",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = conversation.subtitle,
@@ -277,7 +380,12 @@ private fun ConversationItem(
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = if (conversation.unreadCount > 0) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    fontWeight = if (conversation.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
                 )
             }
 
@@ -318,12 +426,18 @@ private fun ChatMessagesScreen(
     conversation: ChatConversation,
     user: DomainUser,
     onBackClick: () -> Unit,
+    onShowProfile: (DomainUser) -> Unit,
     viewModel: ChatViewModel,
     modifier: Modifier = Modifier,
 ) {
     val messagesState by viewModel.messagesState.collectAsStateWithLifecycle()
+    val otherUserState by viewModel.otherUserState.collectAsStateWithLifecycle()
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+
+    LaunchedEffect(conversation.otherUserId) {
+        viewModel.loadOtherUser(conversation.otherUserId)
+    }
 
     Column(
         modifier = modifier
@@ -332,18 +446,75 @@ private fun ChatMessagesScreen(
     ) {
         TopAppBar(
             title = {
-                Column {
-                    Text(
-                        text = conversation.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = conversation.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                when (val state = otherUserState) {
+                    is UiState.Success -> {
+                        val otherUser = state.data.toDomain()
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onShowProfile(otherUser) }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            if (otherUser.profilePictureUrl != null && otherUser.profilePictureUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = otherUser.profilePictureUrl,
+                                    contentDescription = "Profile picture",
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = (otherUser.fullName?.firstOrNull()?.toString() ?: otherUser.username.firstOrNull()?.toString() ?: "U").uppercase(),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = otherUser.fullName ?: otherUser.username,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = when (otherUser.userType?.name) {
+                                        "ORGANIZER" -> otherUser.organizationName ?: "Organizer"
+                                        "VOLUNTEER" -> "Volunteer"
+                                        else -> "User"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                    else -> {
+                        Column {
+                            Text(
+                                text = conversation.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = conversation.subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             },
             navigationIcon = {
