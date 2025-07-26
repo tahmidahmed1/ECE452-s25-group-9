@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.components.CustomToastHost
+import com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.ui.components.rememberToastState
 import com.example.gooddeedfeed.presentation.ui.screens.EditOrganizerProfileScreen
@@ -257,11 +256,7 @@ fun appNavHost(
                     .background(Color.Black.copy(alpha = 0.7f)),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(48.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp,
-                )
+                com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView(modifier = Modifier.size(48.dp))
             }
         }
     }

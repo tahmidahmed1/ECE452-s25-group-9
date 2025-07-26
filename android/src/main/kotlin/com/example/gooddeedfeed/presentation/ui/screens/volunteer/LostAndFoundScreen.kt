@@ -184,7 +184,7 @@ fun LostAndFoundScreen(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator()
+                    com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView()
                 }
             }
             is UiState.Error -> {
@@ -923,9 +923,8 @@ private fun CreateLostFoundScreen(
             shape = RoundedCornerShape(12.dp),
         ) {
             if (createItemState is UiState.Loading) {
-                CircularProgressIndicator(
+                com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView(
                     modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
                 Text("Submit Report")
@@ -1086,9 +1085,8 @@ private fun EditLostFoundScreen(
             shape = RoundedCornerShape(12.dp),
         ) {
             if (updateItemState is UiState.Loading) {
-                CircularProgressIndicator(
+                com.example.gooddeedfeed.presentation.ui.components.ShutterLoadingView(
                     modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
                 Text("Update Item")
