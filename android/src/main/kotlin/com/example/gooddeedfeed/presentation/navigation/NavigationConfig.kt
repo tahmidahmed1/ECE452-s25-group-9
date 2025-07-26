@@ -3,134 +3,68 @@ package com.example.gooddeedfeed.presentation.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Leaderboard
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
-import com.example.gooddeedfeed.presentation.ui.screens.ChatScreen
 import com.example.gooddeedfeed.presentation.ui.screens.HomeScreen
+import com.example.gooddeedfeed.presentation.ui.screens.SimpleChatScreen
 import com.example.gooddeedfeed.presentation.ui.screens.StatsScreen
-import com.example.gooddeedfeed.presentation.ui.screens.institution.ReviewScreen
 import com.example.gooddeedfeed.presentation.ui.screens.organizer.EventManagementScreen
 import com.example.gooddeedfeed.presentation.ui.screens.volunteer.ListScreen
 import com.example.gooddeedfeed.presentation.ui.screens.volunteer.MapScreen
 
+data class TabItem(
+    val title: String,
+    val icon: ImageVector,
+    val screen: @Composable (DomainUser, () -> Unit, ((DomainUser) -> Unit)?) -> Unit,
+)
+
 /**
- * Configuration object that defines navigation tabs for different user types.
- * This centralizes the navigation logic and makes it easy to modify tab configurations.
+ * Tab configuration for volunteer users
  */
-object NavigationConfig {
-
-    /**
-     * Helper functions to create common tab items
-     */
-    @Composable
-    private fun createHomeTab(): TabItem = TabItem(
-        title = "Home",
-        icon = Icons.Default.Home,
-        screen = { user, onLogout -> HomeScreen(user, onLogout) },
+fun getVolunteerTabs(): List<TabItem> {
+    return listOf(
+        TabItem("Home", Icons.Default.Home) { user, onLogout, _ -> HomeScreen(user = user, onLogout = onLogout) },
+        TabItem("Events", Icons.AutoMirrored.Filled.List) { user, onLogout, _ -> ListScreen(user = user, onLogout = onLogout) },
+        TabItem("Map", Icons.Default.Map) { user, onLogout, _ -> MapScreen(user = user, onLogout = onLogout) },
+        TabItem("Chat", Icons.Default.Chat) { user, onLogout, onShowProfile -> SimpleChatScreen(user = user, onShowProfile = onShowProfile ?: {}) },
+        TabItem("Leaderboard", Icons.Default.Leaderboard) { user, onLogout, _ -> StatsScreen() },
     )
+}
 
-    @Composable
-    private fun createLeaderboardTab(): TabItem = TabItem(
-        title = "Statistics",
-        icon = Icons.Default.Star,
-        screen = { _, _ -> StatsScreen() },
+/**
+ * Tab configuration for organizer users
+ */
+fun getOrganizerTabs(): List<TabItem> {
+    return listOf(
+        TabItem("Home", Icons.Default.Home) { user, onLogout, _ -> HomeScreen(user = user, onLogout = onLogout) },
+        TabItem("Manage Events", Icons.Default.Event) { user, onLogout, _ -> EventManagementScreen(user = user) },
+        TabItem("Chat", Icons.Default.Chat) { user, onLogout, onShowProfile -> SimpleChatScreen(user = user, onShowProfile = onShowProfile ?: {}) },
     )
+}
 
-    @Composable
-    private fun createChatTab(): TabItem = TabItem(
-        title = "Chat",
-        icon = Icons.Default.Chat,
-        screen = { user, _ -> ChatScreen(user) },
-    )
-
-    /**
-     * Tab configuration for volunteer users
-     * Features: Home, List of opportunities, Map view, Chat, Leaderboard
-     */
-    @Composable
-    fun getVolunteerTabs(): List<TabItem> {
-        return listOf(
-            createHomeTab(),
-            TabItem(
-                title = "Opportunities",
-                icon = Icons.AutoMirrored.Filled.List,
-                screen = { user, onLogout -> ListScreen(user, onLogout) },
-            ),
-            TabItem(
-                title = "Map",
-                icon = Icons.Default.LocationOn,
-                screen = { user, onLogout -> MapScreen(user, onLogout) },
-            ),
-            createChatTab(),
-            createLeaderboardTab(),
-        )
-    }
-
-    /**
-     * Tab configuration for organization users
-     * Features: Home, Event Management (CRUD), Chat
-     */
-    @Composable
-    fun getOrganizerTabs(): List<TabItem> {
-        return listOf(
-            createHomeTab(),
-            TabItem(
-                title = "Events",
-                icon = Icons.Default.Edit,
-                screen = { user, _ -> EventManagementScreen(user) },
-            ),
-            createChatTab(),
-        )
-    }
-
-    /**
-     * Tab configuration for institution users
-     * Features: Home, Review and approval system
-     */
-    @Composable
-    fun getInstitutionTabs(): List<TabItem> {
-        return listOf(
-            createHomeTab(),
-            TabItem(
-                title = "Reviews",
-                icon = Icons.Default.CheckCircle,
-                screen = { _, _ -> ReviewScreen() },
-            ),
-        )
-    }
-
-    /**
-     * Main function to get tabs based on user type
-     * This is the entry point for determining which tabs to show
-     */
-    @Composable
-    fun getTabsForUserType(userType: DomainUserType?): List<TabItem> {
-        return when (userType) {
-            DomainUserType.VOLUNTEER -> getVolunteerTabs()
-            DomainUserType.ORGANIZER -> getOrganizerTabs()
-            DomainUserType.INSTITUTION -> getInstitutionTabs()
-            null -> getVolunteerTabs()
-        }
+/**
+ * Get tabs based on user type
+ */
+fun getTabsForUserType(userType: DomainUserType): List<TabItem> {
+    return when (userType) {
+        DomainUserType.VOLUNTEER -> getVolunteerTabs()
+        DomainUserType.ORGANIZER -> getOrganizerTabs()
     }
 }
 
 /**
- * Extension functions for better readability and type safety
+ * Get the number of tabs for a user type (used for bottom navigation height calculation)
  */
-fun DomainUserType?.getDisplayName(): String {
-    return com.example.gooddeedfeed.domain.util.UserTypeUtils.getUserTypeDisplayName(this)
-}
-
-fun DomainUserType?.getTabCount(): Int {
-    return when (this) {
-        DomainUserType.VOLUNTEER -> 5 // Home, List, Map, Chat, Leaderboard
-        DomainUserType.ORGANIZER -> 4 // Home, Events, Chat, Leaderboard
-        DomainUserType.INSTITUTION -> 3 // Home, Reviews, Leaderboard
-        null -> 2 // Home, Leaderboard
+fun getTabCountForUserType(userType: DomainUserType?): Int {
+    return when (userType) {
+        DomainUserType.VOLUNTEER -> 5 // Home, Events, Map, Chat, Leaderboard
+        DomainUserType.ORGANIZER -> 3 // Home, Manage Events, Chat
+        null -> 5 // Default fallback
     }
 } 

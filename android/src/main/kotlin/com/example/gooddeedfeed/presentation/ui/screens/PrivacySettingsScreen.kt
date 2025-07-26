@@ -28,30 +28,44 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.ui.components.ToastManager
-import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
+import com.example.gooddeedfeed.presentation.viewmodel.PrivacySettingsViewModel
 
 @Composable
 fun PrivacySettingsScreen(
+    user: DomainUser,
     onClose: () -> Unit,
-    initialNotificationsEnabled: Boolean = true,
-    initialLocationEnabled: Boolean = true,
-    initialShareProfilePicture: Boolean = true,
-    onSave: (notificationsEnabled: Boolean, locationEnabled: Boolean, shareProfilePicture: Boolean) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
+    viewModel: PrivacySettingsViewModel = hiltViewModel(),
 ) {
-    var notificationsEnabled by remember { mutableStateOf(initialNotificationsEnabled) }
-    var locationEnabled by remember { mutableStateOf(initialLocationEnabled) }
-    var shareProfilePictureEnabled by remember { mutableStateOf(initialShareProfilePicture) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            ToastManager.showError(message)
+            viewModel.clearErrorMessage()
+        }
+    }
+
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let { message ->
+            ToastManager.showSuccess(message)
+            viewModel.clearSuccessMessage()
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -74,7 +88,7 @@ fun PrivacySettingsScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Privacy & Notifications",
+                    text = if (user.userType == DomainUserType.ORGANIZER) "Notifications" else "Privacy & Notifications",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -85,34 +99,30 @@ fun PrivacySettingsScreen(
 
             SettingToggleRow(
                 title = "Enable Notifications",
-                checked = notificationsEnabled,
-                onCheckedChange = { notificationsEnabled = it },
-            )
-            SettingToggleRow(
-                title = "Enable Location Services",
-                checked = locationEnabled,
-                onCheckedChange = { locationEnabled = it },
-            )
-            SettingToggleRow(
-                title = "Share Profile Picture",
-                checked = shareProfilePictureEnabled,
-                onCheckedChange = { shareProfilePictureEnabled = it },
+                checked = uiState.notificationsEnabled,
+                onCheckedChange = viewModel::updateNotificationsEnabled,
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            if (user.userType != DomainUserType.ORGANIZER) {
+                SettingToggleRow(
+                    title = "Enable Location Services",
+                    checked = uiState.locationEnabled,
+                    onCheckedChange = viewModel::updateLocationEnabled,
+                )
+            }
 
-            PrimaryButton(
-                text = "Save",
-                onClick = {
-                    // Show success toast
-                    ToastManager.showSuccess("Settings saved successfully")
-                    onSave(notificationsEnabled, locationEnabled, shareProfilePictureEnabled)
-                    onClose()
-                },
-                modifier = Modifier.fillMaxWidth(),
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = "Settings are saved automatically when you toggle them.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                textAlign = TextAlign.Center,
             )
 
-            // Add bottom padding below the button
             Spacer(modifier = Modifier.height(48.dp))
         }
     }

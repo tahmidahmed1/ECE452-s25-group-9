@@ -1,6 +1,8 @@
 package com.example.gooddeedfeed.domain.usecase.organizer
 
+import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.CreateEventData
+import com.example.gooddeedfeed.domain.model.EventVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.repository.EventRepository
 import kotlinx.coroutines.flow.Flow
@@ -38,5 +40,37 @@ class ManageEventsUseCase @Inject constructor(
 
     suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit> {
         return repository.uploadEventImage(eventId, file)
+    }
+
+    suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean): Result<Unit> {
+        return repository.uploadEventImageToCarousel(eventId, file, isMain)
+    }
+
+    suspend fun setMainEventImage(eventId: Int, imageId: Int): Result<Unit> {
+        return repository.setMainEventImage(eventId, imageId)
+    }
+
+    suspend fun getEventVolunteers(eventId: Int): Flow<List<com.example.gooddeedfeed.domain.model.JoinedVolunteer>> {
+        return repository.getEventVolunteers(eventId)
+    }
+
+    suspend fun kickVolunteer(eventId: Int, volunteerId: Int): Result<Unit> {
+        return repository.kickVolunteer(eventId, volunteerId)
+    }
+
+    suspend fun generateDescriptionSuggestion(title: String): Result<String> {
+        return repository.generateDescriptionSuggestion(title)
+    }
+
+    suspend fun searchMyEvents(query: String): Flow<List<VolunteerEvent>> {
+        return repository.searchMyEvents(query)
+    }
+
+    suspend fun getEventVolunteersForAttendance(eventId: Int): Result<List<EventVolunteer>> {
+        return repository.getEventVolunteersForAttendance(eventId)
+    }
+
+    suspend fun submitAttendance(attendanceData: AttendanceSubmission): Result<Map<String, Int>> {
+        return repository.submitAttendance(attendanceData)
     }
 } 

@@ -4,29 +4,22 @@ import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 
 /**
- * Utility functions for user type management and validation
+ * Utility functions for user type operations and validation
  */
 object UserTypeUtils {
 
     /**
-     * Check if user has completed onboarding for their user type
+     * Check if a user has completed their profile setup based on their user type
      */
-    fun isOnboardingComplete(user: DomainUser): Boolean {
-        return user.onboardingCompleted &&
-            user.userType != null &&
-            user.fullName?.isNotBlank() == true &&
-            user.phone?.isNotBlank() == true &&
-            isUserTypeSpecificDataComplete(user)
-    }
-
-    /**
-     * Check if user type specific data is complete
-     */
-    private fun isUserTypeSpecificDataComplete(user: DomainUser): Boolean {
+    fun hasCompletedProfile(user: DomainUser): Boolean {
         return when (user.userType) {
-            DomainUserType.VOLUNTEER -> true
-            DomainUserType.ORGANIZER -> user.organizationName?.isNotBlank() == true
-            DomainUserType.INSTITUTION -> user.institutionName != null
+            DomainUserType.VOLUNTEER -> {
+                user.fullName != null && user.phone != null && user.sex != null &&
+                    user.description != null && user.skills != null && user.age != null &&
+                    user.emergencyContactName != null && user.emergencyContactPhone != null &&
+                    user.locationArea != null && user.hasDriversLicense != null
+            }
+            DomainUserType.ORGANIZER -> user.organizationName != null
             null -> false
         }
     }
@@ -38,65 +31,45 @@ object UserTypeUtils {
         return when (userType) {
             DomainUserType.VOLUNTEER -> "Volunteer"
             DomainUserType.ORGANIZER -> "Organizer"
-            DomainUserType.INSTITUTION -> "Institution"
-            null -> "User"
+            null -> "Unknown"
         }
     }
 
     /**
-     * Get user's full display name including organization/institution
+     * Get user's full display name including organization
      */
-    fun getFullDisplayName(user: DomainUser): String {
+    fun getUserFullDisplayName(user: DomainUser): String {
         val baseName = user.fullName ?: user.username
+
         return when (user.userType) {
-            DomainUserType.ORGANIZER -> {
-                if (!user.organizationName.isNullOrBlank()) {
-                    "$baseName (${user.organizationName})"
-                } else {
-                    "$baseName (Organizer)"
-                }
-            }
-            DomainUserType.INSTITUTION -> {
-                user.institutionName?.let { institutionName ->
-                    "$baseName (${institutionName.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }})"
-                } ?: "$baseName (Institution)"
-            }
             DomainUserType.VOLUNTEER -> baseName
+            DomainUserType.ORGANIZER -> {
+                user.organizationName?.let { orgName ->
+                    "$baseName ($orgName)"
+                } ?: baseName
+            }
             null -> baseName
         }
     }
 
     /**
-     * Get available user types for registration
+     * Get all available user types for registration
      */
     fun getAvailableUserTypes(): List<DomainUserType> {
         return listOf(
             DomainUserType.VOLUNTEER,
             DomainUserType.ORGANIZER,
-            DomainUserType.INSTITUTION,
         )
     }
 
     /**
      * Get description for user type
      */
-    fun getUserTypeDescription(userType: DomainUserType): String {
+    fun getUserTypeDescription(userType: DomainUserType?): String {
         return when (userType) {
-            DomainUserType.VOLUNTEER -> "Join community service activities and make a difference"
-            DomainUserType.ORGANIZER -> "Create and manage volunteer opportunities for your organization"
-            DomainUserType.INSTITUTION -> "Review and approve volunteer activities for institutional credit"
+            DomainUserType.VOLUNTEER -> "Find and participate in volunteer opportunities in your community"
+            DomainUserType.ORGANIZER -> "Create and manage volunteer events and opportunities"
+            null -> "Please select a user type to continue"
         }
-    }
-
-    fun requiresOrganizationName(userType: DomainUserType?): Boolean {
-        return userType == DomainUserType.ORGANIZER
-    }
-
-    fun requiresInstitutionName(userType: DomainUserType?): Boolean {
-        return userType == DomainUserType.INSTITUTION
-    }
-
-    fun isVolunteer(userType: DomainUserType?): Boolean {
-        return userType == DomainUserType.VOLUNTEER
     }
 } 

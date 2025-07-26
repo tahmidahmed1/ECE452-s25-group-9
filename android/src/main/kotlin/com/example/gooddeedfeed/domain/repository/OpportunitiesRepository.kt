@@ -1,6 +1,7 @@
 package com.example.gooddeedfeed.domain.repository
 
 import com.example.gooddeedfeed.domain.model.OpportunityCategory
+import com.example.gooddeedfeed.domain.model.OpportunityFilters
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerOpportunity
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +37,16 @@ interface OpportunitiesRepository {
     ): Flow<List<VolunteerOpportunity>>
 
     /**
+     * Get opportunities with filters applied
+     */
+    suspend fun getOpportunitiesWithFilters(
+        lat: Double? = null,
+        lon: Double? = null,
+        radiusKm: Float? = 50f,
+        filters: OpportunityFilters,
+    ): Flow<List<VolunteerOpportunity>>
+
+    /**
      * Apply for an opportunity
      */
     suspend fun applyForOpportunity(opportunityId: Int, message: String?): Result<Unit>
@@ -59,4 +70,24 @@ interface OpportunitiesRepository {
      * Get all available categories
      */
     suspend fun getCategories(): List<OpportunityCategory>
+
+    /**
+     * Join an event as a volunteer
+     */
+    suspend fun joinEvent(eventId: Int): Result<Unit>
+
+    /**
+     * Leave an event as a volunteer
+     */
+    suspend fun leaveEvent(eventId: Int): Result<Unit>
+
+    /**
+     * Get events that the current user has joined
+     */
+    suspend fun getJoinedEvents(): Flow<List<VolunteerOpportunity>>
+
+    /**
+     * Generate creative volunteer opportunity ideas using AI.
+     */
+    suspend fun generateOpportunityIdeas(): Result<List<String>>
 } 

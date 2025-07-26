@@ -2,16 +2,10 @@ package com.example.gooddeedfeed.presentation.theme
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -23,7 +17,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,9 +28,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.debugInspectorInfo
 import kotlin.math.sin
 
-// Animation presets
 object AppAnimations {
-    // Fade animations
     val fadeIn = fadeIn(
         animationSpec = tween(
             durationMillis = AnimationDurations.normal,
@@ -52,7 +43,6 @@ object AppAnimations {
         ),
     )
 
-    // Scale animations
     val scaleIn = scaleIn(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -69,7 +59,6 @@ object AppAnimations {
         targetScale = 0.8f,
     )
 
-    // Slide animations
     val slideInFromBottom = slideInVertically(
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -86,12 +75,10 @@ object AppAnimations {
         targetOffsetY = { it / 2 },
     )
 
-    // Combined animations
     val enterAnimation = fadeIn + scaleIn + slideInFromBottom
     val exitAnimation = fadeOut + scaleOut + slideOutToBottom
 }
 
-// Animated visibility with modern presets
 @Composable
 fun ModernAnimatedVisibility(
     visible: Boolean,
@@ -109,7 +96,6 @@ fun ModernAnimatedVisibility(
     )
 }
 
-// Bounce click effect
 fun Modifier.bounceClick(
     enabled: Boolean = true,
     onClick: () -> Unit,
@@ -140,7 +126,6 @@ fun Modifier.bounceClick(
         )
 }
 
-// Hover scale effect
 fun Modifier.hoverScale(
     scale: Float = 1.05f,
     enabled: Boolean = true,
@@ -168,72 +153,6 @@ fun Modifier.hoverScale(
         }
 }
 
-// Shimmer loading effect
-@Composable
-fun Modifier.shimmer(
-    enabled: Boolean = true,
-): Modifier = composed(
-    inspectorInfo = debugInspectorInfo {
-        name = "shimmer"
-        properties["enabled"] = enabled
-    },
-) {
-    if (!enabled) return@composed this
-
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = LinearEasing,
-            ),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "shimmerAlpha",
-    )
-
-    this.graphicsLayer { this.alpha = alpha }
-}
-
-// Pulse animation
-@Composable
-fun Modifier.pulse(
-    enabled: Boolean = true,
-    scale: Float = 1.1f,
-    duration: Int = 1000,
-): Modifier = composed(
-    inspectorInfo = debugInspectorInfo {
-        name = "pulse"
-        properties["enabled"] = enabled
-        properties["scale"] = scale
-        properties["duration"] = duration
-    },
-) {
-    if (!enabled) return@composed this
-
-    val transition = rememberInfiniteTransition(label = "pulse")
-    val animatedScale by transition.animateFloat(
-        initialValue = 1f,
-        targetValue = scale,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = duration,
-                easing = FastOutSlowInEasing,
-            ),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "pulseScale",
-    )
-
-    this.graphicsLayer {
-        scaleX = animatedScale
-        scaleY = animatedScale
-    }
-}
-
-// Shake animation for errors
 @Composable
 fun Modifier.shake(
     enabled: Boolean = false,
@@ -256,19 +175,3 @@ fun Modifier.shake(
         translationX = shakeOffset * 10f * sin(shakeOffset * 20f)
     }
 }
-
-// Smooth color transition
-@Composable
-fun animateColorAsState(
-    targetValue: androidx.compose.ui.graphics.Color,
-    animationSpec: AnimationSpec<androidx.compose.ui.graphics.Color> = spring(),
-    label: String = "ColorAnimation",
-    finishedListener: ((androidx.compose.ui.graphics.Color) -> Unit)? = null,
-): State<androidx.compose.ui.graphics.Color> {
-    return androidx.compose.animation.animateColorAsState(
-        targetValue = targetValue,
-        animationSpec = animationSpec,
-        label = label,
-        finishedListener = finishedListener,
-    )
-} 

@@ -15,12 +15,12 @@ data class DomainUser(
     val fullName: String? = null,
     val phone: String? = null,
     val profilePictureUrl: String? = null,
+    val bannerUrl: String? = null,
     val organizationName: String? = null,
-    val institutionName: DomainInstitutionName? = null,
-    val createdAt: String? = null,
-    val karmaPoints: Int? = null,
-
-    // Enhanced volunteer profile fields
+    val organizationDescription: String? = null,
+    val organizationWebsite: String? = null,
+    val organizationSocialMedia: List<SocialMediaLink>? = null,
+    val organizationImages: List<String>? = null,
     val sex: DomainSex? = null,
     val description: String? = null,
     val skills: List<String>? = null,
@@ -30,6 +30,9 @@ data class DomainUser(
     val locationArea: String? = null,
     val hasDriversLicense: Boolean? = null,
     val disabilities: String? = null,
+    val karmaPoints: Int = 0,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 data class DomainAuthResponse(
@@ -57,7 +60,20 @@ data class DomainVolunteerProfile(
     val emergencyContactPhone: String,
     val locationArea: String,
     val hasDriversLicense: Boolean,
-    val disabilities: String?,
+    val disabilities: String? = null,
+)
+
+/**
+ * Data class for updating organizer profile during onboarding
+ */
+data class DomainOrganizerProfile(
+    val fullName: String,
+    val phone: String,
+    val organizationName: String,
+    val organizationDescription: String? = null,
+    val organizationWebsite: String? = null,
+    val organizationSocialMedia: List<SocialMediaLink>? = null,
+    val organizationImages: List<String>? = null,
 )
 
 /**
@@ -67,8 +83,10 @@ data class DomainUserUpdate(
     val fullName: String? = null,
     val phone: String? = null,
     val organizationName: String? = null,
-    val institutionName: DomainInstitutionName? = null,
-
+    val organizationDescription: String? = null,
+    val organizationWebsite: String? = null,
+    val organizationSocialMedia: List<SocialMediaLink>? = null,
+    val organizationImages: List<String>? = null,
     val sex: DomainSex? = null,
     val description: String? = null,
     val skills: List<String>? = null,
@@ -80,7 +98,31 @@ data class DomainUserUpdate(
     val disabilities: String? = null,
 )
 
-// Enumerations are defined in DomainEnums.kt to avoid leaking DTO types into the domain layer.
+/**
+ * Response for organization image uploads
+ */
+data class DomainOrganizationImagesResponse(
+    val organizationImages: List<String>,
+    val message: String,
+    val totalImages: Int,
+)
 
-// Duplicate enums removed; DomainUserType, DomainSex, and DomainInstitutionName
-// are now typealiases defined in DomainAliases.kt
+/**
+ * Domain model for volunteer history entries
+ */
+data class DomainVolunteerHistoryEntry(
+    val eventId: Int,
+    val eventTitle: String,
+    val eventDate: String,
+    val eventDescription: String? = null,
+    val eventLocation: String? = null,
+    val eventStartTime: String? = null,
+    val eventEndTime: String? = null,
+    val eventImageUrls: List<String> = emptyList(),
+    val organizerName: String? = null,
+    val hoursWorked: Double? = null,
+    val isApproved: Boolean,
+    val rejectionReason: String? = null,
+    val karmaPointsEarned: Int = 0,
+    val status: String, // "pending", "approved", "rejected"
+)

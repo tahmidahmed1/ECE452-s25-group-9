@@ -20,9 +20,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,11 +44,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.gooddeedfeed.domain.model.DomainInstitutionName
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.SocialMediaLink
 import java.io.File
 import java.io.FileOutputStream
 
@@ -110,6 +112,10 @@ object ImageUtils {
         locationArea: TextFieldValue? = null,
         hasDriversLicense: Boolean? = null,
         disabilities: TextFieldValue? = null,
+        organizationDescription: TextFieldValue? = null,
+        organizationWebsite: TextFieldValue? = null,
+        organizationSocialMedia: List<SocialMediaLink>? = null,
+        organizationImages: List<String>? = null,
     ): DomainUserUpdate {
         return DomainUserUpdate(
             fullName = fullName?.text?.takeIf { it.isNotBlank() },
@@ -124,6 +130,10 @@ object ImageUtils {
             locationArea = locationArea?.text?.takeIf { it.isNotBlank() },
             hasDriversLicense = hasDriversLicense,
             disabilities = disabilities?.text?.takeIf { it.isNotBlank() },
+            organizationDescription = organizationDescription?.text?.takeIf { it.isNotBlank() },
+            organizationWebsite = organizationWebsite?.text?.takeIf { it.isNotBlank() },
+            organizationSocialMedia = organizationSocialMedia,
+            organizationImages = organizationImages,
         )
     }
 
@@ -139,17 +149,9 @@ object ImageUtils {
             return if (phone.isBlank()) "Phone number is required" else null
         }
 
-        fun validateOrganization(organizationName: String, userType: DomainUserType?): String? {
-            return if (userType == DomainUserType.ORGANIZER && organizationName.isBlank()) {
+        fun validateOrganizationName(organizationName: String?, userType: DomainUserType?): String? {
+            return if (userType == DomainUserType.ORGANIZER && organizationName.isNullOrBlank()) {
                 "Organization name is required"
-            } else {
-                null
-            }
-        }
-
-        fun validateInstitution(selectedInstitution: DomainInstitutionName?, userType: DomainUserType?): String? {
-            return if (userType == DomainUserType.INSTITUTION && selectedInstitution == null) {
-                "Institution is required"
             } else {
                 null
             }
@@ -189,13 +191,13 @@ object ImageUtils {
 fun ProfileImagePicker(
     currentImageUrl: String? = null,
     onImageSelected: (File) -> Unit,
+    onImageRemoved: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
 
-    // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
     ) { bitmap: Bitmap? ->
@@ -207,7 +209,6 @@ fun ProfileImagePicker(
         }
     }
 
-    // Gallery launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -224,7 +225,6 @@ fun ProfileImagePicker(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier,
     ) {
-        // Profile picture display
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -240,20 +240,65 @@ fun ProfileImagePicker(
         ) {
             when {
                 selectedImageUri != null -> {
-                    AsyncImage(
-                        model = selectedImageUri,
-                        contentDescription = "Selected profile picture",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
+                    Box {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Selected profile picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+
+                        IconButton(
+                            onClick = { selectedImageUri = null },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(24.dp)
+                                .background(
+                                    Color.Black.copy(alpha = 0.6f),
+                                    CircleShape,
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove photo",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
                 }
                 !currentImageUrl.isNullOrEmpty() -> {
-                    AsyncImage(
-                        model = currentImageUrl,
-                        contentDescription = "Current profile picture",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
+                    Box {
+                        AsyncImage(
+                            model = currentImageUrl,
+                            contentDescription = "Current profile picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+
+                        if (onImageRemoved != null) {
+                            IconButton(
+                                onClick = {
+                                    selectedImageUri = null
+                                    onImageRemoved()
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(24.dp)
+                                    .background(
+                                        Color.Black.copy(alpha = 0.6f),
+                                        CircleShape,
+                                    ),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove photo",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
+                    }
                 }
                 else -> {
                     Icon(
@@ -265,7 +310,6 @@ fun ProfileImagePicker(
                 }
             }
 
-            // Add/edit indicator
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -299,7 +343,6 @@ fun ProfileImagePicker(
         )
     }
 
-    // Image source selection dialog
     if (showImageSourceDialog) {
         AlertDialog(
             onDismissRequest = { showImageSourceDialog = false },

@@ -4,29 +4,36 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class SignUpRequest(val username: String, val email: String, val password: String)
-
-@Serializable
-data class SignInRequest(val username: String, val password: String)
-
-@Serializable
-data class AuthResponse(val success: Boolean, val token: String? = null, val message: String? = null)
-
-@Serializable
-data class TokenResponse(val access_token: String, val token_type: String)
-
-@Serializable
-data class ValidationError(
-    val type: String,
-    val loc: List<String>,
-    val msg: String,
-    val input: String? = null,
+data class SignUpRequestDto(
+    val username: String,
+    val email: String,
+    val password: String,
 )
 
 @Serializable
-data class ErrorResponse(val success: Boolean = false, val message: String, val errors: List<ValidationError>? = null)
+data class SignInRequestDto(
+    val username: String,
+    val password: String,
+)
 
-// ------------------ Enums ------------------
+@Serializable
+data class AuthResponseDto(
+    val session_id: String,
+    val session_type: String,
+    val user: UserDto,
+)
+
+@Serializable
+data class SessionResponseDto(
+    val session_id: String,
+    val session_type: String,
+)
+
+@Serializable
+data class OnboardingStepOneDto(
+    val user_type: UserType,
+)
+
 @Serializable
 enum class UserType {
     @SerialName("volunteer")
@@ -34,21 +41,6 @@ enum class UserType {
 
     @SerialName("organizer")
     ORGANIZER,
-
-    @SerialName("institution")
-    INSTITUTION,
-}
-
-@Serializable
-enum class InstitutionName {
-    @SerialName("Institution 1")
-    INSTITUTION_1,
-
-    @SerialName("Institution 2")
-    INSTITUTION_2,
-
-    @SerialName("Institution 3")
-    INSTITUTION_3,
 }
 
 @Serializable
@@ -66,9 +58,8 @@ enum class Sex {
     PREFER_NOT_TO_SAY,
 }
 
-// ------------------ Complex DTOs ------------------
 @Serializable
-data class User(
+data class UserDto(
     val id: Int,
     val username: String,
     val email: String,
@@ -78,12 +69,12 @@ data class User(
     val full_name: String? = null,
     val phone: String? = null,
     val profile_picture_url: String? = null,
+    val banner_url: String? = null,
     val organization_name: String? = null,
-    val institution_name: InstitutionName? = null,
-    val created_at: String? = null,
-    val karma_points: Int? = null,
-
-    // Enhanced volunteer profile fields
+    val organization_description: String? = null,
+    val organization_website: String? = null,
+    val organization_social_media: List<SocialMediaLinkDto>? = null,
+    val organization_images: List<String>? = null,
     val sex: Sex? = null,
     val description: String? = null,
     val skills: List<String>? = null,
@@ -93,19 +84,33 @@ data class User(
     val location_area: String? = null,
     val has_drivers_license: Boolean? = null,
     val disabilities: String? = null,
+    val karma_points: Int = 0,
+    val fcm_token: String? = null,
+    val notifications_enabled: Boolean = true,
+    val created_at: String? = null,
+    val updated_at: String? = null,
 )
 
 @Serializable
-data class OnboardingStepOneRequest(val user_type: UserType)
-
-@Serializable
-data class OnboardingCompleteRequest(
-    val user_type: UserType,
+data class OnboardingStepTwoOrganizerDto(
     val full_name: String,
     val phone: String,
+    val organization_name: String,
+    val organization_description: String? = null,
+    val organization_website: String? = null,
+    val organization_social_media: List<SocialMediaLinkDto>? = null,
+    val organization_images: List<String>? = null,
+)
+
+@Serializable
+data class UserUpdateDto(
+    val full_name: String? = null,
+    val phone: String? = null,
     val organization_name: String? = null,
-    val institution_name: InstitutionName? = null,
-    // Volunteer-specific fields
+    val organization_description: String? = null,
+    val organization_website: String? = null,
+    val organization_social_media: List<SocialMediaLinkDto>? = null,
+    val organization_images: List<String>? = null,
     val sex: Sex? = null,
     val description: String? = null,
     val skills: List<String>? = null,
@@ -118,7 +123,10 @@ data class OnboardingCompleteRequest(
 )
 
 @Serializable
-data class InstitutionOption(val value: String, val label: String)
+data class OrganizationImagesResponseDto(
+    val organization_images: List<String>,
+    val message: String,
+)
 
 @Serializable
 data class ProfilePictureUploadResponse(
@@ -127,4 +135,64 @@ data class ProfilePictureUploadResponse(
 )
 
 @Serializable
-data class OnboardingResponse(val message: String, val user_type: UserType? = null) 
+data class OnboardingResponse(val message: String, val user_type: UserType? = null)
+
+@Serializable
+enum class SocialMediaPlatformDto {
+    @SerialName("instagram")
+    INSTAGRAM,
+
+    @SerialName("facebook")
+    FACEBOOK,
+
+    @SerialName("twitter")
+    TWITTER,
+
+    @SerialName("linkedin")
+    LINKEDIN,
+}
+
+@Serializable
+data class SocialMediaLinkDto(
+    val platform: SocialMediaPlatformDto,
+    val url: String,
+)
+
+@Serializable
+data class OnboardingStepThreeVolunteerDto(
+    val full_name: String,
+    val phone: String,
+    val sex: Sex,
+    val description: String,
+    val skills: List<String>,
+    val age: Int,
+    val emergency_contact_name: String,
+    val emergency_contact_phone: String,
+    val location_area: String,
+    val has_drivers_license: Boolean,
+    val disabilities: String? = null,
+)
+
+@Serializable
+data class BannerUploadResponse(
+    val banner_url: String,
+    val message: String,
+)
+
+@Serializable
+data class VolunteerHistoryEntryDto(
+    val event_id: Int,
+    val event_title: String,
+    val event_date: String,
+    val event_description: String? = null,
+    val event_location: String? = null,
+    val event_start_time: String? = null,
+    val event_end_time: String? = null,
+    val event_image_urls: List<String> = emptyList(),
+    val organizer_name: String? = null,
+    val hours_worked: Double? = null,
+    val is_approved: Boolean,
+    val rejection_reason: String? = null,
+    val karma_points_earned: Int = 0,
+    val status: String, // "pending", "approved", "rejected"
+)

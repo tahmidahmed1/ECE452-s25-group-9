@@ -2,13 +2,16 @@ package com.example.gooddeedfeed.data.repository
 
 import com.example.gooddeedfeed.data.remote.EventApiService
 import com.example.gooddeedfeed.data.remote.dto.toDomain
+import com.example.gooddeedfeed.data.remote.dto.toDto
+import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.CreateEventData
+import com.example.gooddeedfeed.domain.model.EventVolunteer
+import com.example.gooddeedfeed.domain.model.JoinedVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerApplicationForOrganizer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.repository.EventRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,8 +23,8 @@ class EventRepositoryImpl @Inject constructor(
 ) : EventRepository {
 
     override suspend fun getMyEvents(): Flow<List<VolunteerEvent>> = flow {
-        val currentUserResult = authRepository.getCurrentUser().firstOrNull()
-        val userId = currentUserResult?.getOrNull()?.id
+        val currentUserResult = authRepository.getCurrentUser()
+        val userId = currentUserResult.getOrNull()?.id
         val dtos = if (userId != null) {
             apiService.getOrganizerEvents(userId)
         } else {
@@ -30,16 +33,23 @@ class EventRepositoryImpl @Inject constructor(
         emit(dtos.map { it.toDomain() })
     }
 
+    override suspend fun searchMyEvents(query: String): Flow<List<VolunteerEvent>> = flow {
+        val currentUser = authRepository.getCurrentUser().getOrNull()
+        val userId = currentUser?.id ?: 0
+        val list = apiService.getOrganizerEvents(userId, query).map { it.toDomain() }
+        emit(list)
+    }
+
     override suspend fun createEvent(eventData: CreateEventData): Result<VolunteerEvent> = runCatching {
-        apiService.createEvent(token(), eventData).toDomain()
+        apiService.createEvent(eventData).toDomain()
     }
 
     override suspend fun updateEvent(eventId: Int, eventData: CreateEventData): Result<VolunteerEvent> = runCatching {
-        apiService.updateEvent(token(), eventId, eventData).toDomain()
+        apiService.updateEvent(eventId, eventData).toDomain()
     }
 
     override suspend fun deleteEvent(eventId: Int): Result<Unit> = runCatching {
-        apiService.deleteEvent(token(), eventId)
+        apiService.deleteEvent(eventId)
     }
 
     override suspend fun getEventById(eventId: Int): Result<VolunteerEvent> = runCatching {
@@ -47,8 +57,6 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun toggleEventStatus(eventId: Int, isPublished: Boolean): Result<Unit> {
-        // For simplicity, call updateEvent with status change
-        // This assumes backend will accept status field but CreateEventData lacks status; skipping.
         return Result.failure(Exception("Not implemented"))
     }
 
@@ -56,11 +64,40 @@ class EventRepositoryImpl @Inject constructor(
         emit(emptyList()) // Not yet implemented
     }
 
-    override suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit> = runCatching {
-        apiService.uploadEventImage(token(), eventId, file)
+    //region Volunteers
+    override suspend fun getEventVolunteers(eventId: Int): Flow<List<JoinedVolunteer>> = flow {
+        val list = apiService.getEventVolunteers(eventId).map { it.toDomain() }
+        emit(list)
     }
 
-    private suspend fun token(): String {
-        return authRepository.getToken().firstOrNull() ?: ""
+    override suspend fun kickVolunteer(eventId: Int, volunteerId: Int): Result<Unit> = runCatching {
+        apiService.kickVolunteer(eventId, volunteerId)
+    }
+    //endregion
+
+    override suspend fun uploadEventImage(eventId: Int, file: java.io.File): Result<Unit> = runCatching {
+        apiService.uploadEventImage(eventId, file)
+    }
+
+    override suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean): Result<Unit> = runCatching {
+        apiService.uploadEventImageToCarousel(eventId, file, isMain)
+    }
+
+    override suspend fun setMainEventImage(eventId: Int, imageId: Int): Result<Unit> = runCatching {
+        apiService.setMainEventImage(eventId, imageId)
+    }
+
+    override suspend fun generateDescriptionSuggestion(title: String): Result<String> = runCatching {
+        apiService.generateDescriptionSuggestion(title)
+    }
+
+    override suspend fun getEventVolunteersForAttendance(eventId: Int): Result<List<EventVolunteer>> = runCatching {
+        val volunteers = apiService.getEventVolunteersForAttendance(eventId)
+        volunteers.map { it.toDomain() }
+    }
+
+    override suspend fun submitAttendance(attendanceData: AttendanceSubmission): Result<Map<String, Int>> = runCatching {
+        val response = apiService.submitAttendance(attendanceData.eventId, attendanceData.toDto())
+        response.karma_points_awarded ?: emptyMap()
     }
 } 

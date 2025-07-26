@@ -1,4 +1,6 @@
-# ECE452-s25-group-9
+# GoodDeedFeed - ECE452-s25-group-9
+
+![./assets/banner.png](./assets/banner.png)
 
 ## Quick Start
 
@@ -21,7 +23,7 @@ This script will:
 
 - **FastAPI Backend:** [http://localhost:9000](http://localhost:9000)
   - API Docs: [http://localhost:9000/docs](http://localhost:9000/docs)
-  - Auth: `/api/register`, `/api/token`, `/api/users/me`
+  - Auth: `/api/register`, `/api/login`, `/api/users/me`, `/api/logout`
   - Onboarding: `/api/onboarding/step-one`, `/api/onboarding/complete`
   - Upload: `/api/upload-profile-picture`
 
@@ -53,7 +55,7 @@ This script will:
 │   │   ├── models.py      # SQLAlchemy models
 │   │   ├── schemas.py     # Pydantic schemas
 │   │   ├── routes.py      # API endpoints
-│   │   ├── auth.py        # JWT authentication
+│   │   ├── auth.py        # authentication
 │   │   ├── storage.py     # MinIO object storage
 │   │   └── database.py    # Database configuration
 │   ├── alembic/           # Database migrations
@@ -66,12 +68,33 @@ This script will:
 
 ## Features
 
-- **Authentication:** JWT-based user registration and login
-- **Onboarding:** Multi-step user type selection and profile completion
-- **Object Storage:** Profile picture uploads with MinIO S3-compatible storage
-- **Database:** PostgreSQL with Alembic migrations
-- **Hot Reload:** Development environment with automatic code reloading
+Below is a non-exhaustive overview of what GoodDeedFeed can do. For a deep technical dive (diagrams, schema, data-flow) check out **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
+### Core
+* **Authentication & Sessions** – Secure cookie-based sessions with automatic invalidation on logout.
+* **User Onboarding** – Guided multi-step flow for Volunteers and Organizers with rich profile capture.
+
+### Volunteering Platform
+* **Event Management** – Organizers create, update, delete, and attach image carousels to volunteering opportunities. Volunteers discover, join and submit attendance (QR or manual).
+* **Karma & Leaderboard** – Volunteers accumulate karma; top contributors are ranked server-side via `/api/leaderboard`.
+* **Badge Achievements** – Dynamic badge engine rewarding milestones & streaks checked through `/api/users/me/check-badges`.
+* **PDF Certificates** – One-click generation of a signed volunteering history PDF (`/api/users/me/volunteer-history/pdf`).
+
+### Social
+* **Realtime Chat** – WebSocket endpoint `/api/ws/chat/{room_id}` for peer-to-peer and group messaging, with local caching.
+* **Subscriptions & Notifications** – Volunteers subscribe to Organizers and receive Firebase Cloud Messaging (FCM) push **and** in-app notifications.
+* **Lost & Found** – Full CRUD for lost/found items with multi-image upload and automatic expiry cleanup.
+
+### Intelligence & UX
+* **OpenAI Suggestions** – Optional GPT-powered helper that proposes engaging event descriptions and volunteering ideas when `OPENAI_API_KEY` is configured.
+* **Google Maps** – Map screen displaying nearby events with distance filtering and clustering.
+* **Developer Mode** – One-tap sign-in with generated accounts for rapid testing—enabled automatically on debug builds.
+
+### Infrastructure
+* **FastAPI + PostgreSQL + MinIO** – Entire backend stack runs locally under Docker Compose with hot-reload.
+* **CI/CD** – GitHub Actions builds the Android APK and runs backend tests on every PR.
+
+---
 
 ## Contribution Rules
 
@@ -81,7 +104,7 @@ This script will:
 
 
 **Tech Stack:**
-- Backend: Python FastAPI, SQLAlchemy, PostgreSQL, MinIO, JWT auth
+- Backend: Python FastAPI, SQLAlchemy, PostgreSQL, MinIO, session auth
 - Frontend: Android (Jetpack Compose, MVVM, Hilt, Ktor client)
 - Infrastructure: Docker Compose, Alembic migrations
 
@@ -92,7 +115,7 @@ For faster development and testing, the Android app includes a **Development Mod
 ### Features
 
 - **Quick Sign-in**: Auto-generates unique users with realistic data
-- **Multiple User Types**: Create Volunteer, Organizer, or Institution accounts instantly  
+- **Multiple User Types**: Create Volunteer or Organizer accounts instantly  
 - **No Server Required**: Works even when the backend is unavailable
 - **Unique Identifiers**: Each dev user gets a unique hash-based username and email
 
@@ -100,7 +123,7 @@ For faster development and testing, the Android app includes a **Development Mod
 
 1. **Debug Builds Only**: Dev mode is automatically enabled in debug builds
 2. **Sign-in Screen**: Look for the "🚀 Development Mode" card at the bottom
-3. **Choose User Type**: Click on 👤 Volunteer, ⭐ Organizer, or 🏛️ Institution
+3. **Choose User Type**: Click on 👤 Volunteer or ⭐ Organizer
 4. **Instant Access**: Get signed in immediately with a pre-configured account
 
 ### Generated Data
@@ -156,7 +179,6 @@ This project uses environment variables for configuration. The main configuratio
 
 ### Required Environment Variables:
 
-- `JWT_SECRET`: Secret key for JWT token authentication (server)
 - `GOOGLE_MAPS_API_KEY`: Google Maps API key for Android app
 - `DB_URL`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`: Database configuration
 - `MINIO_*`: Object storage configuration (handled by Docker Compose)

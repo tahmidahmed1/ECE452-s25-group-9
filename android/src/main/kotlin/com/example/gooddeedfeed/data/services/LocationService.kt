@@ -27,10 +27,11 @@ class LocationService @Inject constructor(
 
     private val locationRequest = LocationRequest.Builder(
         Priority.PRIORITY_HIGH_ACCURACY,
-        10000L, // 10 seconds
+        5000L, // 5 seconds - more frequent updates for better accuracy
     ).apply {
-        setMinUpdateIntervalMillis(5000L) // 5 seconds
-        setMaxUpdateDelayMillis(15000L) // 15 seconds
+        setMinUpdateIntervalMillis(2000L) // 2 seconds
+        setMaxUpdateDelayMillis(10000L) // 10 seconds
+        setMaxUpdateAgeMillis(30000L) // Don't use location older than 30 seconds
     }.build()
 
     @SuppressLint("MissingPermission")
@@ -50,7 +51,6 @@ class LocationService @Inject constructor(
                 Looper.getMainLooper(),
             )
         } catch (e: SecurityException) {
-            // Handle permission denied
             trySend(null)
         }
 

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,9 +24,6 @@ import com.example.gooddeedfeed.presentation.theme.DarkColors
 import com.example.gooddeedfeed.presentation.theme.LightColors
 import com.example.gooddeedfeed.presentation.theme.Spacing
 
-/**
- * Modern screen container with gradient background and improved spacing
- */
 @Composable
 fun ScreenContainer(
     modifier: Modifier = Modifier,
@@ -68,26 +64,6 @@ fun ScreenContainer(
     }
 }
 
-/**
- * Consistent screen title component
- */
-@Composable
-fun ScreenTitle(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.Bold,
-        modifier = modifier,
-    )
-}
-
-/**
- * Consistent subtitle component
- */
 @Composable
 fun ScreenSubtitle(
     text: String,
@@ -101,29 +77,19 @@ fun ScreenSubtitle(
     )
 }
 
-/**
- * Modern spacing components with theme integration
- */
 @Composable
 fun VerticalSpacer(size: SpacingSize = SpacingSize.Medium) {
     Spacer(modifier = Modifier.height(size.dp))
 }
 
-@Composable
-fun HorizontalSpacer(size: SpacingSize = SpacingSize.Medium) {
-    Spacer(modifier = Modifier.width(size.dp))
-}
-
 enum class SpacingSize(val dp: Dp) {
+    ExtraSmall(Spacing.xs),
     Small(Spacing.sm),
     Medium(Spacing.md),
     Large(Spacing.lg),
     ExtraLarge(Spacing.xl),
 }
 
-/**
- * Section header component
- */
 @Composable
 fun SectionHeader(
     title: String,

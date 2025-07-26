@@ -3,7 +3,6 @@ package com.example.gooddeedfeed.presentation.ui.screens.onboarding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,8 +30,6 @@ fun OnboardingStepOneScreen(
     var selectedUserType by remember { mutableStateOf<DomainUserType?>(null) }
 
     ScreenContainer(modifier = modifier) {
-        // Header removed per design
-
         VerticalSpacer(SpacingSize.Small)
 
         ScreenSubtitle("What type of account would you like to create?")
@@ -40,11 +37,10 @@ fun OnboardingStepOneScreen(
         VerticalSpacer(SpacingSize.Large)
         Spacer(modifier = Modifier.height(24.dp)) // Extra space for visual balance
 
-        // User type options
         SelectableOptionCard(
             icon = Icons.Default.Person,
             title = "Volunteer",
-            description = "I want to participate in community service activities",
+            description = "Find and participate in volunteer opportunities in your community",
             isSelected = selectedUserType == DomainUserType.VOLUNTEER,
             onClick = { selectedUserType = DomainUserType.VOLUNTEER },
         )
@@ -54,19 +50,9 @@ fun OnboardingStepOneScreen(
         SelectableOptionCard(
             icon = Icons.Default.Star,
             title = "Organizer",
-            description = "I want to organize and manage community events",
+            description = "Create and manage volunteer events and opportunities for your organization",
             isSelected = selectedUserType == DomainUserType.ORGANIZER,
             onClick = { selectedUserType = DomainUserType.ORGANIZER },
-        )
-
-        VerticalSpacer(SpacingSize.Small)
-
-        SelectableOptionCard(
-            icon = Icons.Default.Home,
-            title = "Institution",
-            description = "I represent an organization or institution",
-            isSelected = selectedUserType == DomainUserType.INSTITUTION,
-            onClick = { selectedUserType = DomainUserType.INSTITUTION },
         )
 
         VerticalSpacer(SpacingSize.Large)

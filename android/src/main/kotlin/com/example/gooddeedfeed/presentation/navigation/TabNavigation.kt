@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,23 +33,25 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.theme.BorderRadius
 import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
+import com.example.gooddeedfeed.presentation.ui.components.BadgeManager
+import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundScreen
+import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
+import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
-
-data class TabItem(
-    val title: String,
-    val icon: ImageVector,
-    val screen: @Composable (DomainUser, () -> Unit) -> Unit,
-)
 
 @Composable
 fun FloatingNavBarItem(
     icon: ImageVector,
     isSelected: Boolean,
+    hasUnread: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -85,6 +88,18 @@ fun FloatingNavBarItem(
             tint = iconColor,
             modifier = Modifier.size(24.dp),
         )
+
+        if (hasUnread) {
+            // Small dot in top-right corner
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-4).dp, y = 4.dp)
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.error),
+            )
+        }
     }
 }
 
@@ -93,6 +108,8 @@ fun FloatingNavigationBar(
     tabs: List<TabItem>,
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
+    chatTabIndex: Int? = null,
+    hasUnreadChat: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -117,9 +134,11 @@ fun FloatingNavigationBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEachIndexed { index, tab ->
+                val showUnreadDot = chatTabIndex != null && index == chatTabIndex && hasUnreadChat
                 FloatingNavBarItem(
                     icon = tab.icon,
                     isSelected = selectedTabIndex == index,
+                    hasUnread = showUnreadDot,
                     onClick = { onTabSelected(index) },
                 )
             }
@@ -131,25 +150,72 @@ fun FloatingNavigationBar(
 fun TabNavigationScreen(
     user: DomainUser,
     onLogout: () -> Unit,
+    onEditProfile: () -> Unit = {},
 ) {
-    // Observe home navigation events to switch bottom bar tabs
     val homeViewModel: HomeViewModel = hiltViewModel()
+    val badgeViewModel: BadgeViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var showEditProfile by remember { mutableStateOf(false) }
     var showPreviewProfile by remember { mutableStateOf(false) }
     var showPrivacySettings by remember { mutableStateOf(false) }
+    var showLostAndFound by remember { mutableStateOf(false) }
+    var showChatProfile by remember { mutableStateOf(false) }
+    var chatProfileUser by remember { mutableStateOf<DomainUser?>(null) }
 
-    // Generate tabs based on user type early
-    val tabs = NavigationConfig.getTabsForUserType(user.userType)
+    val authViewModel: AuthViewModel = hiltViewModel()
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Handle navigation events from HomeScreen using precomputed tabs
+    val currentUser = (authState as? AuthUiState.Success)?.user ?: user
+
+    LaunchedEffect(Unit) {
+        authViewModel.refreshUser()
+    }
+
+    LaunchedEffect(selectedTabIndex) {
+        authViewModel.refreshUser()
+    }
+
+    val tabs = getTabsForUserType(currentUser.userType ?: DomainUserType.VOLUNTEER)
+
+    // --- Chat unread indicator setup ---
+    val chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel = hiltViewModel()
+
+    // Load conversations once user info is ready
+    LaunchedEffect(currentUser.id) {
+        chatViewModel.loadConversations(currentUser)
+    }
+
+    val chatConversationsState by chatViewModel.conversationsState.collectAsStateWithLifecycle()
+    val hasUnreadMessages = (chatConversationsState as? com.example.gooddeedfeed.presentation.common.UiState.Success)?.data?.any { it.unreadCount > 0 } == true
+
+    val chatTabIndex = tabs.indexOfFirst { it.title == "Chat" }.takeIf { it >= 0 }
+
     LaunchedEffect(homeViewModel) {
         homeViewModel.navigationEvent.collect { action ->
             selectedTabIndex = when (action) {
-                HomeAction.BrowseOpportunities -> tabs.indexOfFirst { it.title.contains("Opp") }.let { if (it >= 0) it else selectedTabIndex }
-                HomeAction.ViewMyActivities -> tabs.indexOfFirst { it.title.contains("My Activities") }.let { if (it >= 0) it else selectedTabIndex }
-                HomeAction.CreateEvent, HomeAction.ManageEvents -> tabs.indexOfFirst { it.title == "Events" }.let { if (it >= 0) it else selectedTabIndex }
-                HomeAction.ViewDashboard, HomeAction.ManagePrograms -> tabs.indexOfFirst { it.title.contains("Review") || it.title.contains("Programs") }.let { if (it >= 0) it else selectedTabIndex }
+                HomeAction.BrowseOpportunities -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title.contains("Opp") }
+                    if (index >= 0) index else selectedTabIndex
+                }
+                HomeAction.ViewMyActivities -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title.contains("My Activities") }
+                    if (index >= 0) index else selectedTabIndex
+                }
+                HomeAction.LostAndFound -> {
+                    showLostAndFound = true
+                    selectedTabIndex
+                }
+                HomeAction.CreateEvent, HomeAction.ManageEvents -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title == "Manage Events" }
+                    if (index >= 0) index else selectedTabIndex
+                }
+                HomeAction.Chat -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title == "Chat" }
+                    if (index >= 0) index else selectedTabIndex
+                }
+                HomeAction.ViewDashboard, HomeAction.ManagePrograms -> {
+                    val index = tabs.indexOfFirst { tab: TabItem -> tab.title.contains("Review") || tab.title.contains("Programs") }
+                    if (index >= 0) index else selectedTabIndex
+                }
             }
         }
     }
@@ -158,68 +224,99 @@ fun TabNavigationScreen(
         Scaffold(
             topBar = {
                 AppTopBar(
-                    user = user,
-                    onEditProfile = { showEditProfile = true },
+                    user = currentUser,
+                    onEditProfile = onEditProfile,
                     onPreviewProfile = { showPreviewProfile = true },
                     onEditPrivacy = { showPrivacySettings = true },
                     onLogout = onLogout,
                 )
             },
             bottomBar = {
-                FloatingNavigationBar(
-                    tabs = tabs,
-                    selectedTabIndex = selectedTabIndex,
-                    onTabSelected = { selectedTabIndex = it },
-                    modifier = Modifier.padding(bottom = Spacing.md),
-                )
+                if (!showLostAndFound) {
+                    FloatingNavigationBar(
+                        tabs = tabs,
+                        selectedTabIndex = selectedTabIndex,
+                        onTabSelected = { selectedTabIndex = it },
+                        chatTabIndex = chatTabIndex,
+                        hasUnreadChat = hasUnreadMessages,
+                        modifier = Modifier.padding(bottom = Spacing.md),
+                    )
+                }
             },
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             modifier = Modifier.fillMaxSize(),
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
-                tabs[selectedTabIndex].screen(user, onLogout)
+                tabs[selectedTabIndex].screen(
+                    currentUser,
+                    onLogout,
+                    { profileUser ->
+                        chatProfileUser = profileUser
+                        showChatProfile = true
+                    },
+                )
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showLostAndFound,
+                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        LostAndFoundScreen(
+                            user = currentUser,
+                            onBack = { showLostAndFound = false },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
             }
         }
 
-        // Toast overlay is handled at the app level in AppNavHost
-
-        // Edit Profile Overlay - appears over everything including bottom bar
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showEditProfile,
-            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
-            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
-        ) {
-            com.example.gooddeedfeed.presentation.ui.screens.EditProfileScreen(
-                user = user,
-                onCancel = { showEditProfile = false },
-                onSave = { showEditProfile = false },
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
-        // Preview Profile Overlay - appears over everything including bottom bar
         androidx.compose.animation.AnimatedVisibility(
             visible = showPreviewProfile,
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
         ) {
             com.example.gooddeedfeed.presentation.ui.screens.PreviewProfileScreen(
-                user = user,
+                user = currentUser,
                 onBack = { showPreviewProfile = false },
                 modifier = Modifier.fillMaxSize(),
             )
         }
 
-        // Privacy & Notifications Overlay
         androidx.compose.animation.AnimatedVisibility(
             visible = showPrivacySettings,
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
         ) {
             com.example.gooddeedfeed.presentation.ui.screens.PrivacySettingsScreen(
+                user = currentUser,
                 onClose = { showPrivacySettings = false },
                 modifier = Modifier.fillMaxSize(),
             )
         }
+
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showChatProfile,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+        ) {
+            chatProfileUser?.let { profileUser ->
+                com.example.gooddeedfeed.presentation.ui.screens.PreviewProfileScreen(
+                    user = profileUser,
+                    onBack = { showChatProfile = false },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+
+        BadgeManager(
+            badgeViewModel = badgeViewModel,
+            userKarmaPoints = currentUser.karmaPoints,
+        )
     }
 }

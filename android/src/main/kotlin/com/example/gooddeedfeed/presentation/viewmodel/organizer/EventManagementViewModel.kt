@@ -2,7 +2,10 @@ package com.example.gooddeedfeed.presentation.viewmodel.organizer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gooddeedfeed.domain.model.AttendanceSubmission
 import com.example.gooddeedfeed.domain.model.CreateEventData
+import com.example.gooddeedfeed.domain.model.EventVolunteer
+import com.example.gooddeedfeed.domain.model.JoinedVolunteer
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.usecase.organizer.ManageEventsUseCase
 import com.example.gooddeedfeed.presentation.common.UiState
@@ -26,6 +29,30 @@ class EventManagementViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<UiState<EventManagementData>>(UiState.Loading)
     val uiState: StateFlow<UiState<EventManagementData>> = _uiState.asStateFlow()
+
+    private val _volunteers = MutableStateFlow<List<JoinedVolunteer>>(emptyList())
+    val volunteers: StateFlow<List<JoinedVolunteer>> = _volunteers.asStateFlow()
+
+    private val _searchResults = MutableStateFlow<List<VolunteerEvent>>(emptyList())
+    val searchResults: StateFlow<List<VolunteerEvent>> = _searchResults.asStateFlow()
+
+    // Description suggestion state
+    private val _descriptionSuggestion = MutableStateFlow<String?>(null)
+    val descriptionSuggestion: StateFlow<String?> = _descriptionSuggestion.asStateFlow()
+
+    private val _isGeneratingDescription = MutableStateFlow(false)
+    val isGeneratingDescription: StateFlow<Boolean> = _isGeneratingDescription.asStateFlow()
+
+    fun generateDescriptionSuggestion(title: String) {
+        if (title.isBlank()) return
+        viewModelScope.launch {
+            _isGeneratingDescription.value = true
+            val result = manageEventsUseCase.generateDescriptionSuggestion(title)
+            result.onSuccess { desc -> _descriptionSuggestion.value = desc }
+                .onFailure { e -> _uiState.value = UiState.Error("Failed to generate description: ${e.message}") }
+            _isGeneratingDescription.value = false
+        }
+    }
 
     init {
         loadEvents()
@@ -106,5 +133,55 @@ class EventManagementViewModel @Inject constructor(
         manageEventsUseCase.uploadEventImage(eventId, file)
             .onSuccess { loadEvents() }
             .onFailure { e -> _uiState.value = UiState.Error("Failed to upload image: ${e.message}") }
+    }
+
+    suspend fun uploadEventImageToCarousel(eventId: Int, file: java.io.File, isMain: Boolean) {
+        manageEventsUseCase.uploadEventImageToCarousel(eventId, file, isMain)
+            .onSuccess { loadEvents() }
+            .onFailure { e -> _uiState.value = UiState.Error("Failed to upload image: ${e.message}") }
+    }
+
+    fun setMainEventImage(eventId: Int, imageId: Int) {
+        viewModelScope.launch {
+            manageEventsUseCase.setMainEventImage(eventId, imageId)
+                .onSuccess { loadEvents() }
+                .onFailure { e -> _uiState.value = UiState.Error("Failed to set main image: ${e.message}") }
+        }
+    }
+
+    fun loadEventVolunteers(eventId: Int) {
+        viewModelScope.launch {
+            manageEventsUseCase.getEventVolunteers(eventId)
+                .catch { /* ignore for now */ }
+                .collect { list -> _volunteers.value = list }
+        }
+    }
+
+    fun kickVolunteer(eventId: Int, volunteerId: Int) {
+        viewModelScope.launch {
+            manageEventsUseCase.kickVolunteer(eventId, volunteerId)
+            // refresh list
+            loadEventVolunteers(eventId)
+            loadEvents() // refresh events to update counts
+        }
+    }
+
+    fun searchEvents(query: String) {
+        viewModelScope.launch {
+            manageEventsUseCase.searchMyEvents(query)
+                .catch { /* ignore */ }
+                .collect { list -> _searchResults.value = list }
+        }
+    }
+
+    suspend fun getEventVolunteersForAttendance(eventId: Int): Result<List<EventVolunteer>> {
+        return manageEventsUseCase.getEventVolunteersForAttendance(eventId)
+    }
+
+    suspend fun submitAttendance(attendanceData: AttendanceSubmission): Result<Map<String, Int>> {
+        return manageEventsUseCase.submitAttendance(attendanceData)
+            .onSuccess {
+                loadEvents() // Refresh events list after attendance submission
+            }
     }
 } 

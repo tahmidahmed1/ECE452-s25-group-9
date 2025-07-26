@@ -1,20 +1,43 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.gooddeedfeed.R
+import com.example.gooddeedfeed.data.mapper.toEmulatorAccessibleUrl
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
+import com.example.gooddeedfeed.domain.model.VolunteerEvent
+import com.example.gooddeedfeed.domain.model.toDisplayString
+import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementData
+import com.example.gooddeedfeed.presentation.viewmodel.organizer.EventManagementViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,39 +46,116 @@ fun PreviewProfileScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    when (user.userType?.name) {
+        "VOLUNTEER" -> VolunteerPreviewProfileScreen(user, onBack, modifier)
+        "ORGANIZER" -> OrganizerPreviewProfileScreen(user, onBack, modifier)
+        else -> {
+            VolunteerPreviewProfileScreen(user, onBack, modifier)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun VolunteerPreviewProfileScreen(
+    user: DomainUser,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
-                Row(
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Profile Preview",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
+            Row(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Profile Preview",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
             }
-            item { BasicInfoCard(user) }
-            item { ContactInfoCard(user) }
-            if (user.userType?.name == "VOLUNTEER") item { VolunteerInfoCard(user) }
-            item { Spacer(modifier = Modifier.height(24.dp)) }
+            BasicInfoCard(user)
+            ContactInfoCard(user)
+            VolunteerInfoCard(user)
+            EmergencyContactCard(user)
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrganizerPreviewProfileScreen(
+    user: DomainUser,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    eventManagementViewModel: EventManagementViewModel = hiltViewModel(),
+) {
+    val uiState by eventManagementViewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        eventManagementViewModel.loadEvents()
+    }
+
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Profile Preview",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            BasicInfoCard(user)
+            ContactInfoCard(user)
+            OrganizerInfoCard(user)
+            if (!user.organizationSocialMedia.isNullOrEmpty()) {
+                SocialMediaCard(user)
+            }
+            if (!user.organizationImages.isNullOrEmpty()) {
+                OrganizationImagesCard(user)
+            }
+            OrganizerEventsPreviewCard(uiState)
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -71,30 +171,139 @@ private fun BasicInfoCard(user: DomainUser) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AsyncImage(
-                model = user.profilePictureUrl,
-                contentDescription = "Profile picture",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            if (user.userType?.name == "ORGANIZER") {
+                val bannerImage = when {
+                    !user.organizationImages.isNullOrEmpty() -> user.organizationImages.first()
+                    else -> null
+                }
+
+                if (bannerImage != null) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.BottomCenter,
+                    ) {
+                        AsyncImage(
+                            model = bannerImage,
+                            contentDescription = "Organization Banner",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop,
+                        )
+
+                        if (user.profilePictureUrl != null && user.profilePictureUrl.isNotEmpty()) {
+                            AsyncImage(
+                                model = user.profilePictureUrl,
+                                contentDescription = "Profile picture",
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .offset(y = 60.dp)
+                                    .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .offset(y = 60.dp)
+                                    .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Default Profile Picture",
+                                    modifier = Modifier.size(100.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(72.dp))
+                } else {
+                    if (user.profilePictureUrl != null && user.profilePictureUrl.isNotEmpty()) {
+                        AsyncImage(
+                            model = user.profilePictureUrl,
+                            contentDescription = "Profile picture",
+                            modifier = Modifier
+                                .size(200.dp)
+                                .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(200.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Default Profile Picture",
+                                modifier = Modifier.size(100.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            } else {
+                if (user.profilePictureUrl != null && user.profilePictureUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = user.profilePictureUrl,
+                        contentDescription = "Profile picture",
+                        modifier = Modifier
+                            .size(200.dp)
+                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(200.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Default Profile Picture",
+                            modifier = Modifier.size(100.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            user.fullName?.let { fullName ->
+                Text(
+                    text = fullName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             Text(
-                text = user.fullName ?: user.username,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = "@${user.username}",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = user.email,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = "Role: ${user.userType?.name ?: "Not set"}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -109,9 +318,12 @@ private fun ContactInfoCard(user: DomainUser) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Contact Information")
+            InfoRow("Email", user.email)
             user.phone?.let { InfoRow("Phone", it) }
             user.organizationName?.let { InfoRow("Organization", it) }
-            user.locationArea?.let { InfoRow("Location", it) }
+            if (user.userType?.name == "ORGANIZER") {
+                user.locationArea?.let { InfoRow("Location", it) }
+            }
         }
     }
 }
@@ -125,12 +337,62 @@ private fun VolunteerInfoCard(user: DomainUser) {
     ) {
         Column(Modifier.padding(16.dp)) {
             SectionHeader("Volunteer Information")
-            user.description?.let { InfoRow("Description", it) }
-            user.skills?.let { InfoRow("Skills", it.joinToString()) }
+
             user.age?.let { InfoRow("Age", it.toString()) }
-            if (user.hasDriversLicense == true) InfoRow("Driver's License", "Yes")
-            user.emergencyContactName?.let { InfoRow("Emergency Contact", it) }
-            user.emergencyContactPhone?.let { InfoRow("Emergency Phone", it) }
+            user.sex?.let { InfoRow("Gender", it.toDisplayString()) }
+
+            user.description?.let { description ->
+                if (description.isNotBlank()) {
+                    Text(
+                        text = "About",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                    )
+                }
+            }
+
+            user.skills?.let { skills ->
+                if (skills.isNotEmpty()) {
+                    Text(
+                        text = "Skills & Interests",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                    Text(
+                        text = skills.joinToString(", "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                    )
+                }
+            }
+
+            user.locationArea?.let { InfoRow("Preferred Area", it) }
+            user.hasDriversLicense?.let { InfoRow("Driver's License", if (it) "Yes" else "No") }
+
+            user.disabilities?.let { disabilities ->
+                if (disabilities.isNotBlank()) {
+                    InfoRow("Accessibility Needs", disabilities)
+                }
+            }
+
+            InfoRow("Karma Points", user.karmaPoints.toString())
         }
     }
 }
@@ -164,5 +426,348 @@ private fun InfoRow(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
+    }
+}
+
+@Composable
+private fun EmergencyContactCard(user: DomainUser) {
+    if (user.emergencyContactName?.isNotBlank() == true || user.emergencyContactPhone?.isNotBlank() == true) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                SectionHeader("Emergency Contact")
+                user.emergencyContactName?.let { name ->
+                    if (name.isNotBlank()) InfoRow("Name", name)
+                }
+                user.emergencyContactPhone?.let { phone ->
+                    if (phone.isNotBlank()) InfoRow("Phone", phone)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrganizerInfoCard(user: DomainUser) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            SectionHeader("Organization Information")
+
+            user.organizationName?.let { InfoRow("Organization Name", it) }
+
+            user.organizationDescription?.let { description ->
+                if (description.isNotBlank()) {
+                    Text(
+                        text = "About Organization",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                    )
+                }
+            }
+
+            user.organizationWebsite?.let { website ->
+                if (website.isNotBlank()) {
+                    InfoRow("Website", website)
+                }
+            }
+
+            user.locationArea?.let { InfoRow("Location", it) }
+        }
+    }
+}
+
+@Composable
+private fun SocialMediaCard(user: DomainUser) {
+    user.organizationSocialMedia?.let { socialMedia ->
+        if (socialMedia.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    SectionHeader("Social Media")
+                    socialMedia.forEach { link ->
+                        SocialMediaRow(
+                            platform = link.platform,
+                            url = link.url,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SocialMediaRow(platform: SocialMediaPlatform, url: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = getSocialMediaIcon(platform),
+                contentDescription = platform.displayName,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = platform.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = url,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f, fill = false),
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Composable
+private fun OrganizationImagesCard(user: DomainUser) {
+    user.organizationImages?.let { images ->
+        if (images.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    SectionHeader("Organization Images")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(images) { imageUrl ->
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "Organization Image",
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OrganizerEventsPreviewCard(uiState: UiState<EventManagementData>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            SectionHeader("Organized Events")
+
+            when (uiState) {
+                is UiState.Idle -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "Loading events...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                is UiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is UiState.Success -> {
+                    val events = uiState.data.events
+                    if (events.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Event,
+                                    contentDescription = "No events",
+                                    modifier = Modifier.size(32.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "No events organized yet",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.height(300.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(events) { event ->
+                                EventPreviewCard(event)
+                            }
+                        }
+                    }
+                }
+                is UiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = "Error",
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Unable to load events",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventPreviewCard(event: VolunteerEvent) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val mainImage = event.images.firstOrNull { it.is_main }
+            val fallbackImage = if (mainImage == null && event.images.isNotEmpty()) {
+                event.images.first()
+            } else {
+                null
+            }
+
+            val imageUrl = mainImage?.image_url?.toEmulatorAccessibleUrl()
+                ?: fallbackImage?.image_url?.toEmulatorAccessibleUrl()
+                ?: event.imageUrl?.toEmulatorAccessibleUrl()
+
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Event Image",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Event,
+                        contentDescription = "Default Event Image",
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = event.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${event.date} • ${event.startTime}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "${event.currentVolunteers}/${event.maxVolunteers} volunteers",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {
+    return when (platform) {
+        SocialMediaPlatform.INSTAGRAM -> ImageVector.vectorResource(R.drawable.ic_instagram)
+        SocialMediaPlatform.FACEBOOK -> ImageVector.vectorResource(R.drawable.ic_facebook)
+        SocialMediaPlatform.TWITTER -> ImageVector.vectorResource(R.drawable.ic_twitter)
+        SocialMediaPlatform.LINKEDIN -> ImageVector.vectorResource(R.drawable.ic_linkedin)
     }
 } 

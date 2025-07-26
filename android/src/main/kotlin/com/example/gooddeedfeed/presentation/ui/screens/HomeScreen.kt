@@ -23,10 +23,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.presentation.common.UiState
+import com.example.gooddeedfeed.presentation.ui.components.NotificationPromptDialog
 import com.example.gooddeedfeed.presentation.ui.components.base.ActionCard
 import com.example.gooddeedfeed.presentation.ui.components.base.InfoCard
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
@@ -68,6 +72,7 @@ import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,11 +83,26 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    var hasNotificationPromptBeenShown by remember { mutableStateOf(true) }
+    var showNotificationPrompt by remember { mutableStateOf(false) }
+
     LaunchedEffect(user) {
         viewModel.loadUserHome(user)
     }
 
+    LaunchedEffect(user) {
+        if (user.onboardingCompleted == true) {
+            hasNotificationPromptBeenShown = viewModel.hasNotificationPromptBeenShown()
+            if (!hasNotificationPromptBeenShown) {
+                showNotificationPrompt = true
+            }
+        }
+    }
+
     when (val currentState = uiState) {
+        is UiState.Idle -> {
+            Box(modifier = Modifier.fillMaxSize()) {}
+        }
         is UiState.Loading -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -98,6 +118,7 @@ fun HomeScreen(
                 userTypeDisplay = homeData.userTypeDisplay,
                 onActionClick = { action -> viewModel.handleAction(action) },
                 onLogout = onLogout,
+                homeViewModel = viewModel, // Pass viewModel here
             )
         }
         is UiState.Error -> {
@@ -121,6 +142,25 @@ fun HomeScreen(
             }
         }
     }
+
+    if (showNotificationPrompt && user.userType != null) {
+        NotificationPromptDialog(
+            userType = user.userType!!,
+            onEnableNotifications = {
+                viewModel.enableNotifications()
+                viewModel.markNotificationPromptAsShown()
+                showNotificationPrompt = false
+            },
+            onSkip = {
+                viewModel.markNotificationPromptAsShown()
+                viewModel.disableNotifications()
+                showNotificationPrompt = false
+            },
+            onDismiss = {
+                showNotificationPrompt = false
+            },
+        )
+    }
 }
 
 @Composable
@@ -129,10 +169,10 @@ private fun HomeContent(
     userTypeDisplay: UserTypeDisplay,
     onActionClick: (HomeAction) -> Unit,
     onLogout: () -> Unit,
+    homeViewModel: HomeViewModel, // Add this parameter
 ) {
     ScreenContainer {
         Column {
-            // Welcome header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
@@ -141,7 +181,7 @@ private fun HomeContent(
                     imageVector = when (user.userType) {
                         DomainUserType.VOLUNTEER -> Icons.Default.Person
                         DomainUserType.ORGANIZER -> Icons.Default.Star
-                        DomainUserType.INSTITUTION -> Icons.Default.Home
+                        null -> Icons.Default.Home
                         null -> Icons.Default.Person
                     },
                     contentDescription = null,
@@ -153,7 +193,11 @@ private fun HomeContent(
 
                 Column {
                     Text(
-                        text = "Welcome, ${user.fullName ?: user.username}",
+                        text = when (user.userType) {
+                            DomainUserType.ORGANIZER -> "Welcome, ${user.organizationName ?: user.username}"
+                            DomainUserType.VOLUNTEER -> "Welcome, ${user.fullName ?: user.username}"
+                            null -> "Welcome, ${user.username}"
+                        },
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
@@ -168,7 +212,6 @@ private fun HomeContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Action items (skip Browse Opportunities / My Activities for volunteers)
             val filteredItems = userTypeDisplay.actionItems.filterNot {
                 it.title.contains("Browse Opportunities") || it.title.contains("My Activities")
             }
@@ -177,18 +220,44 @@ private fun HomeContent(
                 ActionCard(
                     icon = when (actionItem.iconName) {
                         "list" -> Icons.AutoMirrored.Filled.List
+                        "chat" -> Icons.Default.Chat
                         else -> getIconForAction(actionItem.iconName)
                     },
                     title = actionItem.title,
                     description = actionItem.description,
                     onClick = { onActionClick(actionItem.action) },
+                    showBorder = actionItem.title == "Lost & Found",
                 )
                 VerticalSpacer(SpacingSize.Small)
             }
 
-            // Volunteer-specific calendar
+            // Opportunity Idea Generator for organizers
+            if (user.userType == DomainUserType.ORGANIZER) {
+                val ideas by homeViewModel.ideaSuggestions.collectAsStateWithLifecycle()
+                val isGenerating by homeViewModel.isGeneratingIdeas.collectAsStateWithLifecycle()
+
+                DisposableEffect(Unit) {
+                    onDispose {
+                        homeViewModel.resetOpportunityIdeas()
+                    }
+                }
+
+                InfoCard(
+                    title = "Opportunity Ideas",
+                    content = if (ideas.isNotEmpty()) ideas.joinToString(separator = "\n• ", prefix = "• ") else "Tap below to generate ideas for your next event.",
+                    icon = Icons.Default.Lightbulb,
+                )
+                VerticalSpacer(SpacingSize.Small)
+                PrimaryButton(
+                    text = if (isGenerating) "Generating Ideas..." else "Generate Ideas",
+                    onClick = { homeViewModel.generateOpportunityIdeas() },
+                    enabled = !isGenerating,
+                )
+                VerticalSpacer(SpacingSize.Large)
+            }
+
             if (user.userType == DomainUserType.VOLUNTEER) {
-                VolunteerCalendarView()
+                VolunteerCalendarView(homeViewModel = homeViewModel)
                 VerticalSpacer(SpacingSize.Large)
             }
 
@@ -207,18 +276,61 @@ private fun getIconForAction(iconName: String) = when (iconName) {
 
 @SuppressLint("NewApi")
 @Composable
-private fun VolunteerCalendarView() {
-    // Mock events: 3 tomorrow
+private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
     data class EventItem(val title: String, val time: String)
-    val tomorrow = LocalDate.now().plusDays(1)
-    val eventsMap = remember {
-        mapOf(
-            tomorrow to listOf(
-                EventItem("Beach Cleanup", "10:00 AM"),
-                EventItem("Food Drive", "1:00 PM"),
-                EventItem("Tree Planting", "4:00 PM"),
-            ),
-        )
+
+    val joinedEventsState by homeViewModel.joinedEventsState.collectAsStateWithLifecycle()
+
+    // Load joined events when the component is created
+    LaunchedEffect(Unit) {
+        homeViewModel.loadJoinedEvents()
+    }
+
+    // Helper function to parse dates with multiple formats
+    fun parseDate(dateStr: String): LocalDate? {
+        val patterns = listOf("yyyy-MM-dd", "MMM d, yyyy", "MMMM d, yyyy")
+        for (pattern in patterns) {
+            try {
+                return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH))
+            } catch (e: Exception) {
+                // Continue to next pattern
+            }
+        }
+        return null
+    }
+
+    val eventsMap = remember(joinedEventsState) {
+        android.util.Log.i("HomeScreen", "🗓️ CALENDAR VIEW - Processing joinedEventsState: ${joinedEventsState::class.simpleName}")
+        val data = (joinedEventsState as? UiState.Success)?.data
+        if (data != null) {
+            android.util.Log.i("HomeScreen", "🗓️ CALENDAR VIEW - Processing ${data.size} joined events for calendar display")
+            data.forEach { event ->
+                android.util.Log.i("HomeScreen", "  📅 Processing event: '${event.title}' on ${event.date} (${event.startTime} - ${event.endTime})")
+            }
+
+            val grouped: Map<LocalDate, List<EventItem>> = data.mapNotNull { event ->
+                val parsedDate = parseDate(event.date)
+                if (parsedDate != null) {
+                    android.util.Log.i("HomeScreen", "  ✅ Successfully parsed date '${event.date}' for event '${event.title}'")
+                    parsedDate to EventItem(
+                        title = event.title,
+                        time = formatEventTime(event.startTime, event.endTime),
+                    )
+                } else {
+                    android.util.Log.w("HomeScreen", "  ⚠️ Failed to parse date '${event.date}' for event '${event.title}'")
+                    null
+                }
+            }.groupBy({ it.first }, { it.second })
+
+            android.util.Log.i("HomeScreen", "🗓️ CALENDAR VIEW - Created events map with ${grouped.size} dates")
+            grouped.forEach { (date, events) ->
+                android.util.Log.i("HomeScreen", "  📆 Date $date has ${events.size} events: ${events.map { it.title }}")
+            }
+            grouped
+        } else {
+            android.util.Log.w("HomeScreen", "🗓️ CALENDAR VIEW - No data available from joinedEventsState")
+            emptyMap()
+        }
     }
 
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
@@ -232,12 +344,11 @@ private fun VolunteerCalendarView() {
         firstDayOfWeek = firstDayOfWeekFromLocale(),
     )
 
-    // Calendar with border
     Box(
         modifier = Modifier
             .height(300.dp)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
-            .clip(RoundedCornerShape(4.dp)),
+            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp)),
     ) {
         VerticalCalendar(
             modifier = Modifier.fillMaxSize(),
@@ -254,6 +365,9 @@ private fun VolunteerCalendarView() {
             dayContent = { day ->
                 val isSelected = selectedDate == day.date
                 val hasEvents = eventsMap.containsKey(day.date)
+                if (hasEvents) {
+                    android.util.Log.d("HomeScreen", "🗓️ CALENDAR DAY - ${day.date} has events: ${eventsMap[day.date]?.map { it.title }}")
+                }
                 val background = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
                 val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else if (day.position == DayPosition.MonthDate) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -284,7 +398,6 @@ private fun VolunteerCalendarView() {
         )
     }
 
-    // Events below calendar
     VerticalSpacer(SpacingSize.Medium)
     val events = eventsMap[selectedDate] ?: emptyList()
     InfoCard(
@@ -305,5 +418,20 @@ private fun VolunteerCalendarView() {
                 InfoCard(title = it.title, content = it.time, icon = Icons.Default.Event)
             }
         }
+    }
+}
+
+/**
+ * Formats event time display showing start and end times, or fallback to "All Day"
+ */
+private fun formatEventTime(startTime: String?, endTime: String?): String {
+    return when {
+        startTime != null && endTime != null && startTime.isNotBlank() && endTime.isNotBlank() -> {
+            "$startTime - $endTime"
+        }
+        startTime != null && startTime.isNotBlank() -> {
+            startTime
+        }
+        else -> "All Day"
     }
 }

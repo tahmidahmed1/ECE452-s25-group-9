@@ -30,8 +30,8 @@ import com.example.gooddeedfeed.presentation.viewmodel.onboarding.OnboardingView
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
+    viewModel: OnboardingViewModel = hiltViewModel(),
     onOnboardingComplete: () -> Unit,
-    viewModel: OnboardingViewModel = hiltViewModel<OnboardingViewModel>(),
     modifier: Modifier = Modifier,
 ) {
     var currentStep by remember { mutableIntStateOf(1) }
@@ -41,16 +41,16 @@ fun OnboardingScreen(
     var basicProfilePicture: java.io.File? by remember { mutableStateOf(null) }
     val context = LocalContext.current
 
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val isSuccess by viewModel.isSuccess.collectAsStateWithLifecycle()
 
-    // Calculate total steps based on user type
     val totalSteps = when (selectedUserType) {
         DomainUserType.VOLUNTEER -> 3 // Step 1: User type, Step 2: Basic info, Step 3: Detailed volunteer profile
         else -> 2 // Step 1: User type, Step 2: Basic info
     }
 
-    // Show loading indicator with consistent theme
-    if (uiState.isLoading) {
+    if (isLoading) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
@@ -60,28 +60,24 @@ fun OnboardingScreen(
         return
     }
 
-    // Show error message if any
-    uiState.errorMessage?.let { errorMessage ->
+    error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
             ToastUtils.showErrorToast(context, errorMessage)
             viewModel.clearError() // Clear the error after showing it
         }
     }
 
-    // Handle onboarding completion
-    LaunchedEffect(uiState.isOnboardingCompleted) {
-        if (uiState.isOnboardingCompleted) {
+    LaunchedEffect(isSuccess) {
+        if (isSuccess) {
             onOnboardingComplete()
         }
     }
 
-    // Main content with consistent theme
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
         Column {
-            // Dot indicators at the top
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -94,7 +90,6 @@ fun OnboardingScreen(
                 )
             }
 
-            // Screen content
             Box(modifier = Modifier.weight(1f)) {
                 when (currentStep) {
                     1 -> {
@@ -128,14 +123,14 @@ fun OnboardingScreen(
                                 else -> {
                                     OnboardingStepTwoScreen(
                                         userType = userType,
-                                        onComplete = { fullName, phone, organizationName, institutionName, profilePictureFile ->
+                                        onComplete = { fullName, phone, organizationName, profilePictureFile, organizerProfile ->
                                             viewModel.completeOnboarding(
                                                 userType = userType,
                                                 fullName = fullName,
                                                 phone = phone,
                                                 organizationName = organizationName,
-                                                institutionName = institutionName,
                                                 profilePictureFile = profilePictureFile,
+                                                organizerProfile = organizerProfile,
                                             )
                                         },
                                         onBack = {
@@ -148,12 +143,10 @@ fun OnboardingScreen(
                         }
                     }
                     3 -> {
-                        // Detailed volunteer profile (only for volunteers)
                         OnboardingStepThreeVolunteerScreen(
                             fullName = basicFullName,
                             phone = basicPhone,
                             onComplete = { volunteerProfile, profilePictureFile ->
-                                // Merge optional profile picture from step 2 if step 3 didn't override
                                 val picture = profilePictureFile ?: basicProfilePicture
                                 viewModel.completeVolunteerOnboarding(
                                     volunteerProfile = volunteerProfile,
@@ -170,4 +163,4 @@ fun OnboardingScreen(
             }
         }
     }
-} 
+}

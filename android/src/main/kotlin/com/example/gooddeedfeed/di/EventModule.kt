@@ -1,5 +1,7 @@
 package com.example.gooddeedfeed.di
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.example.gooddeedfeed.data.remote.EventApiService
 import com.example.gooddeedfeed.data.repository.EventRepositoryImpl
 import com.example.gooddeedfeed.data.repository.MapRepositoryImpl
@@ -38,7 +40,10 @@ abstract class EventModule {
     companion object {
         @Provides
         @Singleton
-        fun provideEventApiService(client: HttpClient): EventApiService = EventApiService(client)
+        fun provideEventApiService(
+            client: HttpClient,
+            dataStore: DataStore<Preferences>,
+        ): EventApiService = EventApiService(client, dataStore)
 
         @Provides
         fun provideGetMapEventsUseCase(repo: MapRepository) = GetMapEventsUseCase(repo)

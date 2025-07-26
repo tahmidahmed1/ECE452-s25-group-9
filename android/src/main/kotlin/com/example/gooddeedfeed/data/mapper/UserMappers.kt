@@ -1,58 +1,82 @@
 package com.example.gooddeedfeed.data.mapper
 
-import com.example.gooddeedfeed.data.remote.dto.AuthResponse
-import com.example.gooddeedfeed.data.remote.dto.InstitutionName
-import com.example.gooddeedfeed.data.remote.dto.ProfilePictureUploadResponse
+import com.example.gooddeedfeed.data.remote.dto.BadgeDto
 import com.example.gooddeedfeed.data.remote.dto.Sex
-import com.example.gooddeedfeed.data.remote.dto.User
+import com.example.gooddeedfeed.data.remote.dto.SocialMediaLinkDto
+import com.example.gooddeedfeed.data.remote.dto.SocialMediaPlatformDto
+import com.example.gooddeedfeed.data.remote.dto.UserBadgeDto
+import com.example.gooddeedfeed.data.remote.dto.UserDto
 import com.example.gooddeedfeed.data.remote.dto.UserType
-import com.example.gooddeedfeed.domain.model.DomainAuthResponse
-import com.example.gooddeedfeed.domain.model.DomainInstitutionName
-import com.example.gooddeedfeed.domain.model.DomainProfilePictureUploadResponse
+import com.example.gooddeedfeed.data.remote.dto.UserUpdateDto
+import com.example.gooddeedfeed.data.remote.dto.VolunteerHistoryEntryDto
+import com.example.gooddeedfeed.domain.model.DomainBadge
 import com.example.gooddeedfeed.domain.model.DomainSex
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.model.DomainUserBadge
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.model.DomainUserUpdate
+import com.example.gooddeedfeed.domain.model.DomainVolunteerHistoryEntry
+import com.example.gooddeedfeed.domain.model.SocialMediaLink
+import com.example.gooddeedfeed.domain.model.SocialMediaPlatform
 
-// User mappers
-fun User.toDomain(): DomainUser = DomainUser(
-    id = id,
-    username = username,
-    email = email,
-    isActive = is_active,
-    userType = user_type?.toDomain(),
-    onboardingCompleted = onboarding_completed,
-    fullName = full_name,
-    phone = phone,
-    profilePictureUrl = profile_picture_url?.toEmulatorAccessibleUrl(),
-    organizationName = organization_name,
-    institutionName = institution_name?.toDomain(),
-    createdAt = created_at,
-    karmaPoints = karma_points,
-    sex = sex?.toDomain(),
-    description = description,
-    skills = skills,
-    age = age,
-    emergencyContactName = emergency_contact_name,
-    emergencyContactPhone = emergency_contact_phone,
-    locationArea = location_area,
-    hasDriversLicense = has_drivers_license,
-    disabilities = disabilities,
-)
+fun UserDto.toDomain(): DomainUser {
+    return DomainUser(
+        id = id,
+        username = username,
+        email = email,
+        isActive = is_active,
+        userType = user_type?.toDomain(),
+        onboardingCompleted = onboarding_completed,
+        fullName = full_name,
+        phone = phone,
+        profilePictureUrl = profile_picture_url?.toEmulatorAccessibleUrl(),
+        bannerUrl = banner_url?.toEmulatorAccessibleUrl(),
+        organizationName = organization_name,
+        organizationDescription = organization_description,
+        organizationWebsite = organization_website,
+        organizationSocialMedia = organization_social_media?.map { it.toDomain() },
+        organizationImages = organization_images?.map { it.toEmulatorAccessibleUrl() },
+        sex = sex?.toDomain(),
+        description = description,
+        skills = skills,
+        age = age,
+        emergencyContactName = emergency_contact_name,
+        emergencyContactPhone = emergency_contact_phone,
+        locationArea = location_area,
+        hasDriversLicense = has_drivers_license,
+        disabilities = disabilities,
+        karmaPoints = karma_points,
+        createdAt = created_at,
+        updatedAt = updated_at,
+    )
+}
 
-// UserType mappers
+fun DomainUserUpdate.toDto(): UserUpdateDto {
+    return UserUpdateDto(
+        full_name = fullName,
+        phone = phone,
+        organization_name = organizationName,
+        organization_description = organizationDescription,
+        organization_website = organizationWebsite,
+        organization_social_media = organizationSocialMedia?.map { it.toDto() },
+        organization_images = organizationImages,
+        sex = sex?.toDto(),
+        description = description,
+        skills = skills,
+        age = age,
+        emergency_contact_name = emergencyContactName,
+        emergency_contact_phone = emergencyContactPhone,
+        location_area = locationArea,
+        has_drivers_license = hasDriversLicense,
+        disabilities = disabilities,
+    )
+}
+
 fun UserType.toDomain(): DomainUserType = when (this) {
     UserType.VOLUNTEER -> DomainUserType.VOLUNTEER
     UserType.ORGANIZER -> DomainUserType.ORGANIZER
-    UserType.INSTITUTION -> DomainUserType.INSTITUTION
 }
 
-fun DomainUserType.toData(): UserType = when (this) {
-    DomainUserType.VOLUNTEER -> UserType.VOLUNTEER
-    DomainUserType.ORGANIZER -> UserType.ORGANIZER
-    DomainUserType.INSTITUTION -> UserType.INSTITUTION
-}
-
-// Sex mappers
 fun Sex.toDomain(): DomainSex = when (this) {
     Sex.MALE -> DomainSex.MALE
     Sex.FEMALE -> DomainSex.FEMALE
@@ -60,43 +84,47 @@ fun Sex.toDomain(): DomainSex = when (this) {
     Sex.PREFER_NOT_TO_SAY -> DomainSex.PREFER_NOT_TO_SAY
 }
 
-fun DomainSex.toData(): Sex = when (this) {
-    DomainSex.MALE -> Sex.MALE
-    DomainSex.FEMALE -> Sex.FEMALE
-    DomainSex.NON_BINARY -> Sex.NON_BINARY
-    DomainSex.PREFER_NOT_TO_SAY -> Sex.PREFER_NOT_TO_SAY
+fun SocialMediaPlatformDto.toDomain(): SocialMediaPlatform = when (this) {
+    SocialMediaPlatformDto.INSTAGRAM -> SocialMediaPlatform.INSTAGRAM
+    SocialMediaPlatformDto.FACEBOOK -> SocialMediaPlatform.FACEBOOK
+    SocialMediaPlatformDto.TWITTER -> SocialMediaPlatform.TWITTER
+    SocialMediaPlatformDto.LINKEDIN -> SocialMediaPlatform.LINKEDIN
 }
 
-// InstitutionName mappers
-fun InstitutionName.toDomain(): DomainInstitutionName = when (this) {
-    InstitutionName.INSTITUTION_1 -> DomainInstitutionName.INSTITUTION_1
-    InstitutionName.INSTITUTION_2 -> DomainInstitutionName.INSTITUTION_2
-    InstitutionName.INSTITUTION_3 -> DomainInstitutionName.INSTITUTION_3
-}
-
-fun DomainInstitutionName.toData(): InstitutionName = when (this) {
-    DomainInstitutionName.INSTITUTION_1 -> InstitutionName.INSTITUTION_1
-    DomainInstitutionName.INSTITUTION_2 -> InstitutionName.INSTITUTION_2
-    DomainInstitutionName.INSTITUTION_3 -> InstitutionName.INSTITUTION_3
-}
-
-// AuthResponse mappers
-fun AuthResponse.toDomain(): DomainAuthResponse = DomainAuthResponse(
-    success = success,
-    token = token,
-    message = message,
+fun SocialMediaLinkDto.toDomain(): SocialMediaLink = SocialMediaLink(
+    platform = platform.toDomain(),
+    url = url,
 )
 
-// ProfilePictureUploadResponse mappers
-fun ProfilePictureUploadResponse.toDomain(): DomainProfilePictureUploadResponse =
-    DomainProfilePictureUploadResponse(
-        profilePictureUrl = profile_picture_url.toEmulatorAccessibleUrl(),
-        message = message,
-    )
+fun BadgeDto.toDomain(): DomainBadge = DomainBadge(
+    id = id,
+    name = name,
+    description = description,
+    requiredKarmaPoints = requiredKarmaPoints,
+    iconName = iconName,
+    color = color,
+    isActive = isActive,
+    createdAt = createdAt,
+)
 
-// ------------------ Helpers ------------------
+fun UserBadgeDto.toDomain(): DomainUserBadge = DomainUserBadge(
+    badge = badge.toDomain(),
+    earnedAt = earnedAt,
+)
 
-private fun String.toEmulatorAccessibleUrl(): String {
-    return this.replace("http://localhost", "http://10.0.2.2")
-        .replace("http://127.0.0.1", "http://10.0.2.2")
-} 
+fun VolunteerHistoryEntryDto.toDomain(): DomainVolunteerHistoryEntry = DomainVolunteerHistoryEntry(
+    eventId = event_id,
+    eventTitle = event_title,
+    eventDate = event_date,
+    eventDescription = event_description,
+    eventLocation = event_location,
+    eventStartTime = event_start_time,
+    eventEndTime = event_end_time,
+    eventImageUrls = event_image_urls,
+    organizerName = organizer_name,
+    hoursWorked = hours_worked,
+    isApproved = is_approved,
+    rejectionReason = rejection_reason,
+    karmaPointsEarned = karma_points_earned,
+    status = status,
+)

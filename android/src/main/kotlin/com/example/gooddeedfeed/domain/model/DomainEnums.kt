@@ -1,15 +1,8 @@
 package com.example.gooddeedfeed.domain.model
 
-/**
- * Domain-layer enumerations. These are intentionally **decoupled** from the DTO layer so that
- * changes in the remote API do not ripple into the domain / presentation layers.
- * Mapper extension functions convert between these enums and the DTO equivalents.
- */
-
 enum class DomainUserType {
     VOLUNTEER,
     ORGANIZER,
-    INSTITUTION,
 }
 
 enum class DomainSex {
@@ -19,13 +12,6 @@ enum class DomainSex {
     PREFER_NOT_TO_SAY,
 }
 
-enum class DomainInstitutionName {
-    INSTITUTION_1,
-    INSTITUTION_2,
-    INSTITUTION_3,
-}
-
-// Extension helpers
 fun DomainSex.toDisplayString(): String = when (this) {
     DomainSex.MALE -> "Male"
     DomainSex.FEMALE -> "Female"

@@ -1,8 +1,10 @@
 package com.example.gooddeedfeed.presentation.viewmodel.volunteer
 
 import android.location.Location
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gooddeedfeed.data.repository.LocationSettingsRepository
 import com.example.gooddeedfeed.data.services.LocationService
 import com.example.gooddeedfeed.domain.model.VolunteerEvent
 import com.example.gooddeedfeed.domain.usecase.GetMapEventsUseCase
@@ -11,11 +13,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Simple contract interface for Map UI state */
 interface MapUiContract {
     val currentLocation: Location?
     val filteredEvents: List<VolunteerEvent>
@@ -36,6 +38,7 @@ data class MapUiState(
 class MapViewModel @Inject constructor(
     private val locationService: LocationService,
     private val getMapEventsUseCase: GetMapEventsUseCase,
+    val locationSettingsRepository: LocationSettingsRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapUiState())
@@ -69,10 +72,7 @@ class MapViewModel @Inject constructor(
                             )
                             val resState = filterEventsByRadius(newState)
 
-                            // Refresh events from backend with current location
-                            location?.let { loc ->
-                                loadEvents(loc.latitude, loc.longitude)
-                            }
+                            // No longer re-fetch events on location updates
                             resState
                         }
                     }
@@ -87,22 +87,27 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    fun updateRadius(radiusKm: Float) {
-        _uiState.update { currentState ->
-            val newState = currentState.copy(radiusKm = radiusKm)
-            val resState = filterEventsByRadius(newState)
-
-            // Re-fetch events with updated radius and location
-            val loc = resState.currentLocation
-            loadEvents(loc?.latitude, loc?.longitude)
-
-            resState
-        }
-    }
-
     fun onLocationPermissionGranted() {
-        _uiState.update { it.copy(isLocationPermissionGranted = true, errorMessage = null) }
-        startLocationUpdates()
+        viewModelScope.launch {
+            val locationEnabled = locationSettingsRepository.isLocationEnabled.first()
+            if (locationEnabled) {
+                _uiState.update { it.copy(isLocationPermissionGranted = true, errorMessage = null) }
+                val location = locationService.getCurrentLocation()
+                location?.let { loc ->
+                    _uiState.update { currentState ->
+                        currentState.copy(currentLocation = loc)
+                    }
+                }
+                startLocationUpdates()
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLocationPermissionGranted = false,
+                        errorMessage = "Location services are disabled in settings",
+                    )
+                }
+            }
+        }
     }
 
     fun onLocationPermissionDenied() {
@@ -114,11 +119,17 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    private fun loadEvents(lat: Double? = null, lon: Double? = null) {
+    private fun loadEvents() {
         viewModelScope.launch {
             try {
-                val events = getMapEventsUseCase(lat, lon, _uiState.value.radiusKm)
-                _uiState.update { currentState -> filterEventsByRadius(currentState.copy(allEvents = events)) }
+                val events = getMapEventsUseCase()
+                Log.d("MapViewModel", "Loaded events: ${events.size}")
+                events.forEach { ev ->
+                    Log.d("MapViewModel", "Event ${ev.id}: ${ev.title} (${ev.latitude},${ev.longitude})")
+                }
+                _uiState.update { currentState ->
+                    currentState.copy(allEvents = events, filteredEvents = events)
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(errorMessage = "Failed to load events: ${e.message}")
@@ -127,42 +138,7 @@ class MapViewModel @Inject constructor(
         }
     }
 
-    private fun filterEventsByRadius(state: MapUiState): MapUiState {
-        // Reference point for distance calculations
-        val referenceLocation = state.currentLocation ?: run {
-            // Fallback: geometric center of all events (if any) so radius slider still works in demo
-            if (state.allEvents.isEmpty()) return state.copy(filteredEvents = emptyList())
-
-            val avgLat = state.allEvents.map { it.latitude }.average()
-            val avgLng = state.allEvents.map { it.longitude }.average()
-            android.location.Location("avg").apply {
-                latitude = avgLat
-                longitude = avgLng
-            }
-        }
-
-        return try {
-            var filteredEvents = state.allEvents.filter { event ->
-                val distance = locationService.calculateDistance(
-                    referenceLocation.latitude,
-                    referenceLocation.longitude,
-                    event.latitude,
-                    event.longitude,
-                )
-                distance <= state.radiusKm
-            }
-
-            // If nothing matched (e.g., user GPS far away), keep showing all events
-            if (filteredEvents.isEmpty()) filteredEvents = state.allEvents
-
-            state.copy(filteredEvents = filteredEvents)
-        } catch (e: Exception) {
-            state.copy(
-                filteredEvents = state.allEvents,
-                errorMessage = "Error filtering events: ${e.message}",
-            )
-        }
-    }
-
-    // Mock generation removed – relies solely on backend data now.
+    // Radius-based filtering removed – always show all events
+    private fun filterEventsByRadius(state: MapUiState): MapUiState =
+        state.copy(filteredEvents = state.allEvents)
 } 

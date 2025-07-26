@@ -84,7 +84,6 @@ fun OnboardingStepTwoBasicScreen(
 
     val isFormValid = fullNameError == null && phoneError == null
 
-    // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
     ) { bitmap: Bitmap? ->
@@ -97,7 +96,6 @@ fun OnboardingStepTwoBasicScreen(
         }
     }
 
-    // Gallery launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -121,7 +119,6 @@ fun OnboardingStepTwoBasicScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Back button
             Row(
                 modifier = Modifier
                     .statusBarsPadding()
@@ -155,7 +152,6 @@ fun OnboardingStepTwoBasicScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Profile Picture Section
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -188,7 +184,6 @@ fun OnboardingStepTwoBasicScreen(
                         )
                     }
 
-                    // Add/edit indicator
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -224,7 +219,6 @@ fun OnboardingStepTwoBasicScreen(
 
             VerticalSpacer(SpacingSize.Large)
 
-            // Full Name Field
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
@@ -251,7 +245,6 @@ fun OnboardingStepTwoBasicScreen(
 
             VerticalSpacer(SpacingSize.Medium)
 
-            // Phone Field (+1 numbers, auto-formatted as XXX-XXX-XXXX)
             OutlinedTextField(
                 value = phone,
                 onValueChange = { input ->
@@ -299,7 +292,6 @@ fun OnboardingStepTwoBasicScreen(
         }
     }
 
-    // Image source selection dialog
     if (showImageSourceDialog) {
         AlertDialog(
             onDismissRequest = { showImageSourceDialog = false },

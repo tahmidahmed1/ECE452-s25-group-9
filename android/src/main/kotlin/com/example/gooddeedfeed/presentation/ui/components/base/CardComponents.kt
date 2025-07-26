@@ -157,6 +157,7 @@ fun ActionCard(
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showBorder: Boolean = false,
 ) {
     Card(
         onClick = onClick,
@@ -167,6 +168,17 @@ fun ActionCard(
                 elevation = Elevation.sm,
                 shape = RoundedCornerShape(BorderRadius.lg),
                 spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            )
+            .then(
+                if (showBorder) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(BorderRadius.lg),
+                    )
+                } else {
+                    Modifier
+                },
             ),
         shape = RoundedCornerShape(BorderRadius.lg),
         colors = CardDefaults.cardColors(
@@ -232,32 +244,33 @@ fun InfoCard(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         ),
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            icon?.let {
-                Icon(
-                    imageVector = it,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-            }
-            Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                icon?.let {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 } 

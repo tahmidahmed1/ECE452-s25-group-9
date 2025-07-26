@@ -30,19 +30,45 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
+import com.example.gooddeedfeed.presentation.ui.components.ToastManager
 import com.example.gooddeedfeed.presentation.ui.components.base.FormTextField
 import com.example.gooddeedfeed.presentation.ui.components.base.PrimaryButton
 import com.example.gooddeedfeed.presentation.ui.components.base.SecondaryButton
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
+
+private fun validateEmail(email: String): String? {
+    if (email.isBlank()) return "Email is required"
+    if (!email.contains("@")) return "Email must contain an @ symbol"
+    if (!email.matches(Regex("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"))) {
+        return "Please enter a valid email address"
+    }
+    return null
+}
+
+private fun validatePassword(password: String): String? {
+    if (password.isBlank()) return "Password is required"
+    if (password.length < 6) return "Password must be at least 6 characters"
+    return null
+}
+
+private fun validateUsername(username: String): String? {
+    if (username.isBlank()) return "Username is required"
+    if (username.length < 3) return "Username must be at least 3 characters"
+    if (username.length > 20) return "Username must be less than 20 characters"
+    if (!username.matches(Regex("^[a-zA-Z0-9_]+$"))) {
+        return "Username can only contain letters, numbers, and underscores"
+    }
+    return null
+}
 
 @Composable
 fun SignUpScreen(
     uiState: AuthUiState,
     onSignUp: (String, String, String) -> Unit,
     onNavigateToSignIn: () -> Unit,
-    onNavigateToOnboarding: () -> Unit = {},
-    onNavigateToHome: () -> Unit = {},
+    onNavigateToOnboarding: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -50,23 +76,34 @@ fun SignUpScreen(
     val isLoading = uiState is AuthUiState.Loading
     val context = LocalContext.current
 
-    // Handle success and error states with toasts and navigation
     LaunchedEffect(uiState) {
         when (uiState) {
             is AuthUiState.Success -> {
-                ToastUtils.showSuccessToast(context, "Account created successfully! Welcome to GoodDeedFeed!")
-                // Navigate based on onboarding status
                 val user = uiState.user
-                if (!user.onboardingCompleted) {
-                    onNavigateToOnboarding()
-                } else {
+                ToastManager.showSuccess("Account created successfully!")
+                if (user.onboardingCompleted) {
                     onNavigateToHome()
+                } else {
+                    onNavigateToOnboarding()
                 }
             }
             is AuthUiState.Error -> {
-                ToastUtils.showErrorToast(context, uiState.message)
+                ToastManager.showError(uiState.message)
             }
             else -> {}
+        }
+    }
+
+    val handleSignUp = {
+        val usernameError = validateUsername(username)
+        val emailError = validateEmail(email)
+        val passwordError = validatePassword(password)
+
+        when {
+            usernameError != null -> ToastManager.showError(usernameError)
+            emailError != null -> ToastManager.showError(emailError)
+            passwordError != null -> ToastManager.showError(passwordError)
+            else -> onSignUp(username, email, password)
         }
     }
 
@@ -89,7 +126,6 @@ fun SignUpScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Logo or App Icon placeholder
             Surface(
                 modifier = Modifier
                     .size(80.dp)
@@ -164,7 +200,7 @@ fun SignUpScreen(
 
                     PrimaryButton(
                         text = "Sign Up",
-                        onClick = { onSignUp(username, email, password) },
+                        onClick = handleSignUp,
                         enabled = username.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
                         isLoading = isLoading,
                         modifier = Modifier.fillMaxWidth(),

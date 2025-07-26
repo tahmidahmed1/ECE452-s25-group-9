@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
+import android.Manifest
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,16 +13,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun SplashScreen(
+    authState: AuthUiState,
     onSplashFinished: () -> Unit,
-    authState: AuthUiState = AuthUiState.Idle,
     modifier: Modifier = Modifier,
 ) {
-    // As soon as we have a definitive auth state, move on
+    val context = LocalContext.current
+    val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
+
+    LaunchedEffect(locationPermissionState.status) {
+        val hasLocationPermission = locationPermissionState.status.isGranted
+        android.util.Log.d("SplashScreen", "Location permission status: $hasLocationPermission")
+
+        if (!hasLocationPermission) {
+            android.util.Log.w("SplashScreen", "Location permission not granted - user will see location prompts")
+        }
+    }
+
     LaunchedEffect(authState) {
         when (authState) {
             is AuthUiState.Success, is AuthUiState.SignedOut -> onSplashFinished()
@@ -29,7 +46,6 @@ fun SplashScreen(
         }
     }
 
-    // Minimal placeholder while the auth check completes
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,

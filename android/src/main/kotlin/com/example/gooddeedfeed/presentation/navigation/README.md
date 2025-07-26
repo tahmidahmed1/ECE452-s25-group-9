@@ -11,26 +11,16 @@ The navigation system dynamically shows different tab configurations based on th
 ### 1. Volunteers (`UserType.VOLUNTEER`)
 **Tab Configuration:** 4 tabs
 - **Home** - Dashboard and main content
-- **Opportunities** - List view of available volunteer opportunities
+- **Events** - List view of available volunteer opportunities and organizer subscriptions
 - **Map** - Map view showing volunteer opportunities geographically
-- **Settings** - User settings and profile management
+- **Leaderboard** - User statistics, karma points, and rankings
 
 ### 2. Organizations (`UserType.ORGANIZER`)
-**Tab Configuration:** 3 tabs
+**Tab Configuration:** 4 tabs
 - **Home** - Dashboard and main content
 - **Events** - CRUD operations for managing volunteer events
-- **Settings** - User settings and profile management
-
-### 3. Institutions (`UserType.INSTITUTION`)
-**Tab Configuration:** 3 tabs
-- **Home** - Dashboard and main content
-- **Reviews** - Review and approve volunteer activities
-- **Settings** - User settings and profile management
-
-### 4. Default (Users without defined type)
-**Tab Configuration:** 2 tabs
-- **Home** - Basic dashboard
-- **Settings** - User settings and profile management
+- **Search** - Search and discovery functionality
+- **Leaderboard** - User statistics, karma points, and rankings
 
 ## File Structure
 
@@ -49,7 +39,6 @@ navigation/
 Central configuration object that defines all tab configurations:
 - `getVolunteerTabs()` - Returns tabs for volunteer users
 - `getOrganizerTabs()` - Returns tabs for organization users
-- `getInstitutionTabs()` - Returns tabs for institution users
 - `getDefaultTabs()` - Returns fallback tabs
 - `getTabsForUserType()` - Main entry point for tab selection
 
