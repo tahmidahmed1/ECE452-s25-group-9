@@ -1298,15 +1298,6 @@ def download_volunteer_history_pdf(
     p.setFont("Helvetica-Bold", 12)
     p.drawString(50, y, "GoodDeedFeed")  # App logo placeholder
     
-    # User profile picture placeholder (top right)
-    if current_user.profile_picture_url:
-        p.setFont("Helvetica", 12)
-        p.drawString(width - 200, y, f"Profile: {current_user.profile_picture_url[:30]}...")
-        logger.info(f"📊 PDF: Added user profile picture reference: {current_user.profile_picture_url}")
-    else:
-        p.setFont("Helvetica", 12)
-        p.drawString(width - 150, y, "Profile")
-        logger.info("📊 PDF: No profile picture for user")
     
     y -= 30
 
@@ -1365,16 +1356,16 @@ def download_volunteer_history_pdf(
                 p.setFont("Helvetica-Bold", 12)
                 p.drawString(50, y, "Location:")
                 p.setFont("Helvetica", 12)
-                p.drawString(100, y, event.location)
-                y -= 20
+                p.drawString(130, y, event.location)
+                y -= 25
 
             # Category
             if event.category:
                 p.setFont("Helvetica-Bold", 12)
                 p.drawString(50, y, "Category:")
                 p.setFont("Helvetica", 12)
-                p.drawString(100, y, event.category.value.replace('_', ' ').title())
-                y -= 20
+                p.drawString(130, y, event.category.value.replace('_', ' ').title())
+                y -= 25
 
             # Status (reflects actual approval state)
             p.setFont("Helvetica-Bold", 12)
@@ -1386,31 +1377,31 @@ def download_volunteer_history_pdf(
                 status_text = "Not Approved"
             else:
                 status_text = "Pending Approval"
-            p.drawString(100, y, status_text)
-            y -= 20
+            p.drawString(130, y, status_text)
+            y -= 25
 
             # Hours worked
             if hours_worked is not None:
                 p.setFont("Helvetica-Bold", 12)
                 p.drawString(50, y, "Hours Worked:")
                 p.setFont("Helvetica", 12)
-                p.drawString(130, y, str(hours_worked))
-                y -= 20
+                p.drawString(160, y, str(hours_worked))
+                y -= 25
 
             # Karma points earned
             if karma_points_earned:
                 p.setFont("Helvetica-Bold", 12)
                 p.drawString(50, y, "Karma Points Earned:")
                 p.setFont("Helvetica", 12)
-                p.drawString(160, y, str(karma_points_earned))
-                y -= 20
+                p.drawString(200, y, str(karma_points_earned))
+                y -= 25
 
             # Event description with text wrapping and standard formatting
             if event.description:
-                y -= 10
+                y -= 15
                 p.setFont("Helvetica-Bold", 12)
                 p.drawString(50, y, "Description:")
-                y -= 20
+                y -= 25
                 p.setFont("Helvetica", 12)
                 
                 description_lines = wrap_text(event.description, "Helvetica", 12, width - 100)
@@ -1419,21 +1410,21 @@ def download_volunteer_history_pdf(
                     if y < 80:
                         p.showPage()
                         y = height - 50
-                    p.drawString(70, y, line)
+                    p.drawString(90, y, line)
                     y -= 20
-                y -= 10
+                y -= 15
 
             # Organizer info with standard formatting
             if hasattr(event, 'organizer') and event.organizer:
-                y -= 10
+                y -= 15
                 p.setFont("Helvetica-Bold", 12)
                 p.drawString(50, y, "Organized by:")
-                y -= 20
+                y -= 25
                 
                 p.setFont("Helvetica", 12)
                 org_name = event.organizer.organization_name or event.organizer.full_name or event.organizer.username
-                p.drawString(70, y, f"Name: {org_name}")
-                y -= 20
+                p.drawString(90, y, f"Name: {org_name}")
+                y -= 25
                 
                 if event.organizer.organization_description:
                     desc_lines = wrap_text(event.organizer.organization_description, "Helvetica", 12, width - 120)
@@ -1441,7 +1432,7 @@ def download_volunteer_history_pdf(
                         if y < 80:
                             p.showPage()
                             y = height - 50
-                        p.drawString(70, y, f"About: {line}")
+                        p.drawString(90, y, f"About: {line}")
                         y -= 20
                         break  # Just show first line
                 
