@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NotificationTokenDto(
+    @SerialName("fcm_token")
     val fcmToken: String,
 )
 

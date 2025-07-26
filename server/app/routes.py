@@ -11,8 +11,6 @@ from sqlalchemy import or_
 import math
 from sqlalchemy import func
 from openai import OpenAI
-from dotenv import load_dotenv
-from pathlib import Path
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -175,10 +173,7 @@ def populate_organizer_name(event: Event) -> None:
         event.organizer_name = ""
         logger.warning(f"🏢 POPULATE ORGANIZER - No organizer found for event '{event.title}' (ID: {event.id})")
 
-# Load environment variables from .env file located in the same directory (if present)
-env_path = Path(__file__).parent / ".env"
-if env_path.exists():
-    load_dotenv(dotenv_path=env_path)
+# Environment variables are loaded through Docker compose from root .env file
 
 # Initialize OpenAI client (optional)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -2364,13 +2359,26 @@ async def update_fcm_token(
     db: Session = Depends(get_db)
 ):
     """Update FCM token for the current user"""
+    logger.info(f"🔄 FCM TOKEN UPDATE: ===== FCM TOKEN UPDATE REQUEST RECEIVED =====")
     logger.info(f"🔄 FCM TOKEN UPDATE: User {current_user.username} (ID: {current_user.id}) updating FCM token")
+    logger.info(f"🔄 FCM TOKEN UPDATE: Request received with token data")
+    logger.info(f"🔄 FCM TOKEN UPDATE: Token object type: {type(token_update)}")
+    logger.info(f"🔄 FCM TOKEN UPDATE: Token object: {token_update}")
     logger.info(f"🔄 FCM TOKEN UPDATE: Old token: {current_user.fcm_token[:20] + '...' if current_user.fcm_token else 'None'}")
     logger.info(f"🔄 FCM TOKEN UPDATE: New token: {token_update.fcm_token[:20]}...{token_update.fcm_token[-10:] if len(token_update.fcm_token) > 30 else token_update.fcm_token}")
+    logger.info(f"🔄 FCM TOKEN UPDATE: New token length: {len(token_update.fcm_token)}")
     
     try:
+        logger.info(f"🔄 FCM TOKEN UPDATE: Before update - current user token: {current_user.fcm_token[:20] + '...' if current_user.fcm_token else 'None'}")
         current_user.fcm_token = token_update.fcm_token
+        logger.info(f"🔄 FCM TOKEN UPDATE: After assignment - user token: {current_user.fcm_token[:20] + '...' if current_user.fcm_token else 'None'}")
+        
         db.commit()
+        logger.info(f"🔄 FCM TOKEN UPDATE: Database commit completed")
+        
+        # Refresh the user object to ensure we have the latest data
+        db.refresh(current_user)
+        logger.info(f"🔄 FCM TOKEN UPDATE: After refresh - user token: {current_user.fcm_token[:20] + '...' if current_user.fcm_token else 'None'}")
         
         logger.info(f"✅ FCM TOKEN UPDATE: Successfully updated FCM token for user {current_user.username}")
         
@@ -2395,63 +2403,6 @@ async def update_fcm_token(
             detail="Failed to update FCM token"
         )
 
-@router.post("/notifications/test", response_model=NotificationResponse)
-async def test_fcm_notification(
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Send a test FCM notification to the current user"""
-    logger.info(f"🧪 FCM TEST: Testing FCM notification for user {current_user.username}")
-    logger.info(f"🧪 FCM TEST: User FCM token: {current_user.fcm_token[:20] + '...' if current_user.fcm_token else 'None'}")
-    logger.info(f"🧪 FCM TEST: User notifications enabled: {current_user.notifications_enabled}")
-    
-    try:
-        if not current_user.fcm_token:
-            logger.warning(f"🧪 FCM TEST: User {current_user.username} has no FCM token")
-            return NotificationResponse(
-                success=False, 
-                message="No FCM token found. Please ensure the app is properly set up for notifications."
-            )
-        
-        if not current_user.notifications_enabled:
-            logger.warning(f"🧪 FCM TEST: User {current_user.username} has notifications disabled")
-            return NotificationResponse(
-                success=False, 
-                message="Notifications are disabled for this user."
-            )
-        
-        logger.info(f"🧪 FCM TEST: Sending test notification to {current_user.username}")
-        success = firebase_service.send_notification_to_token(
-            token=current_user.fcm_token,
-            title="Test Notification",
-            body=f"Hello {current_user.full_name or current_user.username}! This is a test notification from GoodDeedFeed.",
-            data={
-                "type": "test_notification",
-                "timestamp": str(int(time.time()))
-            }
-        )
-        
-        if success:
-            logger.info(f"🧪 FCM TEST: ✅ Test notification sent successfully to {current_user.username}")
-            return NotificationResponse(
-                success=True,
-                message="Test notification sent successfully!"
-            )
-        else:
-            logger.error(f"🧪 FCM TEST: ❌ Failed to send test notification to {current_user.username}")
-            return NotificationResponse(
-                success=False,
-                message="Failed to send test notification. Check server logs for details."
-            )
-            
-    except Exception as e:
-        logger.error(f"🧪 FCM TEST: ❌ Exception while testing FCM notification: {e}")
-        import traceback
-        logger.error(f"🧪 FCM TEST: Full traceback: {traceback.format_exc()}")
-        return NotificationResponse(
-            success=False,
-            message=f"Error sending test notification: {str(e)}"
-        )
 
 @router.put("/notifications/preferences", response_model=NotificationResponse)
 async def update_notification_preferences(
@@ -2920,6 +2871,7 @@ async def send_message_notification(
         notification_data = {
             "type": "new_message",
             "senderId": str(sender_id),
+            "receiverId": str(receiver_id),
             "senderName": sender_name,
             "messagePreview": preview
         }
@@ -2968,6 +2920,7 @@ async def create_message_in_app_notification(
             data={
                 "type": "new_message",
                 "senderId": str(sender_id),
+                "receiverId": str(receiver_id),
                 "senderName": sender_name,
                 "messageId": str(message_id),
                 "messagePreview": preview
