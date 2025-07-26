@@ -24,10 +24,16 @@ class FirebaseService:
     def _initialize_firebase(self):
         """Initialize Firebase Admin SDK"""
         logger.info("🔥 FIREBASE INIT: Starting Firebase initialization")
+        logger.info(f"🔥 FIREBASE INIT: Current working directory: {os.getcwd()}")
+        logger.info(f"🔥 FIREBASE INIT: Environment variables: FIREBASE_SERVICE_ACCOUNT_KEY={'set' if os.getenv('FIREBASE_SERVICE_ACCOUNT_KEY') else 'not set'}")
+        logger.info(f"🔥 FIREBASE INIT: Environment variables: GOOGLE_APPLICATION_CREDENTIALS={os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'not set')}")
+        
         try:
             # Check if Firebase is already initialized
             if firebase_admin._apps:
                 logger.info("🔥 FIREBASE INIT: Firebase already initialized, skipping")
+                for app_name, app in firebase_admin._apps.items():
+                    logger.info(f"🔥 FIREBASE INIT: Existing app: {app_name} - {app}")
                 return
             
             # Try to get service account from environment variable

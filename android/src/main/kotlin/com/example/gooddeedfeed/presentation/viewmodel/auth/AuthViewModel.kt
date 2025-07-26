@@ -84,6 +84,10 @@ constructor(
                     Log.d(TAG, "✅ DevMode sign in successful with existing account")
                     Log.d(TAG, "🔄 Account already exists, signed in successfully")
                     fetchUser()
+                    
+                    // Initialize FCM token after dev mode sign-in
+                    Log.d(TAG, "🔔 Initializing FCM token after dev mode sign-in...")
+                    initializeFcmToken()
                 }.onFailure { signInError ->
                     Log.d(TAG, "ℹ️ Sign in failed, account may not exist. Attempting to create account...")
                     Log.d(TAG, "📞 Calling signUpUseCase to create dev account...")
@@ -99,6 +103,10 @@ constructor(
                             Log.d(TAG, "✅ User type set successfully")
                             Log.d(TAG, "🔄 Fetching user details...")
                             fetchUser()
+                            
+                            // Initialize FCM token after dev mode sign-up
+                            Log.d(TAG, "🔔 Initializing FCM token after dev mode sign-up...")
+                            initializeFcmToken()
                         }.onFailure { setUserTypeError ->
                             Log.e(TAG, "❌ Failed to set user type", setUserTypeError)
                             val detailedMessage = "Failed to set user type: ${setUserTypeError.message ?: "Unknown error"}"
@@ -175,6 +183,10 @@ constructor(
                     Log.d(TAG, "✅ User data from signup - ID: ${domainUser.id}, Username: ${domainUser.username}")
                     Log.d(TAG, "✅ Setting user state directly from signup response...")
                     _uiState.value = AuthUiState.Success(domainUser)
+                    
+                    // Initialize FCM token after successful sign-up
+                    Log.d(TAG, "🔔 Initializing FCM token after sign-up...")
+                    initializeFcmToken()
                 }.onFailure { error ->
                     Log.e(TAG, "❌ SignUp failed", error)
                     _uiState.value = AuthUiState.Error(error.message ?: "Sign up failed")
@@ -203,6 +215,10 @@ constructor(
                     Log.d(TAG, "✅ User data from signin - ID: ${domainUser.id}, Username: ${domainUser.username}")
                     Log.d(TAG, "✅ Setting user state directly from signin response...")
                     _uiState.value = AuthUiState.Success(domainUser)
+                    
+                    // Initialize FCM token after successful sign-in
+                    Log.d(TAG, "🔔 Initializing FCM token after sign-in...")
+                    initializeFcmToken()
                 }.onFailure { error ->
                     Log.e(TAG, "❌ SignIn failed", error)
                     _uiState.value = AuthUiState.Error(error.message ?: "Sign in failed")

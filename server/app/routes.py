@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
 import logging
+import time
 from typing import List, Dict, Optional
 from sqlalchemy import text, select
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -53,6 +54,101 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Badge configuration for the system
+BADGE_CONFIG = [
+    {
+        "name": "First Steps",
+        "description": "Earn 200 karma points to take your first steps!",
+        "required": 200,
+        "icon": "Star",
+        "color": "#FFD700",
+    },
+    {
+        "name": "Rising Star",
+        "description": "Earn 400 karma points as a rising star!",
+        "required": 400,
+        "icon": "WorkspacePremium",
+        "color": "#FFC107",
+    },
+    {
+        "name": "Community Helper",
+        "description": "Earn 600 karma points helping the community!",
+        "required": 600,
+        "icon": "LocalFireDepartment",
+        "color": "#FFB300",
+    },
+    {
+        "name": "Karma Champion",
+        "description": "Earn 800 karma points as a champion!",
+        "required": 800,
+        "icon": "EmojiEvents",
+        "color": "#FFA000",
+    },
+    {
+        "name": "Karma Legend",
+        "description": "Earn 1000 karma points becoming a legend!",
+        "required": 1000,
+        "icon": "WorkspacePremium",
+        "color": "#FF8F00",
+    },
+]
+
+def check_and_award_badges(user: User, db: Session, context: str = "general"):
+    """Helper function to check and award badges for a user"""
+    try:
+        logger.info(f"🏆 BADGE CHECK ({context}): Checking badges for {user.username} with {user.karma_points or 0} karma")
+        
+        # Ensure badge definitions exist
+        for cfg in BADGE_CONFIG:
+            badge = db.query(Badge).filter(Badge.required_karma_points == cfg["required"]).first()
+            if not badge:
+                logger.info(f"🏆 BADGE CHECK ({context}): Creating missing badge: {cfg['name']}")
+                badge = Badge(
+                    name=cfg["name"],
+                    description=cfg["description"],
+                    required_karma_points=cfg["required"],
+                    icon_name=cfg["icon"],
+                    color=cfg["color"],
+                    is_active=True,
+                )
+                db.add(badge)
+                db.flush()  # Get the badge ID
+        
+        # Get existing badge IDs for this user
+        existing_badge_ids = db.execute(
+            text("SELECT badge_id FROM user_badges WHERE user_id = :user_id"),
+            {"user_id": user.id}
+        ).fetchall()
+        existing_ids = [row[0] for row in existing_badge_ids]
+        
+        # Get badges user can now earn based on current karma points
+        available_badges = db.query(Badge).filter(
+            Badge.is_active == True,
+            Badge.required_karma_points <= (user.karma_points or 0),
+            ~Badge.id.in_(existing_ids) if existing_ids else True
+        ).all()
+        
+        # Award new badges
+        newly_earned_badges = []
+        for badge in available_badges:
+            db.execute(
+                text("INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (:user_id, :badge_id, NOW())"),
+                {"user_id": user.id, "badge_id": badge.id}
+            )
+            newly_earned_badges.append(badge.name)
+            logger.info(f"🏆 BADGE CHECK ({context}): ✅ {user.username} earned badge: {badge.name}")
+        
+        if newly_earned_badges:
+            logger.info(f"🏆 BADGE CHECK ({context}): {user.username} earned {len(newly_earned_badges)} new badges: {', '.join(newly_earned_badges)}")
+        else:
+            logger.info(f"🏆 BADGE CHECK ({context}): No new badges earned by {user.username}")
+        
+        return newly_earned_badges
+            
+    except Exception as e:
+        logger.warning(f"🏆 BADGE CHECK ({context}): ❌ Badge check failed for {user.username}: {e}")
+        return []
 
 def populate_organizer_name(event: Event) -> None:
     """Populate the organizer_name field for an event based on organizer data"""
@@ -240,6 +336,12 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    # Check for badges for dev users who got karma points during registration
+    if db_user.karma_points and db_user.karma_points > 0:
+        newly_earned_badges = check_and_award_badges(db_user, db, "new_dev_user")
+        if newly_earned_badges:
+            db.commit()  # Commit the badge awards
     
     logger.info(f"📝 User created successfully: {user.username}")
     logger.info(f"📝 New user details - ID: {db_user.id}, Username: {db_user.username}")
@@ -1005,7 +1107,9 @@ async def send_karma_earned_notification(volunteer: User, event: Event, karma_ea
         
         # Send FCM notification if volunteer has notifications enabled
         if volunteer.fcm_token and volunteer.notifications_enabled:
-            await firebase_service.send_notification(
+            logger.info(f"📱 KARMA NOTIFICATION: Sending FCM notification to {volunteer.username}")
+            logger.info(f"📱 KARMA NOTIFICATION: FCM Token: {volunteer.fcm_token[:20]}...{volunteer.fcm_token[-10:] if len(volunteer.fcm_token) > 30 else volunteer.fcm_token}")
+            success = firebase_service.send_notification_to_token(
                 token=volunteer.fcm_token,
                 title="Karma Points Earned!",
                 body=f"You earned {karma_earned} karma points for completing '{event.title}'",
@@ -1015,6 +1119,9 @@ async def send_karma_earned_notification(volunteer: User, event: Event, karma_ea
                     "karma_points": str(karma_earned)
                 }
             )
+            logger.info(f"📱 KARMA NOTIFICATION: FCM send result: {success}")
+        else:
+            logger.info(f"📱 KARMA NOTIFICATION: Skipping FCM for {volunteer.username} - Token: {bool(volunteer.fcm_token)}, Notifications enabled: {volunteer.notifications_enabled}")
             
         logger.info(f"Karma earned notification sent to volunteer {volunteer.username}")
         
@@ -1042,7 +1149,9 @@ async def send_volunteer_rejected_notification(volunteer: User, event: Event, re
         
         # Send FCM notification if volunteer has notifications enabled
         if volunteer.fcm_token and volunteer.notifications_enabled:
-            await firebase_service.send_notification(
+            logger.info(f"📱 REJECTION NOTIFICATION: Sending FCM notification to {volunteer.username}")
+            logger.info(f"📱 REJECTION NOTIFICATION: FCM Token: {volunteer.fcm_token[:20]}...{volunteer.fcm_token[-10:] if len(volunteer.fcm_token) > 30 else volunteer.fcm_token}")
+            success = firebase_service.send_notification_to_token(
                 token=volunteer.fcm_token,
                 title="Event Participation Update",
                 body=f"Your participation in '{event.title}' was not approved",
@@ -1052,6 +1161,9 @@ async def send_volunteer_rejected_notification(volunteer: User, event: Event, re
                     "rejection_reason": rejection_reason
                 }
             )
+            logger.info(f"📱 REJECTION NOTIFICATION: FCM send result: {success}")
+        else:
+            logger.info(f"📱 REJECTION NOTIFICATION: Skipping FCM for {volunteer.username} - Token: {bool(volunteer.fcm_token)}, Notifications enabled: {volunteer.notifications_enabled}")
             
         logger.info(f"Volunteer rejection notification sent to {volunteer.username}")
         
@@ -1116,6 +1228,9 @@ async def submit_attendance(
             
             # Send notification to volunteer about karma earned
             await send_karma_earned_notification(volunteer, event, karma_earned, db)
+            
+            # Check for newly earned badges after karma award
+            newly_earned_badges = check_and_award_badges(volunteer, db, "karma_earned")
             
             logger.info(f"Awarded {karma_earned} karma points to volunteer {volunteer.username}")
         
@@ -2170,44 +2285,6 @@ def get_user_badges(
     return result
 
 # ----- Badge Seed Config -----
-BADGE_CONFIG = [
-    {
-        "name": "First Steps",
-        "description": "Earn 200 karma points to take your first steps!",
-        "required": 200,
-        "icon": "Star",
-        "color": "#FFD700",
-    },
-    {
-        "name": "Rising Star",
-        "description": "Earn 400 karma points as a rising star!",
-        "required": 400,
-        "icon": "WorkspacePremium",
-        "color": "#FFC107",
-    },
-    {
-        "name": "Community Helper",
-        "description": "Earn 600 karma points helping the community!",
-        "required": 600,
-        "icon": "LocalFireDepartment",
-        "color": "#FFB300",
-    },
-    {
-        "name": "Karma Champion",
-        "description": "Earn 800 karma points as a champion!",
-        "required": 800,
-        "icon": "EmojiEvents",
-        "color": "#FFA000",
-    },
-    {
-        "name": "Karma Legend",
-        "description": "Earn 1000 karma points becoming a legend!",
-        "required": 1000,
-        "icon": "WorkspacePremium",
-        "color": "#FF8F00",
-    },
-]
-
 @router.post("/users/me/check-badges", response_model=BadgeCheckResponse)
 def check_badge_achievements(
     current_user: User = Depends(get_current_active_user),
@@ -2287,19 +2364,93 @@ async def update_fcm_token(
     db: Session = Depends(get_db)
 ):
     """Update FCM token for the current user"""
+    logger.info(f"🔄 FCM TOKEN UPDATE: User {current_user.username} (ID: {current_user.id}) updating FCM token")
+    logger.info(f"🔄 FCM TOKEN UPDATE: Old token: {current_user.fcm_token[:20] + '...' if current_user.fcm_token else 'None'}")
+    logger.info(f"🔄 FCM TOKEN UPDATE: New token: {token_update.fcm_token[:20]}...{token_update.fcm_token[-10:] if len(token_update.fcm_token) > 30 else token_update.fcm_token}")
+    
     try:
         current_user.fcm_token = token_update.fcm_token
         db.commit()
         
-        logger.info(f"Updated FCM token for user {current_user.id}")
+        logger.info(f"✅ FCM TOKEN UPDATE: Successfully updated FCM token for user {current_user.username}")
+        
+        # Test the FCM token by sending a test notification (optional)
+        if firebase_service and current_user.notifications_enabled:
+            logger.info(f"📱 FCM TOKEN TEST: Sending test notification to validate token")
+            test_success = firebase_service.send_notification_to_token(
+                token=token_update.fcm_token,
+                title="GoodDeedFeed",
+                body="Notifications are now enabled!",
+                data={"type": "token_updated"}
+            )
+            logger.info(f"📱 FCM TOKEN TEST: Test notification result: {test_success}")
+        
         return NotificationResponse(success=True, message="FCM token updated successfully")
     
     except Exception as e:
-        logger.error(f"Failed to update FCM token: {e}")
+        logger.error(f"❌ FCM TOKEN UPDATE: Failed to update FCM token: {e}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update FCM token"
+        )
+
+@router.post("/notifications/test", response_model=NotificationResponse)
+async def test_fcm_notification(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Send a test FCM notification to the current user"""
+    logger.info(f"🧪 FCM TEST: Testing FCM notification for user {current_user.username}")
+    logger.info(f"🧪 FCM TEST: User FCM token: {current_user.fcm_token[:20] + '...' if current_user.fcm_token else 'None'}")
+    logger.info(f"🧪 FCM TEST: User notifications enabled: {current_user.notifications_enabled}")
+    
+    try:
+        if not current_user.fcm_token:
+            logger.warning(f"🧪 FCM TEST: User {current_user.username} has no FCM token")
+            return NotificationResponse(
+                success=False, 
+                message="No FCM token found. Please ensure the app is properly set up for notifications."
+            )
+        
+        if not current_user.notifications_enabled:
+            logger.warning(f"🧪 FCM TEST: User {current_user.username} has notifications disabled")
+            return NotificationResponse(
+                success=False, 
+                message="Notifications are disabled for this user."
+            )
+        
+        logger.info(f"🧪 FCM TEST: Sending test notification to {current_user.username}")
+        success = firebase_service.send_notification_to_token(
+            token=current_user.fcm_token,
+            title="Test Notification",
+            body=f"Hello {current_user.full_name or current_user.username}! This is a test notification from GoodDeedFeed.",
+            data={
+                "type": "test_notification",
+                "timestamp": str(int(time.time()))
+            }
+        )
+        
+        if success:
+            logger.info(f"🧪 FCM TEST: ✅ Test notification sent successfully to {current_user.username}")
+            return NotificationResponse(
+                success=True,
+                message="Test notification sent successfully!"
+            )
+        else:
+            logger.error(f"🧪 FCM TEST: ❌ Failed to send test notification to {current_user.username}")
+            return NotificationResponse(
+                success=False,
+                message="Failed to send test notification. Check server logs for details."
+            )
+            
+    except Exception as e:
+        logger.error(f"🧪 FCM TEST: ❌ Exception while testing FCM notification: {e}")
+        import traceback
+        logger.error(f"🧪 FCM TEST: Full traceback: {traceback.format_exc()}")
+        return NotificationResponse(
+            success=False,
+            message=f"Error sending test notification: {str(e)}"
         )
 
 @router.put("/notifications/preferences", response_model=NotificationResponse)
@@ -3056,31 +3207,7 @@ def increase_karma_dev_only(
         db.commit()
 
         # After karma updated, check for new badges automatically
-        # Check badges (but don't return the result here since this is a dev endpoint)
-        try:
-            # Call the badge check function inline to ensure badges are awarded
-            existing_badge_ids = db.execute(
-                text("SELECT badge_id FROM user_badges WHERE user_id = :user_id"),
-                {"user_id": current_user.id}
-            ).fetchall()
-            existing_ids = [row[0] for row in existing_badge_ids]
-            
-            # Get badges user can earn based on karma points
-            available_badges = db.query(Badge).filter(
-                Badge.is_active == True,
-                Badge.required_karma_points <= current_user.karma_points,
-                ~Badge.id.in_(existing_ids) if existing_ids else True
-            ).all()
-            
-            # Award new badges
-            for badge in available_badges:
-                db.execute(
-                    text("INSERT INTO user_badges (user_id, badge_id, earned_at) VALUES (:user_id, :badge_id, NOW())"),
-                    {"user_id": current_user.id, "badge_id": badge.id}
-                )
-                logger.info(f"User {current_user.username} earned badge: {badge.name}")
-        except Exception as e:
-            logger.warning(f"Badge check failed after karma increase: {e}")
+        newly_earned_badges = check_and_award_badges(current_user, db, "dev_karma_increase")
 
         db.refresh(current_user)
         
