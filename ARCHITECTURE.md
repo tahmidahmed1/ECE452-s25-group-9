@@ -1,7 +1,5 @@
 # GoodDeedFeed – Architecture Guide
 
-> **Version:** 2024-04-28 • _Keep this file up-to-date when you add or refactor major components._
-
 ---
 
 ## 1. Overview
@@ -88,7 +86,7 @@ server/app/
 ### 4.2 Key Concerns
 | Area | Implementation |
 |------|----------------|
-| **Auth** | Secure sessions stored in Redis-like in-memory dict (swap for Redis in prod). |
+| **Auth** | Secure sessions stored in-memory dict. |
 | **Events** | CRUD, image carousel, volunteer relation table, attendance & karma calculation. |
 | **Chat** | `/ws/chat/{room_id}` with in-memory connection registry. |
 | **Notifications** | FCM push + in-app table; OpenAPI `send_*` helpers coexist. |
@@ -116,7 +114,7 @@ _See `alembic/versions/` for full DDL history._
 * `lost-found`
 
 ### 4.5 Background Jobs
-Currently scheduled via `asyncio.create_task` (see `routes.schedule_lost_found_cleanup`). In production migrate to Celery or APScheduler.
+Currently scheduled via `asyncio.create_task` (see `routes.schedule_lost_found_cleanup`).
 
 ---
 
@@ -139,36 +137,4 @@ _For full list start the server and visit `/docs`._
 
 1. **Local:** `./run-dev.sh` → spins up Postgres 15, MinIO, Adminer & API (with hot-reload) in Docker.
 2. **CI:** GitHub Actions workflow builds Debug APK and runs backend unit tests on every push & PR.
-3. **Production (suggested):**
-   * AWS RDS Postgres
-   * S3 bucket w/ lifecycle policies
-   * Redis for sessions & WebSocket broadcasting
-   * Gunicorn/Uvicorn workers behind Traefik/NGINX
-
 ---
-
-## 7. Security Hardening Checklist
-- [ ] Enforce HTTPS – terminate TLS at load-balancer or Traefik.
-- [ ] Store sessions in Redis with expiry instead of memory.
-- [ ] Rate-limit auth endpoints.
-- [ ] Sanitize user uploads (MIME & size limits already in place).
-- [ ] Rotate MinIO/S3 credentials via IAM role.
-
----
-
-## 8. Roadmap
-* _Q2:_ Refactor chat to use Redis pub/sub for horizontal scalability.  
-* _Q2:_ Implement server-side pagination & search across all list endpoints.  
-* _Q3:_ iOS client built with Kotlin Multiplatform.
-
----
-
-## 9. Contributing
-1. Pick or create an issue, assign yourself, branch from `main`.
-2. Follow **Conventional Commits** (`feat:`, `fix:`…).
-3. Write/maintain unit tests; run `black` + `isort` + `ktlint`.
-4. Open PR → GitHub Actions must pass before review.
-
----
-
-_Questions? ping **@ECE452-s25-group-9** on Teams._ 

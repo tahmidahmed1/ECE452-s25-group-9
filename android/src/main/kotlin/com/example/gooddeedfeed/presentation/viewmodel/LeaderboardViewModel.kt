@@ -165,4 +165,21 @@ class LeaderboardViewModel @Inject constructor(
             )
         }
     }
+
+    fun sendTestNotification(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                authRepository.sendTestNotification().fold(
+                    onSuccess = {
+                        onSuccess()
+                    },
+                    onFailure = { error ->
+                        onError(error.message ?: "Failed to send test notification")
+                    }
+                )
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to send test notification")
+            }
+        }
+    }
 } 

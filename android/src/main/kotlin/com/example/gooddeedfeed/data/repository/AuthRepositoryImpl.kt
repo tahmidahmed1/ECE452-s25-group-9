@@ -314,4 +314,16 @@ class AuthRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun sendTestNotification(): Result<Unit> {
+        return try {
+            Log.d(TAG, "🧪 Sending test notification...")
+            api.sendTestNotification()
+            Log.d(TAG, "🧪 ✅ Test notification sent successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "🧪 ❌ Failed to send test notification", e)
+            Result.failure(e)
+        }
+    }
 }
