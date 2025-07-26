@@ -175,7 +175,7 @@ class LeaderboardViewModel @Inject constructor(
                     },
                     onFailure = { error ->
                         onError(error.message ?: "Failed to send test notification")
-                    }
+                    },
                 )
             } catch (e: Exception) {
                 onError(e.message ?: "Failed to send test notification")

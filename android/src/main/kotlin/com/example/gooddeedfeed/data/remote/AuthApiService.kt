@@ -622,14 +622,14 @@ class AuthApiService @Inject constructor(
         return try {
             val sessionId = getSessionIdFromDataStore() ?: throw Exception("No authentication session found")
             Log.d(TAG, "🧪 Sending test notification request to server...")
-            
+
             val response = withFallbackUrls { baseUrl ->
                 client.post("$baseUrl/notifications/test") {
                     contentType(ContentType.Application.Json)
                     header("Authorization", "Bearer $sessionId")
                 }
             }
-            
+
             if (response.status.isSuccess()) {
                 Log.d(TAG, "🧪 ✅ Test notification API call successful")
                 true

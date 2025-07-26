@@ -479,7 +479,7 @@ fun StatsScreen(
 
         // Test notification button (for all users to test FCM)
         VerticalSpacer(SpacingSize.Large)
-        
+
         Button(
             onClick = {
                 viewModel.sendTestNotification(
@@ -488,7 +488,7 @@ fun StatsScreen(
                     },
                     onError = { error ->
                         ToastUtils.showErrorToast(context, "Failed to send test notification: $error")
-                    }
+                    },
                 )
             },
             modifier = Modifier
