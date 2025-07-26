@@ -34,7 +34,7 @@ class NotificationRepositoryImpl @Inject constructor(
         Log.i(TAG, "🔄 UPDATE FCM TOKEN: Starting FCM token update process")
         Log.i(TAG, "🔄 UPDATE FCM TOKEN: Token: ${token.take(20)}...${token.takeLast(10)}")
         Log.i(TAG, "🔄 UPDATE FCM TOKEN: Token length: ${token.length}")
-        
+
         return try {
             Log.i(TAG, "🔄 UPDATE FCM TOKEN: Saving token to local datastore")
             dataStore.edit { preferences ->

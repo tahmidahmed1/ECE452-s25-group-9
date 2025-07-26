@@ -90,7 +90,7 @@ class NotificationService : FirebaseMessagingService() {
             Log.i(TAG, "📥 FCM MESSAGE: Notification color: ${notification.color}")
             Log.i(TAG, "📥 FCM MESSAGE: Notification sound: ${notification.sound}")
             Log.i(TAG, "📥 FCM MESSAGE: Notification tag: ${notification.tag}")
-            
+
             showNotification(
                 title = notification.title ?: "Good Deed Feed",
                 body = notification.body ?: "You have a new notification",
@@ -99,18 +99,18 @@ class NotificationService : FirebaseMessagingService() {
         } ?: run {
             Log.i(TAG, "📥 FCM MESSAGE: No notification payload")
         }
-        
+
         Log.i(TAG, "📥 FCM MESSAGE: Message processing completed")
     }
 
     private fun handleDataMessage(data: Map<String, String>) {
         Log.i(TAG, "🔄 DATA MESSAGE: Processing data-only message")
-        
+
         val type = data["type"]
         val eventId = data["eventId"]
         val organizerName = data["organizerName"]
         val eventTitle = data["eventTitle"]
-        
+
         Log.i(TAG, "🔄 DATA MESSAGE: Type: '$type'")
         Log.i(TAG, "🔄 DATA MESSAGE: Event ID: '$eventId'")
         Log.i(TAG, "🔄 DATA MESSAGE: Organizer: '$organizerName'")
@@ -155,7 +155,7 @@ class NotificationService : FirebaseMessagingService() {
                 Log.w(TAG, "🔄 DATA MESSAGE: ⚠️ Unknown message type: '$type'")
             }
         }
-        
+
         Log.i(TAG, "🔄 DATA MESSAGE: Data message processing completed")
     }
 
@@ -164,17 +164,17 @@ class NotificationService : FirebaseMessagingService() {
         Log.i(TAG, "🔔 SHOW NOTIFICATION: Title: '$title'")
         Log.i(TAG, "🔔 SHOW NOTIFICATION: Body: '$body'")
         Log.i(TAG, "🔔 SHOW NOTIFICATION: Data extras: $data")
-        
+
         try {
             val intent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
 
-                data["eventId"]?.let { 
+                data["eventId"]?.let {
                     putExtra("eventId", it)
                     Log.i(TAG, "🔔 SHOW NOTIFICATION: Added eventId extra: $it")
                 }
-                data["type"]?.let { 
-                    putExtra("notificationType", it) 
+                data["type"]?.let {
+                    putExtra("notificationType", it)
                     Log.i(TAG, "🔔 SHOW NOTIFICATION: Added notificationType extra: $it")
                 }
             }
@@ -185,7 +185,7 @@ class NotificationService : FirebaseMessagingService() {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-            
+
             Log.i(TAG, "🔔 SHOW NOTIFICATION: PendingIntent created successfully")
 
             val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -204,13 +204,12 @@ class NotificationService : FirebaseMessagingService() {
 
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             Log.i(TAG, "🔔 SHOW NOTIFICATION: NotificationManager obtained")
-            
+
             val notification = notificationBuilder.build()
             Log.i(TAG, "🔔 SHOW NOTIFICATION: Notification built successfully")
-            
+
             notificationManager.notify(NOTIFICATION_ID, notification)
             Log.i(TAG, "🔔 SHOW NOTIFICATION: ✅ Notification displayed successfully with ID: $NOTIFICATION_ID")
-            
         } catch (e: Exception) {
             Log.e(TAG, "🔔 SHOW NOTIFICATION: ❌ Failed to show notification", e)
             Log.e(TAG, "🔔 SHOW NOTIFICATION: Exception type: ${e.javaClass.simpleName}")
@@ -220,10 +219,10 @@ class NotificationService : FirebaseMessagingService() {
 
     private fun createNotificationChannel() {
         Log.i(TAG, "📢 CHANNEL: Creating notification channel")
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Log.i(TAG, "📢 CHANNEL: Android O+ detected, creating notification channel")
-            
+
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
@@ -233,7 +232,7 @@ class NotificationService : FirebaseMessagingService() {
                 enableLights(true)
                 enableVibration(true)
             }
-            
+
             Log.i(TAG, "📢 CHANNEL: Channel configured - ID: $CHANNEL_ID, Name: $CHANNEL_NAME")
             Log.i(TAG, "📢 CHANNEL: Channel importance: HIGH")
             Log.i(TAG, "📢 CHANNEL: Lights enabled: true, Vibration enabled: true")

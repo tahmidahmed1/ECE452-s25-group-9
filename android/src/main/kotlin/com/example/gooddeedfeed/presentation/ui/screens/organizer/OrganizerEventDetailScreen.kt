@@ -299,7 +299,7 @@ fun OrganizerEventDetailScreen(
                 userType = com.example.gooddeedfeed.domain.model.DomainUserType.VOLUNTEER,
                 onboardingCompleted = vol.onboardingCompleted,
                 phone = vol.phone,
-                sex = vol.sex?.let { 
+                sex = vol.sex?.let {
                     try {
                         com.example.gooddeedfeed.domain.model.DomainSex.valueOf(it.uppercase())
                     } catch (e: Exception) {

@@ -1,5 +1,7 @@
 package com.example.gooddeedfeed.di
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.example.gooddeedfeed.data.remote.NotificationApiService
 import com.example.gooddeedfeed.data.repository.NotificationRepositoryImpl
 import com.example.gooddeedfeed.domain.repository.NotificationRepository
@@ -10,8 +12,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import javax.inject.Singleton
 
 @Module

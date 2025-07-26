@@ -1,5 +1,8 @@
 package com.example.gooddeedfeed.data.remote
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.remote.dto.InAppNotificationUpdateDto
 import com.example.gooddeedfeed.data.remote.dto.InAppNotificationsResponseDto
 import com.example.gooddeedfeed.data.remote.dto.NotificationPreferencesDto
@@ -9,18 +12,15 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.stringPreferencesKey
-import io.ktor.client.request.header
-import kotlinx.coroutines.flow.first
 
 @Singleton
 class NotificationApiService @Inject constructor(
