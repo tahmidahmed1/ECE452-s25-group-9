@@ -15,6 +15,7 @@ import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.model.DomainVolunteerHistoryEntry
 import com.example.gooddeedfeed.domain.model.DomainVolunteerProfile
 import com.example.gooddeedfeed.domain.repository.AuthRepository
+import com.example.gooddeedfeed.domain.repository.NotificationRepository
 import kotlinx.coroutines.flow.first
 import java.io.File
 import javax.inject.Inject
@@ -24,6 +25,7 @@ import javax.inject.Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val api: AuthApiService,
     private val dataStore: DataStore<Preferences>,
+    private val notificationRepository: NotificationRepository,
 ) : AuthRepository {
 
     companion object {
@@ -311,18 +313,6 @@ class AuthRepositoryImpl @Inject constructor(
             val bytes = api.downloadVolunteerHistoryPdf()
             Result.success(bytes)
         } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun sendTestNotification(): Result<Unit> {
-        return try {
-            Log.d(TAG, "🧪 Sending test notification...")
-            api.sendTestNotification()
-            Log.d(TAG, "🧪 ✅ Test notification sent successfully")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e(TAG, "🧪 ❌ Failed to send test notification", e)
             Result.failure(e)
         }
     }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,7 +17,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -136,7 +134,6 @@ private fun SocialMediaAddDialog(
 ) {
     var selectedPlatform by remember { mutableStateOf<SocialMediaPlatform?>(null) }
     var url by remember { mutableStateOf("") }
-    var isValidUrl by remember { mutableStateOf(true) }
 
     val availablePlatforms = SocialMediaPlatform.values().filter { it !in existingPlatforms }
 
@@ -175,40 +172,27 @@ private fun SocialMediaAddDialog(
 
                 OutlinedTextField(
                     value = url,
-                    onValueChange = {
-                        url = it
-                        isValidUrl = isValidSocialMediaUrl(it, selectedPlatform)
-                    },
-                    label = { Text("Profile URL") },
+                    onValueChange = { url = it },
+                    label = { Text("Profile Text") },
                     placeholder = {
-                        Text(getPlaceholderUrl(selectedPlatform))
+                        Text(getPlaceholderText(selectedPlatform))
                     },
-                    isError = !isValidUrl,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    isError = false,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
-
-                if (!isValidUrl) {
-                    VerticalSpacer(SpacingSize.ExtraSmall)
-                    Text(
-                        text = "Please enter a valid URL",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
                     selectedPlatform?.let { platform ->
-                        if (url.isNotBlank() && isValidUrl) {
+                        if (url.isNotBlank()) {
                             onAdd(platform, url)
                         }
                     }
                 },
-                enabled = selectedPlatform != null && url.isNotBlank() && isValidUrl,
+                enabled = selectedPlatform != null && url.isNotBlank(),
             ) {
                 Text("Add")
             }
@@ -276,24 +260,12 @@ private fun getSocialMediaColor(platform: SocialMediaPlatform): Color {
     }
 }
 
-private fun getPlaceholderUrl(platform: SocialMediaPlatform?): String {
+private fun getPlaceholderText(platform: SocialMediaPlatform?): String {
     return when (platform) {
-        SocialMediaPlatform.INSTAGRAM -> "https://instagram.com/yourprofile"
-        SocialMediaPlatform.FACEBOOK -> "https://facebook.com/yourpage"
-        SocialMediaPlatform.TWITTER -> "https://twitter.com/yourhandle"
-        SocialMediaPlatform.LINKEDIN -> "https://linkedin.com/company/yourcompany"
-        null -> "Enter profile URL"
+        SocialMediaPlatform.INSTAGRAM -> "@username or profile text"
+        SocialMediaPlatform.FACEBOOK -> "Page name or profile text"
+        SocialMediaPlatform.TWITTER -> "@username or profile text"
+        SocialMediaPlatform.LINKEDIN -> "Company name or profile text"
+        null -> "Enter profile text"
     }
 }
-
-private fun isValidSocialMediaUrl(url: String, platform: SocialMediaPlatform?): Boolean {
-    if (url.isBlank()) return true // Allow empty for now
-
-    return when (platform) {
-        SocialMediaPlatform.INSTAGRAM -> url.contains("instagram.com")
-        SocialMediaPlatform.FACEBOOK -> url.contains("facebook.com")
-        SocialMediaPlatform.TWITTER -> url.contains("twitter.com") || url.contains("x.com")
-        SocialMediaPlatform.LINKEDIN -> url.contains("linkedin.com")
-        null -> true
-    }
-} 

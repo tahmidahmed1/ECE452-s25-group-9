@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -101,6 +102,13 @@ fun SimpleChatScreen(
                 viewModel.clearSendMessageState()
             }
             else -> {}
+        }
+    }
+
+    // Clean up current chat state when leaving the screen
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clearCurrentChat()
         }
     }
 

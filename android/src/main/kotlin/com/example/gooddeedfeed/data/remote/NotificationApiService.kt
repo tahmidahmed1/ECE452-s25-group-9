@@ -46,15 +46,31 @@ class NotificationApiService @Inject constructor(
     suspend fun updateFcmToken(token: String): Boolean {
         return try {
             val sessionId = getSessionId() ?: throw Exception("No authentication session found")
+            android.util.Log.i("NotificationApiService", "🔄 API: Updating FCM token on server")
+            android.util.Log.i("NotificationApiService", "🔄 API: Token: ${token.take(20)}...${token.takeLast(10)}")
+            android.util.Log.i("NotificationApiService", "🔄 API: Session ID: ${sessionId.take(10)}...")
+
             val response = withFallbackUrls { baseUrl ->
+                android.util.Log.i("NotificationApiService", "🔄 API: Sending PUT request to: $baseUrl/notifications/token")
                 client.put("$baseUrl/notifications/token") {
                     contentType(ContentType.Application.Json)
                     setBody(NotificationTokenDto(fcmToken = token))
                     header("Authorization", "Bearer $sessionId")
                 }
             }
-            response.body<Map<String, Any>>()["success"] as? Boolean ?: false
+
+            val responseText = response.body<String>()
+            android.util.Log.i("NotificationApiService", "🔄 API: Server response: $responseText")
+
+            // Parse the JSON manually to avoid serialization issues
+            val success = responseText.contains("\"success\":true")
+            android.util.Log.i("NotificationApiService", "🔄 API: Success result: $success")
+
+            success
         } catch (e: Exception) {
+            android.util.Log.e("NotificationApiService", "🔄 API: Failed to update FCM token", e)
+            android.util.Log.e("NotificationApiService", "🔄 API: Exception type: ${e.javaClass.simpleName}")
+            android.util.Log.e("NotificationApiService", "🔄 API: Exception message: ${e.message}")
             false
         }
     }
