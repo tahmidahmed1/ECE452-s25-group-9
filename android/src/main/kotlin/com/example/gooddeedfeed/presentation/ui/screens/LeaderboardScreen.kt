@@ -341,7 +341,7 @@ fun StatsScreen(
                             .height(120.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        ShutterLoadingView()
                     }
                 }
                 is UiState.Success -> {
@@ -450,7 +450,7 @@ fun StatsScreen(
                             .height(120.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        ShutterLoadingView()
                     }
                 }
             }
