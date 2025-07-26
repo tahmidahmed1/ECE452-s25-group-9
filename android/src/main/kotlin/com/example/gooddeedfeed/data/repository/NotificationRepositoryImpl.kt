@@ -31,17 +31,27 @@ class NotificationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateFcmToken(token: String): Result<Unit> {
+        Log.i(TAG, "🔄 UPDATE FCM TOKEN: Starting FCM token update process")
+        Log.i(TAG, "🔄 UPDATE FCM TOKEN: Token: ${token.take(20)}...${token.takeLast(10)}")
+        Log.i(TAG, "🔄 UPDATE FCM TOKEN: Token length: ${token.length}")
+        
         return try {
+            Log.i(TAG, "🔄 UPDATE FCM TOKEN: Saving token to local datastore")
             dataStore.edit { preferences ->
                 preferences[FCM_TOKEN_KEY] = token
             }
+            Log.i(TAG, "🔄 UPDATE FCM TOKEN: ✅ Token saved to local datastore")
 
+            Log.i(TAG, "🔄 UPDATE FCM TOKEN: Sending token to server")
             notificationApiService.updateFcmToken(token)
+            Log.i(TAG, "🔄 UPDATE FCM TOKEN: ✅ Token sent to server successfully")
 
-            Log.d(TAG, "FCM token updated successfully")
+            Log.i(TAG, "🔄 UPDATE FCM TOKEN: ✅ FCM token updated successfully")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update FCM token", e)
+            Log.e(TAG, "🔄 UPDATE FCM TOKEN: ❌ Failed to update FCM token", e)
+            Log.e(TAG, "🔄 UPDATE FCM TOKEN: Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "🔄 UPDATE FCM TOKEN: Exception message: ${e.message}")
             Result.failure(e)
         }
     }

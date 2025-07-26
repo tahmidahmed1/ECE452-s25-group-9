@@ -10,6 +10,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import javax.inject.Singleton
 
 @Module
@@ -31,8 +33,11 @@ abstract class NotificationModule {
 
         @Provides
         @Singleton
-        fun provideNotificationApiService(client: HttpClient): NotificationApiService {
-            return NotificationApiService(client)
+        fun provideNotificationApiService(
+            client: HttpClient,
+            dataStore: DataStore<Preferences>,
+        ): NotificationApiService {
+            return NotificationApiService(client, dataStore)
         }
     }
 }

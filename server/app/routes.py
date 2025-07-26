@@ -904,29 +904,46 @@ async def get_event_volunteers(
     current_user: User = Depends(get_current_active_user), 
     db: Session = Depends(get_db)
 ):
-    """Get list of volunteers who joined an event"""
-    logger.info(f"Getting volunteers for event {event_id}")
+    """Get list of volunteers who joined an event with complete profile information"""
+    logger.info(f"Getting volunteers for event {event_id} with full profile data")
     
     # Check if event exists
     event = db.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     
-    # Get volunteers
+    # Get volunteers with complete information
     volunteers = db.query(User).join(volunteer_events).filter(
         volunteer_events.c.event_id == event_id
     ).all()
     
     volunteer_list = []
     for volunteer in volunteers:
-        volunteer_list.append({
+        volunteer_data = {
             "id": volunteer.id,
             "username": volunteer.username,
+            "email": volunteer.email,
             "full_name": volunteer.full_name,
-            "profile_picture_url": volunteer.profile_picture_url
-        })
+            "profile_picture_url": volunteer.profile_picture_url,
+            "phone": volunteer.phone,
+            "sex": volunteer.sex.value if volunteer.sex else None,
+            "age": volunteer.age,
+            "description": volunteer.description,
+            "skills": volunteer.skills,
+            "emergency_contact_name": volunteer.emergency_contact_name,
+            "emergency_contact_phone": volunteer.emergency_contact_phone,
+            "location_area": volunteer.location_area,
+            "has_drivers_license": volunteer.has_drivers_license,
+            "disabilities": volunteer.disabilities,
+            "karma_points": volunteer.karma_points,
+            "user_type": volunteer.user_type.value if volunteer.user_type else "volunteer",
+            "is_active": volunteer.is_active,
+            "onboarding_completed": volunteer.onboarding_completed
+        }
+        volunteer_list.append(volunteer_data)
+        logger.info(f"Added volunteer {volunteer.username} with complete profile data")
     
-    logger.info(f"Event {event_id} has {len(volunteer_list)} volunteers")
+    logger.info(f"Event {event_id} has {len(volunteer_list)} volunteers with full profiles")
     return {"volunteers": volunteer_list, "total_count": len(volunteer_list)}
 
 @router.get("/events/{event_id}/volunteers/attendance", response_model=List[EventVolunteer])
@@ -1246,15 +1263,8 @@ def download_volunteer_history_pdf(
         logger.info(f"    📸 Images: {len(event.images) if event.images else 0}")
         logger.info(f"    👤 Organizer: {event.organizer.username if event.organizer else 'None'}")
     
-    # Filter for approved events only after logging
-    approved_rows = [
-        (event, hours_worked, is_approved, rejection_reason, karma_points_earned)
-        for event, hours_worked, is_approved, rejection_reason, karma_points_earned in attendance_rows
-        if is_approved == True
-    ]
-    
-    logger.info(f"📊 PDF: {len(approved_rows)} approved events will be included in PDF")
-    attendance_rows = approved_rows
+    # Include ALL events regardless of approval status to give volunteers complete history
+    logger.info(f"📊 PDF: {len(attendance_rows)} total events will be included in PDF (approved, pending, rejected)")
 
     def wrap_text(text, font, font_size, max_width):
         """Helper function to wrap text within a given width"""
@@ -1285,43 +1295,43 @@ def download_volunteer_history_pdf(
     logger.info("📊 PDF: Starting PDF generation")
     
     # App logo placeholder (top left)
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, y, "🏆 GoodDeedFeed")  # App logo placeholder
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y, "GoodDeedFeed")  # App logo placeholder
     
     # User profile picture placeholder (top right)
     if current_user.profile_picture_url:
-        p.setFont("Helvetica", 10)
+        p.setFont("Helvetica", 12)
         p.drawString(width - 200, y, f"Profile: {current_user.profile_picture_url[:30]}...")
         logger.info(f"📊 PDF: Added user profile picture reference: {current_user.profile_picture_url}")
     else:
         p.setFont("Helvetica", 12)
-        p.drawString(width - 150, y, "👤 Profile")
+        p.drawString(width - 150, y, "Profile")
         logger.info("📊 PDF: No profile picture for user")
     
-    y -= 40
-
-    # Header with much larger font
-    p.setFont("Helvetica-Bold", 24)
-    p.drawString(50, y, "Volunteer History Report")
-    y -= 50
-
-    # Volunteer info with larger fonts and better spacing
-    p.setFont("Helvetica-Bold", 18)
-    p.drawString(50, y, f"Volunteer: {current_user.full_name or current_user.username}")
     y -= 30
+
+    # Header with standard font
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y, "Volunteer History Report")
+    y -= 30
+
+    # Volunteer info with standard font
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y, f"Volunteer: {current_user.full_name or current_user.username}")
+    y -= 20
     
-    p.setFont("Helvetica", 16)
+    p.setFont("Helvetica", 12)
     if current_user.email:
         p.drawString(50, y, f"Email: {current_user.email}")
-        y -= 25
+        y -= 20
     if current_user.karma_points:
         p.drawString(50, y, f"Total Karma Points: {current_user.karma_points}")
-        y -= 25
+        y -= 20
     y -= 30  # Extra spacing before events
 
     if not attendance_rows:
-        p.setFont("Helvetica", 18)
-        p.drawString(50, y, "No volunteer events completed yet.")
+        p.setFont("Helvetica", 12)
+        p.drawString(50, y, "No volunteer events found.")
         logger.info("📊 PDF: No events to display in PDF")
     else:
         logger.info(f"📊 PDF: Rendering {len(attendance_rows)} events in PDF")
@@ -1334,66 +1344,76 @@ def download_volunteer_history_pdf(
                 p.showPage()
                 y = height - 50
 
-            # Event header box
-            p.setStrokeColorRGB(0.7, 0.7, 0.7)
-            p.setFillColorRGB(0.95, 0.95, 0.95)
-            p.rect(40, y-40, width-80, 35, fill=1, stroke=1)
-            
-            # Event title with larger font
-            p.setFillColorRGB(0, 0, 0)  # Reset to black
-            p.setFont("Helvetica-Bold", 20)
-            p.drawString(50, y-25, f"Event #{i+1}: {event.title}")
-            y -= 50
+            # Event title with standard 12pt font
+            p.setFont("Helvetica-Bold", 12)
+            p.drawString(50, y, f"Event {i+1}: {event.title}")
+            y -= 30
 
-            # Event details with larger fonts and proper spacing
-            p.setFont("Helvetica", 16)
+            # Event details with standard 12pt font
+            p.setFont("Helvetica", 12)
             
-            # Date and time on same line with proper spacing
+            # Date and time on same line
             if event.date:
-                date_text = f"📅 Date: {event.date}"
+                date_text = f"Date: {event.date}"
                 if event.start_time and event.end_time:
-                    date_text += f" | ⏰ Time: {event.start_time} - {event.end_time}"
+                    date_text += f" | Time: {event.start_time} - {event.end_time}"
                 p.drawString(50, y, date_text)
-                y -= 25
+                y -= 20
 
-            # Location with proper spacing
+            # Location
             if event.location:
-                p.drawString(50, y, f"📍 Location: {event.location}")
-                y -= 25
+                p.setFont("Helvetica-Bold", 12)
+                p.drawString(50, y, "Location:")
+                p.setFont("Helvetica", 12)
+                p.drawString(100, y, event.location)
+                y -= 20
 
             # Category
             if event.category:
-                p.drawString(50, y, f"🏷️ Category: {event.category.value.replace('_', ' ').title()}")
-                y -= 25
+                p.setFont("Helvetica-Bold", 12)
+                p.drawString(50, y, "Category:")
+                p.setFont("Helvetica", 12)
+                p.drawString(100, y, event.category.value.replace('_', ' ').title())
+                y -= 20
 
-            # Status with proper spacing
-            status_text = "✅ Status: Verified and Completed"
-            if is_approved is None:
-                status_text = "⏳ Status: Pending Approval"
+            # Status (reflects actual approval state)
+            p.setFont("Helvetica-Bold", 12)
+            p.drawString(50, y, "Status:")
+            p.setFont("Helvetica", 12)
+            if is_approved is True:
+                status_text = "Verified and Completed"
             elif is_approved is False:
-                status_text = "❌ Status: Not Approved"
-            p.drawString(50, y, status_text)
-            y -= 25
+                status_text = "Not Approved"
+            else:
+                status_text = "Pending Approval"
+            p.drawString(100, y, status_text)
+            y -= 20
 
             # Hours worked
             if hours_worked is not None:
-                p.drawString(50, y, f"⏱️ Hours Worked: {hours_worked}")
-                y -= 25
+                p.setFont("Helvetica-Bold", 12)
+                p.drawString(50, y, "Hours Worked:")
+                p.setFont("Helvetica", 12)
+                p.drawString(130, y, str(hours_worked))
+                y -= 20
 
             # Karma points earned
             if karma_points_earned:
-                p.drawString(50, y, f"⭐ Karma Points Earned: {karma_points_earned}")
-                y -= 25
+                p.setFont("Helvetica-Bold", 12)
+                p.drawString(50, y, "Karma Points Earned:")
+                p.setFont("Helvetica", 12)
+                p.drawString(160, y, str(karma_points_earned))
+                y -= 20
 
-            # Event description with text wrapping and better formatting
+            # Event description with text wrapping and standard formatting
             if event.description:
                 y -= 10
-                p.setFont("Helvetica-Bold", 16)
-                p.drawString(50, y, "📝 Description:")
-                y -= 22
-                p.setFont("Helvetica", 14)
+                p.setFont("Helvetica-Bold", 12)
+                p.drawString(50, y, "Description:")
+                y -= 20
+                p.setFont("Helvetica", 12)
                 
-                description_lines = wrap_text(event.description, "Helvetica", 14, width - 100)
+                description_lines = wrap_text(event.description, "Helvetica", 12, width - 100)
                 logger.info(f"📊 PDF: Event description wrapped into {len(description_lines)} lines")
                 for line in description_lines:
                     if y < 80:
@@ -1403,47 +1423,17 @@ def download_volunteer_history_pdf(
                     y -= 20
                 y -= 10
 
-            # Event photos information with enhanced display
-            if hasattr(event, 'images') and event.images:
-                y -= 10
-                p.setFont("Helvetica-Bold", 16)
-                p.drawString(50, y, f"📸 Event Photos: {len(event.images)} image(s)")
-                y -= 22
-                
-                logger.info(f"📊 PDF: Event has {len(event.images)} images")
-                p.setFont("Helvetica", 12)
-                for img_idx, img in enumerate(event.images):
-                    if y < 80:
-                        p.showPage()
-                        y = height - 50
-                    
-                    # Show image URL and metadata
-                    p.drawString(70, y, f"Photo {img_idx+1}: {img.image_url}")
-                    y -= 15
-                    
-                    if hasattr(img, 'is_main') and img.is_main:
-                        p.drawString(90, y, "⭐ Main Event Photo")
-                        y -= 15
-                    
-                    # If we have more than 5 images, show abbreviated list
-                    if img_idx >= 4 and len(event.images) > 5:
-                        remaining = len(event.images) - 5
-                        p.drawString(70, y, f"... and {remaining} more photos")
-                        y -= 15
-                        break
-                y -= 10
-
-            # Organizer info with enhanced details
+            # Organizer info with standard formatting
             if hasattr(event, 'organizer') and event.organizer:
                 y -= 10
-                p.setFont("Helvetica-Bold", 14)
-                p.drawString(50, y, "👤 Organized by:")
-                y -= 18
+                p.setFont("Helvetica-Bold", 12)
+                p.drawString(50, y, "Organized by:")
+                y -= 20
                 
                 p.setFont("Helvetica", 12)
                 org_name = event.organizer.organization_name or event.organizer.full_name or event.organizer.username
                 p.drawString(70, y, f"Name: {org_name}")
-                y -= 15
+                y -= 20
                 
                 if event.organizer.organization_description:
                     desc_lines = wrap_text(event.organizer.organization_description, "Helvetica", 12, width - 120)
@@ -1452,22 +1442,20 @@ def download_volunteer_history_pdf(
                             p.showPage()
                             y = height - 50
                         p.drawString(70, y, f"About: {line}")
-                        y -= 15
+                        y -= 20
                         break  # Just show first line
                 
                 logger.info(f"📊 PDF: Added organizer info: {org_name}")
 
-            # Event separator
             y -= 20
-            p.setStrokeColorRGB(0.8, 0.8, 0.8)
             p.line(50, y, width-50, y)
-            y -= 30  # Extra spacing between events
-            
+            y -= 30
+
             logger.info(f"📊 PDF: Completed rendering event {i+1}: {event.title}")
 
     p.save()
     buffer.seek(0)
-    
+
     logger.info(f"PDF generated successfully for user {current_user.username}")
     return StreamingResponse(
         buffer, 
@@ -1971,6 +1959,13 @@ def get_conversations(current_user: User = Depends(get_current_active_user), db:
         if not other_user:
             continue
             
+        # Get the  count of unread messages from this user to current user
+        unread_count = db.query(func.count(Message.id)).filter(
+            (Message.sender_id == other_user_id) &
+            (Message.receiver_id == current_user.id) &
+            (Message.is_read == False)
+        ).scalar()
+
         # Get the last message in this conversation
         last_message = db.query(Message).filter(
             ((Message.sender_id == current_user.id) & (Message.receiver_id == other_user_id)) |
@@ -1984,7 +1979,7 @@ def get_conversations(current_user: User = Depends(get_current_active_user), db:
                 "subtitle": f"Chat with {other_user.username}",
                 "lastMessage": last_message.content,
                 "timestamp": last_message.created_at.strftime("%H:%M"),
-                "unreadCount": 0,  # TODO: Implement unread count
+                "unreadCount": unread_count,
                 "isStarred": False,  # TODO: Implement starred conversations
                 "participantCount": 2,
                 "otherUserId": other_user_id
@@ -1996,6 +1991,15 @@ def get_conversations(current_user: User = Depends(get_current_active_user), db:
 
 @router.get("/messages/{other_user_id}", response_model=list[MessageOut])
 def get_messages_with_user(other_user_id: int, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    # First, mark any unread messages from the other user as read
+    db.query(Message).filter(
+        (Message.sender_id == other_user_id) &
+        (Message.receiver_id == current_user.id) &
+        (Message.is_read == False)
+    ).update({Message.is_read: True}, synchronize_session=False)
+    db.commit()
+
+    # Now fetch the full message list (reflecting updated read flags)
     msgs = db.query(Message).filter(
         ((Message.sender_id == current_user.id) & (Message.receiver_id == other_user_id)) |
         ((Message.sender_id == other_user_id) & (Message.receiver_id == current_user.id))
@@ -2488,8 +2492,14 @@ async def send_event_notification(
     db: Session
 ):
     """Helper function to send notifications when a new event is created"""
+    logger.info(f"🔔 EVENT NOTIFICATION: Starting notification process for event {event_id}")
+    logger.info(f"🔔 EVENT NOTIFICATION: Organizer ID: {organizer_id}, Name: '{organizer_name}'")
+    logger.info(f"🔔 EVENT NOTIFICATION: Event Title: '{event_title}'")
+    
     try:
         # Get all subscribers with FCM tokens and notifications enabled
+        logger.info(f"🔔 EVENT NOTIFICATION: Querying subscribers for organizer {organizer_id}")
+        
         subscribers = db.query(User).join(
             user_subscriptions,
             User.id == user_subscriptions.c.subscriber_id
@@ -2499,39 +2509,70 @@ async def send_event_notification(
             User.notifications_enabled == True
         ).all()
         
+        logger.info(f"🔔 EVENT NOTIFICATION: Found {len(subscribers)} subscribers with FCM tokens and notifications enabled")
+        
         if not subscribers:
-            logger.info(f"No subscribers found for organizer {organizer_id}")
+            logger.info(f"🔔 EVENT NOTIFICATION: ⚠️ No subscribers found for organizer {organizer_id}")
             return
+        
+        # Log subscriber details for debugging
+        for i, subscriber in enumerate(subscribers):
+            logger.info(f"🔔 EVENT NOTIFICATION: Subscriber {i+1}: ID={subscriber.id}, Username={subscriber.username}")
+            logger.info(f"🔔 EVENT NOTIFICATION: FCM Token: {subscriber.fcm_token[:20]}...{subscriber.fcm_token[-10:] if len(subscriber.fcm_token) > 30 else subscriber.fcm_token}")
+            logger.info(f"🔔 EVENT NOTIFICATION: Notifications enabled: {subscriber.notifications_enabled}")
         
         # Extract FCM tokens
         fcm_tokens = [user.fcm_token for user in subscribers if user.fcm_token]
         
+        logger.info(f"🔔 EVENT NOTIFICATION: Extracted {len(fcm_tokens)} valid FCM tokens")
+        
         if not fcm_tokens:
-            logger.info(f"No valid FCM tokens found for organizer {organizer_id} subscribers")
+            logger.warning(f"🔔 EVENT NOTIFICATION: ⚠️ No valid FCM tokens found for organizer {organizer_id} subscribers")
             return
         
+        # Prepare notification data
+        notification_title = "New Volunteer Opportunity!"
+        notification_body = f"{organizer_name} posted: {event_title}"
+        notification_data = {
+            "type": "new_event",
+            "eventId": str(event_id),
+            "organizerId": str(organizer_id),
+            "organizerName": organizer_name,
+            "eventTitle": event_title
+        }
+        
+        logger.info(f"🔔 EVENT NOTIFICATION: Notification title: '{notification_title}'")
+        logger.info(f"🔔 EVENT NOTIFICATION: Notification body: '{notification_body}'")
+        logger.info(f"🔔 EVENT NOTIFICATION: Notification data: {notification_data}")
+        
         # Send notifications
+        logger.info(f"🔔 EVENT NOTIFICATION: Sending notifications to {len(fcm_tokens)} tokens")
         results = firebase_service.send_notification_to_multiple_tokens(
             tokens=fcm_tokens,
-            title="New Volunteer Opportunity!",
-            body=f"{organizer_name} posted: {event_title}",
-            data={
-                "type": "new_event",
-                "eventId": str(event_id),
-                "organizerId": str(organizer_id),
-                "organizerName": organizer_name,
-                "eventTitle": event_title
-            }
+            title=notification_title,
+            body=notification_body,
+            data=notification_data
         )
         
         # Count successful sends
         successful_sends = sum(1 for success in results.values() if success)
         total_attempts = len(fcm_tokens)
+        failed_sends = total_attempts - successful_sends
         
-        logger.info(f"Event notification sent: {successful_sends}/{total_attempts} successful for event {event_id}")
+        logger.info(f"🔔 EVENT NOTIFICATION: ✅ Event notification results: {successful_sends}/{total_attempts} successful")
+        if failed_sends > 0:
+            logger.warning(f"🔔 EVENT NOTIFICATION: ⚠️ {failed_sends} notifications failed to send")
+            
+        # Log individual results for debugging
+        for token, success in results.items():
+            status = "✅ SUCCESS" if success else "❌ FAILED"
+            logger.info(f"🔔 EVENT NOTIFICATION: Token {token[:20]}... - {status}")
         
     except Exception as e:
-        logger.error(f"Failed to send event notification: {e}")
+        logger.error(f"🔔 EVENT NOTIFICATION: ❌ Failed to send event notification: {e}")
+        logger.error(f"🔔 EVENT NOTIFICATION: Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"🔔 EVENT NOTIFICATION: Full traceback: {traceback.format_exc()}")
 
 async def create_event_in_app_notifications(
     organizer_id: int,
@@ -2702,41 +2743,67 @@ async def send_message_notification(
     db: Session
 ):
     """Helper function to send notifications when a message is sent"""
+    logger.info(f"💬 MESSAGE NOTIFICATION: Starting message notification process")
+    logger.info(f"💬 MESSAGE NOTIFICATION: Sender: {sender_name} (ID: {sender_id})")
+    logger.info(f"💬 MESSAGE NOTIFICATION: Receiver ID: {receiver_id}")
+    logger.info(f"💬 MESSAGE NOTIFICATION: Message content length: {len(message_content)} chars")
+    
     try:
         # Get receiver with FCM token and notification preferences
+        logger.info(f"💬 MESSAGE NOTIFICATION: Querying receiver {receiver_id} for FCM token and preferences")
         receiver = db.query(User).filter(
             User.id == receiver_id,
             User.fcm_token.isnot(None),
             User.notifications_enabled == True
         ).first()
         
-        if not receiver or not receiver.fcm_token:
-            logger.info(f"Receiver {receiver_id} has no FCM token or notifications disabled")
+        if not receiver:
+            logger.warning(f"💬 MESSAGE NOTIFICATION: ⚠️ Receiver {receiver_id} not found or has no FCM token/notifications disabled")
+            return
+        
+        logger.info(f"💬 MESSAGE NOTIFICATION: Receiver found: {receiver.username}")
+        logger.info(f"💬 MESSAGE NOTIFICATION: FCM Token: {receiver.fcm_token[:20]}...{receiver.fcm_token[-10:] if len(receiver.fcm_token) > 30 else receiver.fcm_token}")
+        logger.info(f"💬 MESSAGE NOTIFICATION: Notifications enabled: {receiver.notifications_enabled}")
+        
+        if not receiver.fcm_token:
+            logger.warning(f"💬 MESSAGE NOTIFICATION: ⚠️ Receiver {receiver_id} has no FCM token")
             return
         
         # Truncate message content for notification preview
         preview = message_content[:50] + "..." if len(message_content) > 50 else message_content
+        logger.info(f"💬 MESSAGE NOTIFICATION: Message preview: '{preview}'")
+        
+        # Prepare notification data
+        notification_title = f"Message from {sender_name}"
+        notification_data = {
+            "type": "new_message",
+            "senderId": str(sender_id),
+            "senderName": sender_name,
+            "messagePreview": preview
+        }
+        
+        logger.info(f"💬 MESSAGE NOTIFICATION: Notification title: '{notification_title}'")
+        logger.info(f"💬 MESSAGE NOTIFICATION: Notification data: {notification_data}")
         
         # Send notification
+        logger.info(f"💬 MESSAGE NOTIFICATION: Sending notification to FCM token")
         success = firebase_service.send_notification_to_token(
             token=receiver.fcm_token,
-            title=f"Message from {sender_name}",
+            title=notification_title,
             body=preview,
-            data={
-                "type": "new_message",
-                "senderId": str(sender_id),
-                "senderName": sender_name,
-                "messagePreview": preview
-            }
+            data=notification_data
         )
         
         if success:
-            logger.info(f"Message notification sent successfully to user {receiver_id}")
+            logger.info(f"💬 MESSAGE NOTIFICATION: ✅ Message notification sent successfully to user {receiver_id}")
         else:
-            logger.warning(f"Failed to send message notification to user {receiver_id}")
+            logger.warning(f"💬 MESSAGE NOTIFICATION: ⚠️ Failed to send message notification to user {receiver_id}")
         
     except Exception as e:
-        logger.error(f"Failed to send message notification: {e}")
+        logger.error(f"💬 MESSAGE NOTIFICATION: ❌ Failed to send message notification: {e}")
+        logger.error(f"💬 MESSAGE NOTIFICATION: Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"💬 MESSAGE NOTIFICATION: Full traceback: {traceback.format_exc()}")
 
 async def create_message_in_app_notification(
     sender_name: str,
@@ -3449,34 +3516,16 @@ async def delete_lost_found_image(
 
 
 async def save_lost_found_image(file: UploadFile, item_id: int) -> str:
-    """Save uploaded image for lost/found item and return URL"""
-    import os
-    import uuid
-    from pathlib import Path
-    
+    """Save lost/found image to MinIO and return its public URL"""
     try:
-        # Create upload directory if it doesn't exist
-        upload_dir = Path("uploads/lost_found")
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate unique filename
-        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
-        unique_filename = f"{item_id}_{uuid.uuid4()}.{file_extension}"
-        file_path = upload_dir / unique_filename
-        
-        # Save file
-        content = await file.read()
-        with open(file_path, "wb") as f:
-            f.write(content)
-        
-        # Return URL (adjust based on your file serving setup)
-        return f"/uploads/lost_found/{unique_filename}"
-        
+        return await storage_service.upload_lost_found_image(file, item_id)
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to save lost/found image: {e}")
+        logger.error(f"Failed to upload lost/found image: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to save image"
+            detail="Failed to upload image"
         )
 
 

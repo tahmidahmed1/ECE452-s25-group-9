@@ -186,6 +186,9 @@ class ChatViewModel @Inject constructor(
                         )
                     }
                     _messagesState.value = UiState.Success(chatMessages)
+
+                    // Refresh conversations to update unread counts
+                    loadConversations(currentUser)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load messages", e)

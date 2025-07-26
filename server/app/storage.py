@@ -224,6 +224,40 @@ class ObjectStorageService:
             logger.error(f"Unexpected error uploading image: {e}")
             raise HTTPException(status_code=500, detail="Failed to upload image")
 
+    # ---------------- Lost & Found Images ---------------- #
+
+    async def upload_lost_found_image(self, file: UploadFile, item_id: int) -> str:
+        """Upload a lost & found image and return the public URL"""
+        # Re-use same validation/resize logic as event images
+        if not self._validate_image(file):
+            raise HTTPException(status_code=400, detail="Invalid image file")
+
+        if file.size and file.size > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB")
+
+        try:
+            filename = f"lostfound_{item_id}_{uuid.uuid4().hex}.jpg"
+
+            resized_image = self._resize_image(file)
+
+            self.client.put_object(
+                self.bucket_name,
+                filename,
+                resized_image,
+                length=resized_image.getbuffer().nbytes,
+                content_type="image/jpeg",
+            )
+
+            url = f"http://{self.public_endpoint}/{self.bucket_name}/{filename}"
+            logger.info(f"Uploaded lost & found image: {url}")
+            return url
+        except S3Error as e:
+            logger.error(f"Error uploading lost & found image to MinIO: {e}")
+            raise HTTPException(status_code=500, detail="Failed to upload image")
+        except Exception as e:
+            logger.error(f"Unexpected error uploading lost & found image: {e}")
+            raise HTTPException(status_code=500, detail="Failed to upload image")
+
     async def delete_file_from_url(self, file_url: str):
         """Delete a file from storage using its URL."""
         try:

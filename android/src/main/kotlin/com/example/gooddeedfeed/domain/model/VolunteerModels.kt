@@ -34,8 +34,23 @@ data class VolunteerOpportunity(
 data class JoinedVolunteer(
     val id: Int,
     val username: String,
+    val email: String,
     val fullName: String,
     val profilePictureUrl: String? = null,
+    val phone: String? = null,
+    val sex: String? = null,
+    val age: Int? = null,
+    val description: String? = null,
+    val skills: List<String>? = null,
+    val emergencyContactName: String? = null,
+    val emergencyContactPhone: String? = null,
+    val locationArea: String? = null,
+    val hasDriversLicense: Boolean? = null,
+    val disabilities: String? = null,
+    val karmaPoints: Int = 0,
+    val userType: String = "volunteer",
+    val isActive: Boolean = true,
+    val onboardingCompleted: Boolean = true,
 )
 
 enum class OpportunityCategory {

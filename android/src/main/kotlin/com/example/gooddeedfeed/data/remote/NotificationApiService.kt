@@ -16,21 +16,41 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import io.ktor.client.request.header
+import kotlinx.coroutines.flow.first
 
 @Singleton
 class NotificationApiService @Inject constructor(
     client: HttpClient,
+    private val dataStore: DataStore<Preferences>,
 ) : BaseApiService(client) {
+
+    companion object {
+        private val SESSION_ID_KEY = stringPreferencesKey("session_id")
+    }
+
+    private suspend fun getSessionId(): String? {
+        return try {
+            dataStore.data.first()[SESSION_ID_KEY]
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     /**
      * Update FCM token for the current user
      */
     suspend fun updateFcmToken(token: String): Boolean {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             val response = withFallbackUrls { baseUrl ->
                 client.put("$baseUrl/notifications/token") {
                     contentType(ContentType.Application.Json)
                     setBody(NotificationTokenDto(fcmToken = token))
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
             response.body<Map<String, Any>>()["success"] as? Boolean ?: false
@@ -44,10 +64,12 @@ class NotificationApiService @Inject constructor(
      */
     suspend fun setNotificationPreferences(enabled: Boolean): Boolean {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             val response = withFallbackUrls { baseUrl ->
                 client.put("$baseUrl/notifications/preferences") {
                     contentType(ContentType.Application.Json)
                     setBody(NotificationPreferencesDto(notificationsEnabled = enabled))
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
             response.body<Map<String, Any>>()["success"] as? Boolean ?: false
@@ -61,10 +83,12 @@ class NotificationApiService @Inject constructor(
      */
     suspend fun subscribeToOrganizer(organizerId: Int): Boolean {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             val response = withFallbackUrls { baseUrl ->
                 client.post("$baseUrl/notifications/subscribe") {
                     contentType(ContentType.Application.Json)
                     setBody(SubscriptionRequestDto(organizerId = organizerId))
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
             response.body<Map<String, Any>>()["success"] as? Boolean ?: false
@@ -78,10 +102,12 @@ class NotificationApiService @Inject constructor(
      */
     suspend fun unsubscribeFromOrganizer(organizerId: Int): Boolean {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             val response = withFallbackUrls { baseUrl ->
                 client.post("$baseUrl/notifications/unsubscribe") {
                     contentType(ContentType.Application.Json)
                     setBody(SubscriptionRequestDto(organizerId = organizerId))
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
             response.body<Map<String, Any>>()["success"] as? Boolean ?: false
@@ -95,9 +121,11 @@ class NotificationApiService @Inject constructor(
      */
     suspend fun getInAppNotifications(limit: Int = 50): InAppNotificationsResponseDto? {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             withFallbackUrls { baseUrl ->
                 client.get("$baseUrl/in-app-notifications?limit=$limit") {
                     contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $sessionId")
                 }
             }.body<InAppNotificationsResponseDto>()
         } catch (e: Exception) {
@@ -110,10 +138,12 @@ class NotificationApiService @Inject constructor(
      */
     suspend fun updateNotification(notificationId: Int, isRead: Boolean): Boolean {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             withFallbackUrls { baseUrl ->
                 client.put("$baseUrl/in-app-notifications/$notificationId") {
                     contentType(ContentType.Application.Json)
                     setBody(InAppNotificationUpdateDto(isRead = isRead))
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
             true
@@ -127,9 +157,11 @@ class NotificationApiService @Inject constructor(
      */
     suspend fun markAllNotificationsRead(): Boolean {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             val response = withFallbackUrls { baseUrl ->
                 client.put("$baseUrl/in-app-notifications/mark-all-read") {
                     contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
             response.body<Map<String, Any>>()["success"] as? Boolean ?: false
@@ -143,9 +175,11 @@ class NotificationApiService @Inject constructor(
      */
     suspend fun clearAllNotifications(): Boolean {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             val response = withFallbackUrls { baseUrl ->
                 client.delete("$baseUrl/in-app-notifications") {
                     contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
             response.body<Map<String, Any>>()["success"] as? Boolean ?: false
@@ -159,9 +193,11 @@ class NotificationApiService @Inject constructor(
      */
     suspend fun deleteNotification(notificationId: Int): Boolean {
         return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             val response = withFallbackUrls { baseUrl ->
                 client.delete("$baseUrl/in-app-notifications/$notificationId") {
                     contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $sessionId")
                 }
             }
             response.body<Map<String, Any>>()["success"] as? Boolean ?: false

@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 import logging
 import json
 from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from .routes import router
 from .database import engine, wait_for_db
@@ -20,6 +21,8 @@ wait_for_db()
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
+
+# Note: We no longer serve local uploads; all images are in MinIO.
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -82,12 +85,7 @@ async def log_requests(request: Request, call_next):
 # Include routers
 app.include_router(router, prefix="/api")
 
-# Serve uploaded images (lost & found, event images, etc.)
-app.mount(
-    "/uploads",
-    StaticFiles(directory="uploads", html=False),
-    name="uploads",
-)
+# Legacy mount removed – images are served directly from MinIO public endpoint
 
 # Root endpoint
 @app.get("/")

@@ -292,11 +292,29 @@ fun OrganizerEventDetailScreen(
             val user = DomainUser(
                 id = vol.id,
                 username = vol.username,
-                email = "",
-                isActive = true,
+                email = vol.email,
+                isActive = vol.isActive,
                 fullName = vol.fullName,
                 profilePictureUrl = vol.profilePictureUrl,
                 userType = com.example.gooddeedfeed.domain.model.DomainUserType.VOLUNTEER,
+                onboardingCompleted = vol.onboardingCompleted,
+                phone = vol.phone,
+                sex = vol.sex?.let { 
+                    try {
+                        com.example.gooddeedfeed.domain.model.DomainSex.valueOf(it.uppercase())
+                    } catch (e: Exception) {
+                        null
+                    }
+                },
+                description = vol.description,
+                skills = vol.skills,
+                age = vol.age,
+                emergencyContactName = vol.emergencyContactName,
+                emergencyContactPhone = vol.emergencyContactPhone,
+                locationArea = vol.locationArea,
+                hasDriversLicense = vol.hasDriversLicense,
+                disabilities = vol.disabilities,
+                karmaPoints = vol.karmaPoints,
             )
             com.example.gooddeedfeed.presentation.ui.screens.PreviewProfileScreen(
                 user = user,

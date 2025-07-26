@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,7 @@ import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
 fun FloatingNavBarItem(
     icon: ImageVector,
     isSelected: Boolean,
+    hasUnread: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -86,6 +88,18 @@ fun FloatingNavBarItem(
             tint = iconColor,
             modifier = Modifier.size(24.dp),
         )
+
+        if (hasUnread) {
+            // Small dot in top-right corner
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-4).dp, y = 4.dp)
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.error)
+            )
+        }
     }
 }
 
@@ -94,6 +108,8 @@ fun FloatingNavigationBar(
     tabs: List<TabItem>,
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
+    chatTabIndex: Int? = null,
+    hasUnreadChat: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -118,9 +134,11 @@ fun FloatingNavigationBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEachIndexed { index, tab ->
+                val showUnreadDot = chatTabIndex != null && index == chatTabIndex && hasUnreadChat
                 FloatingNavBarItem(
                     icon = tab.icon,
                     isSelected = selectedTabIndex == index,
+                    hasUnread = showUnreadDot,
                     onClick = { onTabSelected(index) },
                 )
             }
@@ -157,6 +175,19 @@ fun TabNavigationScreen(
     }
 
     val tabs = getTabsForUserType(currentUser.userType ?: DomainUserType.VOLUNTEER)
+
+    // --- Chat unread indicator setup ---
+    val chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel = hiltViewModel()
+
+    // Load conversations once user info is ready
+    LaunchedEffect(currentUser.id) {
+        chatViewModel.loadConversations(currentUser)
+    }
+
+    val chatConversationsState by chatViewModel.conversationsState.collectAsStateWithLifecycle()
+    val hasUnreadMessages = (chatConversationsState as? com.example.gooddeedfeed.presentation.common.UiState.Success)?.data?.any { it.unreadCount > 0 } == true
+
+    val chatTabIndex = tabs.indexOfFirst { it.title == "Chat" }.takeIf { it >= 0 }
 
     LaunchedEffect(homeViewModel) {
         homeViewModel.navigationEvent.collect { action ->
@@ -206,6 +237,8 @@ fun TabNavigationScreen(
                         tabs = tabs,
                         selectedTabIndex = selectedTabIndex,
                         onTabSelected = { selectedTabIndex = it },
+                        chatTabIndex = chatTabIndex,
+                        hasUnreadChat = hasUnreadMessages,
                         modifier = Modifier.padding(bottom = Spacing.md),
                     )
                 }
