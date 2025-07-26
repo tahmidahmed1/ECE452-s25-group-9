@@ -19,44 +19,53 @@ import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private fun EventDto.toOpportunity(isJoined: Boolean = false): VolunteerOpportunity = VolunteerOpportunity(
-    id = id ?: 0,
-    title = title,
-    organizationName = organizer_name ?: "",
-    location = location ?: "",
-    date = date ?: "",
-    startTime = start_time,
-    endTime = end_time,
-    description = description ?: "",
-    requiredVolunteers = max_volunteers ?: 0,
-    currentVolunteers = current_volunteers ?: 0,
-    category = try {
-        // Convert from backend format (e.g., "community_service") to enum
-        when (category) {
-            "community_service" -> OpportunityCategory.COMMUNITY_SERVICE
-            "education" -> OpportunityCategory.EDUCATION
-            "environmental" -> OpportunityCategory.ENVIRONMENTAL
-            "healthcare" -> OpportunityCategory.HEALTHCARE
-            "social_services" -> OpportunityCategory.SOCIAL_SERVICES
-            "disaster_relief" -> OpportunityCategory.DISASTER_RELIEF
-            "food_security" -> OpportunityCategory.FOOD_SECURITY
-            "animal_welfare" -> OpportunityCategory.ANIMAL_WELFARE
-            "arts_culture" -> OpportunityCategory.ARTS_CULTURE
-            "youth_mentoring" -> OpportunityCategory.YOUTH_MENTORING
-            "elderly_care" -> OpportunityCategory.ELDERLY_CARE
-            "technology" -> OpportunityCategory.TECHNOLOGY
-            else -> OpportunityCategory.OTHER
-        }
-    } catch (e: Exception) {
-        OpportunityCategory.OTHER
-    },
-    latitude = latitude ?: 0.0,
-    longitude = longitude ?: 0.0,
-    imageUrl = image_url?.toEmulatorAccessibleUrl(),
-    karmaPoints = karma_points,
-    isJoined = isJoined,
-    images = images.map { it.copy(image_url = it.image_url.toEmulatorAccessibleUrl()) },
-)
+private fun EventDto.toOpportunity(isJoined: Boolean = false): VolunteerOpportunity {
+    // Debug logging for organization name mapping
+    Log.d("OpportunitiesRepo", "🏢 DTO MAPPING - Event ID: ${id ?: 0}")
+    Log.d("OpportunitiesRepo", "🏢 DTO MAPPING - Event Title: '$title'")
+    Log.d("OpportunitiesRepo", "🏢 DTO MAPPING - Raw organizer_name: '$organizer_name'")
+    Log.d("OpportunitiesRepo", "🏢 DTO MAPPING - organizer_name is null: ${organizer_name == null}")
+    Log.d("OpportunitiesRepo", "🏢 DTO MAPPING - Final organizationName: '${organizer_name ?: ""}'")
+    
+    return VolunteerOpportunity(
+        id = id ?: 0,
+        title = title,
+        organizationName = organizer_name ?: "",
+        location = location ?: "",
+        date = date ?: "",
+        startTime = start_time,
+        endTime = end_time,
+        description = description ?: "",
+        requiredVolunteers = max_volunteers ?: 0,
+        currentVolunteers = current_volunteers ?: 0,
+        category = try {
+            // Convert from backend format (e.g., "community_service") to enum
+            when (category) {
+                "community_service" -> OpportunityCategory.COMMUNITY_SERVICE
+                "education" -> OpportunityCategory.EDUCATION
+                "environmental" -> OpportunityCategory.ENVIRONMENTAL
+                "healthcare" -> OpportunityCategory.HEALTHCARE
+                "social_services" -> OpportunityCategory.SOCIAL_SERVICES
+                "disaster_relief" -> OpportunityCategory.DISASTER_RELIEF
+                "food_security" -> OpportunityCategory.FOOD_SECURITY
+                "animal_welfare" -> OpportunityCategory.ANIMAL_WELFARE
+                "arts_culture" -> OpportunityCategory.ARTS_CULTURE
+                "youth_mentoring" -> OpportunityCategory.YOUTH_MENTORING
+                "elderly_care" -> OpportunityCategory.ELDERLY_CARE
+                "technology" -> OpportunityCategory.TECHNOLOGY
+                else -> OpportunityCategory.OTHER
+            }
+        } catch (e: Exception) {
+            OpportunityCategory.OTHER
+        },
+        latitude = latitude ?: 0.0,
+        longitude = longitude ?: 0.0,
+        imageUrl = image_url?.toEmulatorAccessibleUrl(),
+        karmaPoints = karma_points,
+        isJoined = isJoined,
+        images = images.map { it.copy(image_url = it.image_url.toEmulatorAccessibleUrl()) },
+    )
+}
 
 @Singleton
 class OpportunitiesRepositoryImpl @Inject constructor(

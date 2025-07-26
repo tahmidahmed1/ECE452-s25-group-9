@@ -40,6 +40,9 @@ class LeaderboardViewModel @Inject constructor(
 
     private val pageSize = 20
 
+    // Expose AuthRepository for PDF download
+    fun getAuthRepository(): AuthRepository = authRepository
+
     init {
         loadLeaderboard()
     }

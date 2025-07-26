@@ -219,7 +219,7 @@ private fun ChatListScreen(
                             SwipeableConversationItem(
                                 conversation = conversation,
                                 onClick = { onConversationClick(conversation) },
-                                onDelete = { viewModel.deleteConversation(conversation.id, user) },
+                                onDelete = { viewModel.deleteConversation(conversation, user) },
                                 onToggleStar = { viewModel.toggleConversationStar(conversation.id, user) },
                             )
                         }

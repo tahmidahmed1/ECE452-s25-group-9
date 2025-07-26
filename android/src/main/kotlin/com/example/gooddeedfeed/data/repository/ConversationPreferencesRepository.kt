@@ -27,9 +27,42 @@ class ConversationPreferencesRepository @Inject constructor(
         return dataStore.data.first()[key]?.contains(conversationId) ?: false
     }
 
-    suspend fun isConversationDeleted(userId: Int, conversationId: String): Boolean {
+    /**
+     * Determine whether the given [conversationId] should currently be considered deleted.
+     * We store the lastMessage snapshot at the moment when the user deleted the conversation.
+     * If the *current* snapshot differs (meaning a new message arrived) we automatically
+     * restore the conversation so that it shows up again.
+     */
+    suspend fun isConversationDeleted(
+        userId: Int,
+        conversationId: String,
+        currentSnapshot: String,
+    ): Boolean {
         val key = deletedConversationsKey(userId)
-        return dataStore.data.first()[key]?.contains(conversationId) ?: false
+        var deleted = false
+
+        dataStore.edit { preferences ->
+            val deletedSet = preferences[key]?.toMutableSet() ?: mutableSetOf()
+
+            // Find any entry that matches this conversation (regardless of snapshot)
+            val existingEntry = deletedSet.firstOrNull { it.startsWith("$conversationId::") }
+
+            if (existingEntry != null) {
+                val storedSnapshot = existingEntry.substringAfter("::")
+
+                if (storedSnapshot == currentSnapshot) {
+                    // Still matches → keep hidden
+                    deleted = true
+                } else {
+                    // Snapshot changed → new message arrived → remove the deletion entry
+                    deletedSet.remove(existingEntry)
+                    preferences[key] = deletedSet
+                    deleted = false
+                }
+            }
+        }
+
+        return deleted
     }
 
     suspend fun toggleConversationStar(userId: Int, conversationId: String): Boolean {
@@ -51,12 +84,21 @@ class ConversationPreferencesRepository @Inject constructor(
         return isStarred
     }
 
-    suspend fun deleteConversation(userId: Int, conversationId: String) {
+    /** Store a deletion record as "conversationId::lastMessageSnapshot" */
+    suspend fun deleteConversation(
+        userId: Int,
+        conversationId: String,
+        lastMessageSnapshot: String,
+    ) {
         val key = deletedConversationsKey(userId)
 
         dataStore.edit { preferences ->
             val deletedSet = preferences[key]?.toMutableSet() ?: mutableSetOf()
-            deletedSet.add(conversationId)
+
+            // Remove any previous entry irrespective of snapshot then add new one
+            deletedSet.removeIf { it.startsWith("$conversationId::") }
+            deletedSet.add("$conversationId::$lastMessageSnapshot")
+
             preferences[key] = deletedSet
         }
     }
@@ -66,7 +108,7 @@ class ConversationPreferencesRepository @Inject constructor(
 
         dataStore.edit { preferences ->
             val deletedSet = preferences[key]?.toMutableSet() ?: mutableSetOf()
-            deletedSet.remove(conversationId)
+            deletedSet.removeIf { it.startsWith("$conversationId::") }
             preferences[key] = deletedSet
         }
     }

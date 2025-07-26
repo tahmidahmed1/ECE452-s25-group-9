@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, Column, Integer, String, DateTime, Enum, Text, JSON, Float, ForeignKey, Table
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 import enum
 
 from .database import Base
@@ -175,6 +176,9 @@ class Event(Base):
 
     # Organizer relationship
     organizer = relationship("User", backref="organized_events")
+    
+    # Organizer name for API responses (populated dynamically)
+    organizer_name = Column(String, nullable=True)
 
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)

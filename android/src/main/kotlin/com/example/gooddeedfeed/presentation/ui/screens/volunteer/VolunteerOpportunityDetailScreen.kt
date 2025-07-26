@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.presentation.ui.screens.volunteer
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,13 @@ fun VolunteerOpportunityDetailScreen(
     onLeave: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // Debug logging for organization name
+    Log.d("VolunteerEventDetail", "🏢 ORGANIZATION DEBUG - Event ID: ${opportunity.id}")
+    Log.d("VolunteerEventDetail", "🏢 ORGANIZATION DEBUG - Event Title: '${opportunity.title}'")
+    Log.d("VolunteerEventDetail", "🏢 ORGANIZATION DEBUG - Organization Name: '${opportunity.organizationName}'")
+    Log.d("VolunteerEventDetail", "🏢 ORGANIZATION DEBUG - Organization Name Length: ${opportunity.organizationName.length}")
+    Log.d("VolunteerEventDetail", "🏢 ORGANIZATION DEBUG - Organization Name isEmpty: ${opportunity.organizationName.isEmpty()}")
+    Log.d("VolunteerEventDetail", "🏢 ORGANIZATION DEBUG - Organization Name isBlank: ${opportunity.organizationName.isBlank()}")
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,7 +68,19 @@ fun VolunteerOpportunityDetailScreen(
             InfoRow(icon = Icons.Default.Category, text = opportunity.category.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() })
             InfoRow(icon = Icons.Default.Group, text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers} volunteers")
             InfoRow(icon = Icons.Default.Star, text = "${opportunity.karmaPoints} Karma Points")
-            InfoRow(icon = Icons.Default.Business, text = opportunity.organizationName)
+            
+            // Organization display with logging and fallback
+            val organizationDisplayText = when {
+                opportunity.organizationName.isNotBlank() -> {
+                    Log.d("VolunteerEventDetail", "🏢 ORGANIZATION DISPLAY - Using organization name: '${opportunity.organizationName}'")
+                    opportunity.organizationName
+                }
+                else -> {
+                    Log.w("VolunteerEventDetail", "🏢 ORGANIZATION DISPLAY - Organization name is empty/blank, using fallback")
+                    "Organization not specified"
+                }
+            }
+            InfoRow(icon = Icons.Default.Business, text = organizationDisplayText)
 
             Divider(modifier = Modifier.padding(vertical = 16.dp))
 

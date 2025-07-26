@@ -72,6 +72,7 @@ import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -285,26 +286,49 @@ private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
         homeViewModel.loadJoinedEvents()
     }
 
+    // Helper function to parse dates with multiple formats
+    fun parseDate(dateStr: String): LocalDate? {
+        val patterns = listOf("yyyy-MM-dd", "MMM d, yyyy", "MMMM d, yyyy")
+        for (pattern in patterns) {
+            try {
+                return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH))
+            } catch (e: Exception) {
+                // Continue to next pattern
+            }
+        }
+        return null
+    }
+
     val eventsMap = remember(joinedEventsState) {
+        android.util.Log.i("HomeScreen", "🗓️ CALENDAR VIEW - Processing joinedEventsState: ${joinedEventsState::class.simpleName}")
         val data = (joinedEventsState as? UiState.Success)?.data
         if (data != null) {
-            data.groupBy { event ->
-                try {
-                    LocalDate.parse(event.date)
-                } catch (e: Exception) {
+            android.util.Log.i("HomeScreen", "🗓️ CALENDAR VIEW - Processing ${data.size} joined events for calendar display")
+            data.forEach { event ->
+                android.util.Log.i("HomeScreen", "  📅 Processing event: '${event.title}' on ${event.date} (${event.startTime} - ${event.endTime})")
+            }
+            
+            val grouped: Map<LocalDate, List<EventItem>> = data.mapNotNull { event ->
+                val parsedDate = parseDate(event.date)
+                if (parsedDate != null) {
+                    android.util.Log.i("HomeScreen", "  ✅ Successfully parsed date '${event.date}' for event '${event.title}'")
+                    parsedDate to EventItem(
+                        title = event.title,
+                        time = formatEventTime(event.startTime, event.endTime),
+                    )
+                } else {
+                    android.util.Log.w("HomeScreen", "  ⚠️ Failed to parse date '${event.date}' for event '${event.title}'")
                     null
                 }
-            }.filterKeys { it != null }
-                .mapKeys { it.key!! }
-                .mapValues { (_, events) ->
-                    events.map { event ->
-                        EventItem(
-                            title = event.title,
-                            time = formatEventTime(event.startTime, event.endTime),
-                        )
-                    }
-                }
+            }.groupBy({ it.first }, { it.second })
+            
+            android.util.Log.i("HomeScreen", "🗓️ CALENDAR VIEW - Created events map with ${grouped.size} dates")
+            grouped.forEach { (date, events) ->
+                android.util.Log.i("HomeScreen", "  📆 Date $date has ${events.size} events: ${events.map { it.title }}")
+            }
+            grouped
         } else {
+            android.util.Log.w("HomeScreen", "🗓️ CALENDAR VIEW - No data available from joinedEventsState")
             emptyMap()
         }
     }
@@ -341,6 +365,9 @@ private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
             dayContent = { day ->
                 val isSelected = selectedDate == day.date
                 val hasEvents = eventsMap.containsKey(day.date)
+                if (hasEvents) {
+                    android.util.Log.d("HomeScreen", "🗓️ CALENDAR DAY - ${day.date} has events: ${eventsMap[day.date]?.map { it.title }}")
+                }
                 val background = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
                 val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else if (day.position == DayPosition.MonthDate) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
 

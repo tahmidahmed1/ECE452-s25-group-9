@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import com.example.gooddeedfeed.data.remote.dto.MessageDto
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
@@ -119,18 +120,25 @@ class ChatViewModel @Inject constructor(
                     }
                     val conversations = response.body<List<ChatConversation>>()
 
-                    // Apply user preferences for starring and filtering deleted conversations
-                    val filteredConversations = conversations.mapNotNull { conversation ->
-                        val isDeleted = conversationPreferencesRepository.isConversationDeleted(currentUser.id, conversation.id)
-                        if (isDeleted) {
-                            null // Filter out deleted conversations
-                        } else {
+                    // Apply user preferences for starring conversations (previously deleted conversations will now
+                    // re-appear in the list if new messages arrive, addressing the issue where volunteers sometimes
+                    // could not see ongoing chats).
+                    val visibleConversations = mutableListOf<ChatConversation>()
+
+                    for (conversation in conversations) {
+                        val isDeleted = conversationPreferencesRepository.isConversationDeleted(
+                            currentUser.id,
+                            conversation.id,
+                            conversation.lastMessage
+                        )
+
+                        if (!isDeleted) {
                             val isStarred = conversationPreferencesRepository.isConversationStarred(currentUser.id, conversation.id)
-                            conversation.copy(isStarred = isStarred)
+                            visibleConversations.add(conversation.copy(isStarred = isStarred))
                         }
                     }
 
-                    _conversationsState.value = UiState.Success(filteredConversations)
+                    _conversationsState.value = UiState.Success(visibleConversations)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load conversations", e)
@@ -160,12 +168,16 @@ class ChatViewModel @Inject constructor(
                         header("Authorization", "Bearer $sessionId")
                     }
                 }.let { response ->
-                    val messages = response.body<List<MessageResponse>>()
+                    val messages = response.body<List<MessageDto>>()
                     val chatMessages = messages.map { msg ->
                         ChatMessage(
                             id = msg.id.toString(),
                             content = msg.content,
-                            senderName = if (msg.sender_id == currentUser.id) currentUser.fullName ?: currentUser.username else "Other User",
+                            senderName = if (msg.sender_id == currentUser.id) {
+                                currentUser.fullName ?: currentUser.username
+                            } else {
+                                msg.sender_username.ifBlank { msg.receiver_username }
+                            },
                             senderType = if (msg.sender_id == currentUser.id) currentUser.userType?.name?.lowercase() ?: "volunteer" else "organizer",
                             timestamp = formatTimestamp(msg.created_at),
                             isFromCurrentUser = msg.sender_id == currentUser.id,
@@ -205,7 +217,7 @@ class ChatViewModel @Inject constructor(
                         setBody(request)
                     }
                 }.let { response ->
-                    val sentMessage = response.body<MessageResponse>()
+                    val sentMessage = response.body<MessageDto>()
                     _sendMessageState.value = UiState.Success("Message sent successfully")
 
                     val currentMessages = (_messagesState.value as? UiState.Success)?.data ?: emptyList()
@@ -302,15 +314,19 @@ class ChatViewModel @Inject constructor(
         _sendMessageState.value = UiState.Idle
     }
 
-    fun deleteConversation(conversationId: String, currentUser: DomainUser) {
+    fun deleteConversation(conversation: ChatConversation, currentUser: DomainUser) {
         viewModelScope.launch {
             try {
-                // Store the deletion preference
-                conversationPreferencesRepository.deleteConversation(currentUser.id, conversationId)
+                // Store the deletion preference along with snapshot of last message
+                conversationPreferencesRepository.deleteConversation(
+                    currentUser.id,
+                    conversation.id,
+                    conversation.lastMessage
+                )
 
                 // Update the UI state by filtering out the deleted conversation
                 val currentConversations = (_conversationsState.value as? UiState.Success)?.data ?: return@launch
-                val updatedConversations = currentConversations.filter { it.id != conversationId }
+                val updatedConversations = currentConversations.filter { it.id != conversation.id }
                 _conversationsState.value = UiState.Success(updatedConversations)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to delete conversation", e)
@@ -341,11 +357,4 @@ class ChatViewModel @Inject constructor(
     }
 }
 
-@Serializable
-data class MessageResponse(
-    val id: Int,
-    val content: String,
-    val sender_id: Int,
-    val receiver_id: Int,
-    val created_at: String,
-) 
+// Removed obsolete MessageResponse; now using MessageDto from data.remote.dto 

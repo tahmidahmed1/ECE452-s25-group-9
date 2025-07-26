@@ -206,6 +206,9 @@ class EventBase(BaseModel):
     end_time: Optional[str] = None
     location: Optional[str] = None
     image_url: Optional[str] = None
+    
+    # Organizer information
+    organizer_name: Optional[str] = None
 
     # Geolocation coordinates
     latitude: Optional[float] = None
@@ -495,6 +498,12 @@ class VolunteerHistoryEntry(BaseModel):
     event_id: int
     event_title: str
     event_date: str
+    event_description: Optional[str] = None
+    event_location: Optional[str] = None
+    event_start_time: Optional[str] = None
+    event_end_time: Optional[str] = None
+    event_image_urls: List[str] = []
+    organizer_name: Optional[str] = None
     hours_worked: Optional[float] = None
     is_approved: bool
     rejection_reason: Optional[str] = None

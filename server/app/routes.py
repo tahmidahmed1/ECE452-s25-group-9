@@ -15,6 +15,7 @@ from pathlib import Path
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from .database import get_db
 from .models import User, UserType, Sex, Event, Message, Badge, user_badges, user_subscriptions, volunteer_events, InAppNotification, LostFoundItem, LostFoundImage
@@ -52,6 +53,31 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+def populate_organizer_name(event: Event) -> None:
+    """Populate the organizer_name field for an event based on organizer data"""
+    if hasattr(event, 'organizer') and event.organizer:
+        logger.info(f"🏢 POPULATE ORGANIZER - Event '{event.title}' (ID: {event.id})")
+        logger.info(f"🏢 POPULATE ORGANIZER - Organizer: {event.organizer.username}")
+        logger.info(f"🏢 POPULATE ORGANIZER - Organizer full_name: '{event.organizer.full_name}'")
+        logger.info(f"🏢 POPULATE ORGANIZER - Has organization_name: {hasattr(event.organizer, 'organization_name')}")
+        
+        if hasattr(event.organizer, 'organization_name'):
+            logger.info(f"🏢 POPULATE ORGANIZER - Organization name: '{event.organizer.organization_name}'")
+        
+        # Use organization name for organizers, or full name/username as fallback
+        if hasattr(event.organizer, 'organization_name') and event.organizer.organization_name:
+            event.organizer_name = event.organizer.organization_name
+            logger.info(f"🏢 POPULATE ORGANIZER - Using organization_name: '{event.organizer_name}'")
+        elif event.organizer.full_name:
+            event.organizer_name = event.organizer.full_name
+            logger.info(f"🏢 POPULATE ORGANIZER - Using full_name: '{event.organizer_name}'")
+        else:
+            event.organizer_name = event.organizer.username
+            logger.info(f"🏢 POPULATE ORGANIZER - Using username: '{event.organizer_name}'")
+    else:
+        event.organizer_name = ""
+        logger.warning(f"🏢 POPULATE ORGANIZER - No organizer found for event '{event.title}' (ID: {event.id})")
 
 # Load environment variables from .env file located in the same directory (if present)
 env_path = Path(__file__).parent / ".env"
@@ -153,44 +179,63 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     )
     
     # Check if this is a dev user and auto-complete onboarding
-    if user.username.startswith("dev_"):
+    if user.username.startswith("dev_") or user.username in ["volunteer", "organizer"]:
         logger.info(f"Dev user detected: {user.username}, auto-completing onboarding")
         
-        # Extract user type from username (e.g., "dev_volunteer_123456")
-        parts = user.username.split("_")
-        if len(parts) >= 2:
-            user_type_str = parts[1].upper()
-            try:
-                if user_type_str == "VOLUNTEER":
-                    db_user.user_type = UserType.VOLUNTEER
+        # Extract user type from username
+        if user.username == "volunteer":
+            user_type_str = "VOLUNTEER"
+        elif user.username == "organizer":
+            user_type_str = "ORGANIZER"
+        else:
+            # Handle old format (e.g., "dev_volunteer_123456")
+            parts = user.username.split("_")
+            user_type_str = parts[1].upper() if len(parts) >= 2 else "VOLUNTEER"
+        
+        try:
+            if user_type_str == "VOLUNTEER":
+                db_user.user_type = UserType.VOLUNTEER
+                if user.username == "volunteer":
+                    db_user.full_name = "Dev Volunteer"
+                    db_user.phone = "+1-555-DEV-VOL"
+                else:
+                    # Old format handling
+                    parts = user.username.split("_")
                     db_user.full_name = f"Dev Volunteer {parts[2] if len(parts) > 2 else 'User'}"
                     db_user.phone = f"+1-555-DEV-{parts[2] if len(parts) > 2 else '123'}"
-                    db_user.sex = Sex.PREFER_NOT_TO_SAY
-                    db_user.description = "Auto-generated dev volunteer account"
-                    db_user.skills = ["testing", "development", "community"]
-                    db_user.age = 25
-                    db_user.emergency_contact_name = "Dev Emergency Contact"
-                    db_user.emergency_contact_phone = "+1-555-911-DEV"
-                    db_user.location_area = "DevVille"
-                    db_user.has_drivers_license = True
-                    db_user.disabilities = None
-                    # Add some random karma points for dev users
-                    import random
-                    db_user.karma_points = random.randint(50, 1500)
-                elif user_type_str == "ORGANIZER":
-                    db_user.user_type = UserType.ORGANIZER
+                db_user.sex = Sex.PREFER_NOT_TO_SAY
+                db_user.description = "Auto-generated dev volunteer account"
+                db_user.skills = ["testing", "development", "community"]
+                db_user.age = 25
+                db_user.emergency_contact_name = "Dev Emergency Contact"
+                db_user.emergency_contact_phone = "+1-555-911-DEV"
+                db_user.location_area = "DevVille"
+                db_user.has_drivers_license = True
+                db_user.disabilities = None
+                # Add some random karma points for dev users
+                import random
+                db_user.karma_points = random.randint(50, 1500)
+            elif user_type_str == "ORGANIZER":
+                db_user.user_type = UserType.ORGANIZER
+                if user.username == "organizer":
+                    db_user.full_name = "Dev Organizer"
+                    db_user.phone = "+1-555-DEV-ORG"
+                    db_user.organization_name = "Dev Organization"
+                else:
+                    # Old format handling
+                    parts = user.username.split("_")
                     db_user.full_name = f"Dev Organizer {parts[2] if len(parts) > 2 else 'User'}"
                     db_user.phone = f"+1-555-DEV-{parts[2] if len(parts) > 2 else '123'}"
                     db_user.organization_name = f"Dev Organization {parts[2] if len(parts) > 2 else '123'}"
-                    db_user.banner_url = "https://placehold.co/600x200?text=Dev+Banner"
+                db_user.banner_url = "https://placehold.co/600x200?text=Dev+Banner"
 
-                    
-                # Mark onboarding as completed for dev users
-                db_user.onboarding_completed = True
-                logger.info(f"Dev user {user.username} onboarding auto-completed with type: {user_type_str}")
                 
-            except Exception as e:
-                logger.warning(f"Failed to auto-complete onboarding for dev user {user.username}: {e}")
+            # Mark onboarding as completed for dev users
+            db_user.onboarding_completed = True
+            logger.info(f"Dev user {user.username} onboarding auto-completed with type: {user_type_str}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to auto-complete onboarding for dev user {user.username}: {e}")
     
     db.add(db_user)
     db.commit()
@@ -472,7 +517,7 @@ def list_events_nearby(
     """Return all events, filtered by various criteria."""
     from datetime import datetime, timedelta
     
-    query = db.query(Event).options(selectinload(Event.images))
+    query = db.query(Event).options(selectinload(Event.images), selectinload(Event.organizer))
     
     # DEFAULT: Only show future events (events that haven't started yet)
     # Filter by exact date and time comparison
@@ -552,6 +597,10 @@ def list_events_nearby(
             e for e in events if e.latitude is not None and e.longitude is not None and _haversine_km(lat, lon, e.latitude, e.longitude) <= radius_km
         ]
     
+    # Populate organizer names for all events
+    for event in events:
+        populate_organizer_name(event)
+    
     return events
 
 @router.post("/events", response_model=EventSchema)
@@ -605,13 +654,20 @@ async def create_event(event: EventCreate, current_user: User = Depends(get_curr
         # Don't fail event creation if in-app notification fails
         logger.error(f"Failed to create in-app notifications: {e}")
     
+    # Populate organizer name for the newly created event
+    new_event.organizer = current_user  # Set the organizer directly since we have it
+    populate_organizer_name(new_event)
+    
     return new_event
 
 @router.get("/events/{event_id}", response_model=EventSchema)
 def get_event(event_id: int, db: Session = Depends(get_db)):
-    event = db.query(Event).options(selectinload(Event.images)).filter(Event.id == event_id).first()
+    event = db.query(Event).options(selectinload(Event.images), selectinload(Event.organizer)).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Populate organizer name
+    populate_organizer_name(event)
     
     # Debug logging
     logger.info(f"Returning event {event_id} with {len(event.images)} images")
@@ -678,6 +734,11 @@ async def update_event(event_id: int, payload: EventCreate, current_user: User =
         except Exception as e:
             # Don't fail event update if in-app notification fails
             logger.error(f"Failed to create event update in-app notifications: {e}")
+    
+    # Ensure organizer is loaded and populate organizer name
+    if not hasattr(event, 'organizer') or event.organizer is None:
+        db.refresh(event, ['organizer'])
+    populate_organizer_name(event)
     
     return event
 
@@ -1095,7 +1156,7 @@ async def get_volunteer_history(
         volunteer_events.c.karma_points_earned
     ).join(
         volunteer_events, Event.id == volunteer_events.c.event_id
-    ).filter(
+    ).options(selectinload(Event.images), selectinload(Event.organizer)).filter(
         volunteer_events.c.volunteer_id == current_user.id
     ).all()
 
@@ -1110,11 +1171,25 @@ async def get_volunteer_history(
         else:  # is_approved is False
             status = "rejected"
             is_approved_bool = False
+        
+        # Get event image URLs
+        event_image_urls = [img.image_url for img in event.images] if event.images else []
+        
+        # Get organizer name
+        organizer_name = None
+        if event.organizer:
+            organizer_name = event.organizer.organization_name or event.organizer.full_name or event.organizer.username
             
         history_entries.append(VolunteerHistoryEntry(
             event_id=event.id,
             event_title=event.title,
             event_date=event.date,
+            event_description=event.description,
+            event_location=event.location,
+            event_start_time=event.start_time,
+            event_end_time=event.end_time,
+            event_image_urls=event_image_urls,
+            organizer_name=organizer_name,
             hours_worked=hours_worked,
             is_approved=is_approved_bool,
             rejection_reason=rejection_reason,
@@ -1126,12 +1201,29 @@ async def get_volunteer_history(
     return history_entries
 
 @router.get("/users/me/volunteer-history/pdf")
-async def download_volunteer_history_pdf(
+def download_volunteer_history_pdf(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Generate and return a PDF summary of the volunteer's history."""
-    # Reuse logic from get_volunteer_history to build data
+    """Generate and return a PDF summary of the volunteer's history with proper formatting."""
+    logger.info(f"Generating PDF for volunteer history for user {current_user.username}")
+    
+    if current_user.user_type != UserType.VOLUNTEER:
+        raise HTTPException(status_code=403, detail="Only volunteers can access volunteer history PDF")
+    
+    # Get volunteer attendance records with full event info
+    logger.info(f"📊 PDF: Querying events for user {current_user.id} ({current_user.username})")
+    
+    # First, let's see all volunteer_events entries for this user
+    all_volunteer_events = db.execute(
+        select(volunteer_events).where(volunteer_events.c.volunteer_id == current_user.id)
+    ).fetchall()
+    
+    logger.info(f"📊 PDF: Found {len(all_volunteer_events)} total volunteer_events entries for user {current_user.id}")
+    for entry in all_volunteer_events:
+        logger.info(f"  📝 PDF: Event ID: {entry.event_id}, Status: {getattr(entry, 'status', 'N/A')}, Approved: {getattr(entry, 'is_approved', 'N/A')}")
+    
+    # Now get the detailed event data
     attendance_rows = db.query(
         Event,
         volunteer_events.c.hours_worked,
@@ -1140,51 +1232,251 @@ async def download_volunteer_history_pdf(
         volunteer_events.c.karma_points_earned
     ).join(
         volunteer_events, Event.id == volunteer_events.c.event_id
-    ).filter(
-        volunteer_events.c.volunteer_id == current_user.id,
-        volunteer_events.c.is_approved == True  # Only include verified/approved events in PDF
+    ).options(selectinload(Event.images), selectinload(Event.organizer)).filter(
+        volunteer_events.c.volunteer_id == current_user.id
+        # Temporarily remove the is_approved filter to see all events
+        # volunteer_events.c.is_approved == True  # Only include verified/approved events in PDF
     ).all()
+    
+    logger.info(f"📊 PDF: Found {len(attendance_rows)} events after joining with detailed info")
+    for i, (event, hours_worked, is_approved, rejection_reason, karma_points_earned) in enumerate(attendance_rows):
+        logger.info(f"  🗓️ PDF Event {i+1}: '{event.title}' (ID: {event.id})")
+        logger.info(f"    📍 Location: {event.location}, Date: {event.date}")
+        logger.info(f"    ✅ Approved: {is_approved}, Hours: {hours_worked}, Karma: {karma_points_earned}")
+        logger.info(f"    📸 Images: {len(event.images) if event.images else 0}")
+        logger.info(f"    👤 Organizer: {event.organizer.username if event.organizer else 'None'}")
+    
+    # Filter for approved events only after logging
+    approved_rows = [
+        (event, hours_worked, is_approved, rejection_reason, karma_points_earned)
+        for event, hours_worked, is_approved, rejection_reason, karma_points_earned in attendance_rows
+        if is_approved == True
+    ]
+    
+    logger.info(f"📊 PDF: {len(approved_rows)} approved events will be included in PDF")
+    attendance_rows = approved_rows
+
+    def wrap_text(text, font, font_size, max_width):
+        """Helper function to wrap text within a given width"""
+        if not text:
+            return []
+        words = text.split()
+        lines = []
+        current_line = []
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            if stringWidth(test_line, font, font_size) <= max_width:
+                current_line.append(word)
+            else:
+                if current_line:
+                    lines.append(' '.join(current_line))
+                    current_line = [word]
+                else:
+                    lines.append(word)
+        if current_line:
+            lines.append(' '.join(current_line))
+        return lines
 
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
-    y = height - 40
-
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(40, y, "Volunteer History Report")
-    y -= 30
-
-    p.setFont("Helvetica", 11)
-    if not attendance_rows:
-        p.drawString(40, y, "No volunteer events completed yet.")
+    y = height - 80  # Start high for logo
+    
+    logger.info("📊 PDF: Starting PDF generation")
+    
+    # App logo placeholder (top left)
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, y, "🏆 GoodDeedFeed")  # App logo placeholder
+    
+    # User profile picture placeholder (top right)
+    if current_user.profile_picture_url:
+        p.setFont("Helvetica", 10)
+        p.drawString(width - 200, y, f"Profile: {current_user.profile_picture_url[:30]}...")
+        logger.info(f"📊 PDF: Added user profile picture reference: {current_user.profile_picture_url}")
     else:
-        for event, hours_worked, is_approved, rejection_reason, karma_points_earned in attendance_rows:
-            if y < 60:
-                p.showPage()
-                y = height - 40
-            p.setFont("Helvetica-Bold", 12)
-            p.drawString(40, y, f"Event: {event.title}")
-            y -= 16
-            p.setFont("Helvetica", 11)
-            p.drawString(40, y, f"Date: {event.date}")
-            y -= 14
-            # Since we're only showing approved events in PDF, status is always "Verified"
-            p.drawString(40, y, f"Status: Verified")
-            y -= 14
-            if hours_worked is not None:
-                p.drawString(40, y, f"Hours Worked: {hours_worked}")
-                y -= 14
-            if karma_points_earned:
-                p.drawString(40, y, f"Karma Points Earned: {karma_points_earned}")
-                y -= 14
-            y -= 10
-    p.save()
+        p.setFont("Helvetica", 12)
+        p.drawString(width - 150, y, "👤 Profile")
+        logger.info("📊 PDF: No profile picture for user")
+    
+    y -= 40
 
+    # Header with much larger font
+    p.setFont("Helvetica-Bold", 24)
+    p.drawString(50, y, "Volunteer History Report")
+    y -= 50
+
+    # Volunteer info with larger fonts and better spacing
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(50, y, f"Volunteer: {current_user.full_name or current_user.username}")
+    y -= 30
+    
+    p.setFont("Helvetica", 16)
+    if current_user.email:
+        p.drawString(50, y, f"Email: {current_user.email}")
+        y -= 25
+    if current_user.karma_points:
+        p.drawString(50, y, f"Total Karma Points: {current_user.karma_points}")
+        y -= 25
+    y -= 30  # Extra spacing before events
+
+    if not attendance_rows:
+        p.setFont("Helvetica", 18)
+        p.drawString(50, y, "No volunteer events completed yet.")
+        logger.info("📊 PDF: No events to display in PDF")
+    else:
+        logger.info(f"📊 PDF: Rendering {len(attendance_rows)} events in PDF")
+        for i, (event, hours_worked, is_approved, rejection_reason, karma_points_earned) in enumerate(attendance_rows):
+            logger.info(f"📊 PDF: Rendering event {i+1}/{len(attendance_rows)}: {event.title}")
+            
+            # Check if we need a new page - reserve more space for event details
+            if y < 300:
+                logger.info("📊 PDF: Starting new page")
+                p.showPage()
+                y = height - 50
+
+            # Event header box
+            p.setStrokeColorRGB(0.7, 0.7, 0.7)
+            p.setFillColorRGB(0.95, 0.95, 0.95)
+            p.rect(40, y-40, width-80, 35, fill=1, stroke=1)
+            
+            # Event title with larger font
+            p.setFillColorRGB(0, 0, 0)  # Reset to black
+            p.setFont("Helvetica-Bold", 20)
+            p.drawString(50, y-25, f"Event #{i+1}: {event.title}")
+            y -= 50
+
+            # Event details with larger fonts and proper spacing
+            p.setFont("Helvetica", 16)
+            
+            # Date and time on same line with proper spacing
+            if event.date:
+                date_text = f"📅 Date: {event.date}"
+                if event.start_time and event.end_time:
+                    date_text += f" | ⏰ Time: {event.start_time} - {event.end_time}"
+                p.drawString(50, y, date_text)
+                y -= 25
+
+            # Location with proper spacing
+            if event.location:
+                p.drawString(50, y, f"📍 Location: {event.location}")
+                y -= 25
+
+            # Category
+            if event.category:
+                p.drawString(50, y, f"🏷️ Category: {event.category.value.replace('_', ' ').title()}")
+                y -= 25
+
+            # Status with proper spacing
+            status_text = "✅ Status: Verified and Completed"
+            if is_approved is None:
+                status_text = "⏳ Status: Pending Approval"
+            elif is_approved is False:
+                status_text = "❌ Status: Not Approved"
+            p.drawString(50, y, status_text)
+            y -= 25
+
+            # Hours worked
+            if hours_worked is not None:
+                p.drawString(50, y, f"⏱️ Hours Worked: {hours_worked}")
+                y -= 25
+
+            # Karma points earned
+            if karma_points_earned:
+                p.drawString(50, y, f"⭐ Karma Points Earned: {karma_points_earned}")
+                y -= 25
+
+            # Event description with text wrapping and better formatting
+            if event.description:
+                y -= 10
+                p.setFont("Helvetica-Bold", 16)
+                p.drawString(50, y, "📝 Description:")
+                y -= 22
+                p.setFont("Helvetica", 14)
+                
+                description_lines = wrap_text(event.description, "Helvetica", 14, width - 100)
+                logger.info(f"📊 PDF: Event description wrapped into {len(description_lines)} lines")
+                for line in description_lines:
+                    if y < 80:
+                        p.showPage()
+                        y = height - 50
+                    p.drawString(70, y, line)
+                    y -= 20
+                y -= 10
+
+            # Event photos information with enhanced display
+            if hasattr(event, 'images') and event.images:
+                y -= 10
+                p.setFont("Helvetica-Bold", 16)
+                p.drawString(50, y, f"📸 Event Photos: {len(event.images)} image(s)")
+                y -= 22
+                
+                logger.info(f"📊 PDF: Event has {len(event.images)} images")
+                p.setFont("Helvetica", 12)
+                for img_idx, img in enumerate(event.images):
+                    if y < 80:
+                        p.showPage()
+                        y = height - 50
+                    
+                    # Show image URL and metadata
+                    p.drawString(70, y, f"Photo {img_idx+1}: {img.image_url}")
+                    y -= 15
+                    
+                    if hasattr(img, 'is_main') and img.is_main:
+                        p.drawString(90, y, "⭐ Main Event Photo")
+                        y -= 15
+                    
+                    # If we have more than 5 images, show abbreviated list
+                    if img_idx >= 4 and len(event.images) > 5:
+                        remaining = len(event.images) - 5
+                        p.drawString(70, y, f"... and {remaining} more photos")
+                        y -= 15
+                        break
+                y -= 10
+
+            # Organizer info with enhanced details
+            if hasattr(event, 'organizer') and event.organizer:
+                y -= 10
+                p.setFont("Helvetica-Bold", 14)
+                p.drawString(50, y, "👤 Organized by:")
+                y -= 18
+                
+                p.setFont("Helvetica", 12)
+                org_name = event.organizer.organization_name or event.organizer.full_name or event.organizer.username
+                p.drawString(70, y, f"Name: {org_name}")
+                y -= 15
+                
+                if event.organizer.organization_description:
+                    desc_lines = wrap_text(event.organizer.organization_description, "Helvetica", 12, width - 120)
+                    for line in desc_lines[:2]:  # Show first 2 lines only
+                        if y < 80:
+                            p.showPage()
+                            y = height - 50
+                        p.drawString(70, y, f"About: {line}")
+                        y -= 15
+                        break  # Just show first line
+                
+                logger.info(f"📊 PDF: Added organizer info: {org_name}")
+
+            # Event separator
+            y -= 20
+            p.setStrokeColorRGB(0.8, 0.8, 0.8)
+            p.line(50, y, width-50, y)
+            y -= 30  # Extra spacing between events
+            
+            logger.info(f"📊 PDF: Completed rendering event {i+1}: {event.title}")
+
+    p.save()
     buffer.seek(0)
-    return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=volunteer_history.pdf"})
+    
+    logger.info(f"PDF generated successfully for user {current_user.username}")
+    return StreamingResponse(
+        buffer, 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": "attachment; filename=volunteer_history.pdf"}
+    )
 
 @router.get("/users/me/joined-events", response_model=List[EventSchema])
-async def get_my_joined_events(
+def get_my_joined_events(
     current_user: User = Depends(get_current_active_user), 
     db: Session = Depends(get_db)
 ):
@@ -1207,7 +1499,7 @@ async def get_my_joined_events(
     # Get joined events
     events = db.query(Event).join(volunteer_events).filter(
         volunteer_events.c.volunteer_id == current_user.id
-    ).options(selectinload(Event.images)).all()
+    ).options(selectinload(Event.images), selectinload(Event.organizer)).all()
     
     logger.info(f"📊 GET JOINED EVENTS - User {current_user.username} has joined {len(events)} events")
     
@@ -1217,17 +1509,25 @@ async def get_my_joined_events(
         logger.info(f"    📍 Location: {event.location}, Category: {event.category}")
         logger.info(f"    👥 Volunteers: {event.current_volunteers}/{event.max_volunteers or 'unlimited'}")
     
+    # Populate organizer names for all events
+    for event in events:
+        populate_organizer_name(event)
+    
     logger.info(f"✅ GET JOINED EVENTS - Returning {len(events)} events for user {current_user.username}")
     return events
 
 @router.get("/organizers/{organizer_id}/events", response_model=List[EventSchema])
 def list_events_by_organizer(organizer_id: int, q: str | None = None, db: Session = Depends(get_db)):
-    query = db.query(Event).options(selectinload(Event.images)).filter(Event.organizer_id == organizer_id)
+    query = db.query(Event).options(selectinload(Event.images), selectinload(Event.organizer)).filter(Event.organizer_id == organizer_id)
     if q:
         like_pattern = f"%{q}%"
         query = query.filter(Event.title.ilike(like_pattern))
 
     events = query.all()
+    
+    # Populate organizer names for all events
+    for event in events:
+        populate_organizer_name(event)
     
     # Debug logging
     logger.info(f"Returning {len(events)} events for organizer {organizer_id}")
@@ -2756,52 +3056,6 @@ async def get_all_badges(db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get badges"
         )
-
-
-@router.get("/users/me/badges", response_model=List[UserBadge])
-async def get_user_badges(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get badges earned by the current user"""
-    try:
-        # Query user badges with their badge information
-        user_badge_rows = db.query(Badge, user_badges.c.earned_at).join(
-            user_badges,
-            Badge.id == user_badges.c.badge_id
-        ).filter(
-            user_badges.c.user_id == current_user.id
-        ).all()
-        
-        # Convert to UserBadge format
-        result = []
-        for badge, earned_at in user_badge_rows:
-            result.append(UserBadge(
-                badge=BadgeSchema(
-                    id=badge.id,
-                    name=badge.name,
-                    description=badge.description,
-                    required_karma_points=badge.required_karma_points,
-                    icon_name=badge.icon_name,
-                    color=badge.color,
-                    is_active=badge.is_active,
-                    created_at=badge.created_at
-                ),
-                earned_at=earned_at
-            ))
-        
-        logger.info(f"Retrieved {len(result)} badges for user {current_user.username}")
-        return result
-        
-    except Exception as e:
-        logger.error(f"Failed to get user badges: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get user badges"
-        )
-
-
-
 
 # ===== LOST & FOUND ENDPOINTS =====
 

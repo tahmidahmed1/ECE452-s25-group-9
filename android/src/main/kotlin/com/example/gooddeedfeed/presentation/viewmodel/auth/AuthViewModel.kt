@@ -47,6 +47,12 @@ constructor(
         checkCurrentUser()
     }
 
+    /**
+     * Dev mode sign in with fixed credentials for testing.
+     * Creates accounts with these fixed credentials if they don't exist:
+     * - Volunteer: username="volunteer", email="volunteer@email.com", password="volunteer"
+     * - Organizer: username="organizer", email="organizer@email.com", password="organizer"
+     */
     fun devModeSignIn(userType: DomainUserType = DomainUserType.VOLUNTEER) {
         Log.d(TAG, "🎯 DevMode signIn initiated")
         Log.d(TAG, "📝 DevMode userType: $userType")
@@ -62,31 +68,47 @@ constructor(
 
         viewModelScope.launch {
             try {
-                val timestamp = System.currentTimeMillis().toString().takeLast(6)
-                val devUsername = "dev_${userType.name.lowercase()}_$timestamp"
+                // Use fixed dev accounts based on user type
+                val (devUsername, devEmail, devPassword) = when (userType) {
+                    DomainUserType.VOLUNTEER -> Triple("volunteer", "volunteer@email.com", "volunteer")
+                    DomainUserType.ORGANIZER -> Triple("organizer", "organizer@email.com", "organizer")
+                }
 
-                Log.d(TAG, "🔄 Generated dev username: $devUsername")
-                Log.d(TAG, "📞 Calling signUpUseCase...")
+                Log.d(TAG, "🔄 Using fixed dev credentials: $devUsername")
+                Log.d(TAG, "📞 First trying to sign in with existing account...")
 
-                val result = signUpUseCase.invoke(devUsername, "$devUsername@example.com", "dev_password_123")
+                // Try to sign in first
+                val signInResult = signInUseCase.invoke(devUsername, devPassword)
 
-                result.onSuccess { response ->
-                    Log.d(TAG, "✅ DevMode signUp successful")
-                    Log.d(TAG, "🔄 Setting user type to: $userType")
+                signInResult.onSuccess { response ->
+                    Log.d(TAG, "✅ DevMode sign in successful with existing account")
+                    Log.d(TAG, "🔄 Account already exists, signed in successfully")
+                    fetchUser()
+                }.onFailure { signInError ->
+                    Log.d(TAG, "ℹ️ Sign in failed, account may not exist. Attempting to create account...")
+                    Log.d(TAG, "📞 Calling signUpUseCase to create dev account...")
 
-                    authRepository.setUserType(userType).onSuccess {
-                        Log.d(TAG, "✅ User type set successfully")
-                        Log.d(TAG, "🔄 Fetching user details...")
-                        fetchUser()
-                    }.onFailure { error ->
-                        Log.e(TAG, "❌ Failed to set user type", error)
-                        val detailedMessage = "Failed to set user type: ${error.message ?: "Unknown error"}"
+                    // If sign in fails, try to create the account
+                    val signUpResult = signUpUseCase.invoke(devUsername, devEmail, devPassword)
+
+                    signUpResult.onSuccess { signUpResponse ->
+                        Log.d(TAG, "✅ DevMode account created successfully")
+                        Log.d(TAG, "🔄 Setting user type to: $userType")
+
+                        authRepository.setUserType(userType).onSuccess {
+                            Log.d(TAG, "✅ User type set successfully")
+                            Log.d(TAG, "🔄 Fetching user details...")
+                            fetchUser()
+                        }.onFailure { setUserTypeError ->
+                            Log.e(TAG, "❌ Failed to set user type", setUserTypeError)
+                            val detailedMessage = "Failed to set user type: ${setUserTypeError.message ?: "Unknown error"}"
+                            _uiState.value = AuthUiState.Error(detailedMessage)
+                        }
+                    }.onFailure { signUpError ->
+                        Log.e(TAG, "❌ DevMode account creation failed", signUpError)
+                        val detailedMessage = "Dev mode account creation failed: ${signUpError.message ?: "Unknown error"}"
                         _uiState.value = AuthUiState.Error(detailedMessage)
                     }
-                }.onFailure { error ->
-                    Log.e(TAG, "❌ DevMode signUp failed", error)
-                    val detailedMessage = "Dev mode sign-in failed: ${error.message ?: "Unknown error"}"
-                    _uiState.value = AuthUiState.Error(detailedMessage)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "❌ DevMode exception", e)

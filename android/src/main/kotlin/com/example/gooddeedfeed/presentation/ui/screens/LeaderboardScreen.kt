@@ -1,7 +1,13 @@
 package com.example.gooddeedfeed.presentation.ui.screens
 
-import android.graphics.pdf.PdfDocument
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Environment
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,14 +75,15 @@ import com.example.gooddeedfeed.presentation.common.UiState
 import com.example.gooddeedfeed.presentation.ui.components.ToastUtils
 import com.example.gooddeedfeed.presentation.ui.components.base.SpacingSize
 import com.example.gooddeedfeed.presentation.ui.components.base.VerticalSpacer
-import com.example.gooddeedfeed.presentation.ui.theme.AppConstants
 import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.LeaderboardViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import com.example.gooddeedfeed.R
+import androidx.compose.ui.graphics.Color as ComposeColor
+import java.util.Locale
 
 @Composable
 fun StatsScreen(
@@ -325,7 +332,9 @@ fun StatsScreen(
 
         VerticalSpacer(SpacingSize.Large)
 
-        SectionCard(title = "Volunteer History", showExport = true, volunteerHistoryState = volunteerHistoryState) {
+        val currentUser: DomainUser? = (authState as? AuthUiState.Success)?.user
+
+        SectionCard(title = "Volunteer History", showExport = true, volunteerHistoryState = volunteerHistoryState, currentUser = currentUser, authRepository = viewModel.getAuthRepository()) {
             when (val historyState = volunteerHistoryState) {
                 is UiState.Loading -> {
                     Box(
@@ -540,95 +549,68 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
     }
 }
 
-private fun exportVolunteerHistoryPdf(context: android.content.Context, history: List<DomainVolunteerHistoryEntry>) {
-    val doc = PdfDocument()
-    val pageInfo = PdfDocument.PageInfo.Builder(400, 800, 1).create()
-    val page = doc.startPage(pageInfo)
-    val canvas = page.canvas
-    val paint = android.graphics.Paint()
-    paint.textSize = 14f
-    var y = 30f
-
-    // Title
-    paint.isFakeBoldText = true
-    canvas.drawText("Volunteer History Report", 20f, y, paint)
-    paint.isFakeBoldText = false
-    y += 30f
-
-    // Filter to only show verified/approved events in PDF
-    val verifiedHistory = history.filter { it.status == "approved" }
-
-    if (verifiedHistory.isEmpty()) {
-        canvas.drawText("No verified volunteer events yet.", 20f, y, paint)
-    } else {
-        paint.textSize = 12f
-        verifiedHistory.forEach { entry ->
-            // Event title
-            paint.isFakeBoldText = true
-            canvas.drawText("Event: ${entry.eventTitle}", 20f, y, paint)
-            paint.isFakeBoldText = false
-            y += 18f
-
-            // Date
-            canvas.drawText("Date: ${entry.eventDate}", 20f, y, paint)
-            y += 16f
-
-            // Status (always "Verified" since we filtered to only approved events)
-            canvas.drawText("Status: Verified", 20f, y, paint)
-            y += 16f
-
-            // Hours worked
-            if (entry.hoursWorked != null && entry.hoursWorked > 0) {
-                canvas.drawText("Hours Worked: ${entry.hoursWorked}", 20f, y, paint)
-                y += 16f
+private fun exportVolunteerHistoryPdf(
+    context: android.content.Context, 
+    authRepository: com.example.gooddeedfeed.domain.repository.AuthRepository,
+    coroutineScope: CoroutineScope
+) {
+    coroutineScope.launch {
+        try {
+            ToastUtils.showInfoToast(context, "Generating PDF from server...")
+            
+            // Download PDF from backend
+            val result = authRepository.downloadVolunteerHistoryPdf()
+            
+            result.onSuccess { pdfBytes ->
+                // Save PDF to downloads folder
+                val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                val file = File(downloads, "volunteer_history.pdf")
+                
+                try {
+                    FileOutputStream(file).use { 
+                        it.write(pdfBytes)
+                    }
+                    
+                    ToastUtils.showSuccessToast(context, "PDF downloaded successfully!")
+                    
+                    // Open the PDF for preview
+                    try {
+                        val uri: Uri = FileProvider.getUriForFile(
+                            context,
+                            "${BuildConfig.APPLICATION_ID}.provider",
+                            file,
+                        )
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, "application/pdf")
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Open Volunteer History PDF"))
+                    } catch (e: ActivityNotFoundException) {
+                        ToastUtils.showErrorToast(context, "No application found to open PDF")
+                    }
+                } catch (e: Exception) {
+                    Log.e("PDF_EXPORT", "Failed to save PDF file", e)
+                    ToastUtils.showErrorToast(context, "Failed to save PDF: ${e.message}")
+                }
+            }.onFailure { error ->
+                Log.e("PDF_EXPORT", "Failed to download PDF from server", error)
+                ToastUtils.showErrorToast(context, "Failed to generate PDF: ${error.message}")
             }
-
-            // Karma points earned
-            if (entry.karmaPointsEarned > 0) {
-                canvas.drawText("Karma Points Earned: ${entry.karmaPointsEarned}", 20f, y, paint)
-                y += 16f
-            }
-
-            y += 10f // Space between entries
+        } catch (e: Exception) {
+            Log.e("PDF_EXPORT", "Unexpected error during PDF export", e)
+            ToastUtils.showErrorToast(context, "Unexpected error: ${e.message}")
         }
     }
-
-    doc.finishPage(page)
-    val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    val file = File(downloads, "volunteer_history.pdf")
-    FileOutputStream(file).use { doc.writeTo(it) }
-    doc.close()
 }
 
-// Keep the old function for backward compatibility with other sections
-private fun exportHistoryPdf(context: android.content.Context, history: List<AppConstants.HistoryItem>) {
-    val doc = PdfDocument()
-    val pageInfo = PdfDocument.PageInfo.Builder(300, 600, 1).create()
-    val page = doc.startPage(pageInfo)
-    val canvas = page.canvas
-    val paint = android.graphics.Paint()
-    paint.textSize = 12f
-    var y = 20f
-    paint.isFakeBoldText = true
-    canvas.drawText("Volunteer History", 10f, y, paint)
-    paint.isFakeBoldText = false
-    y += 20f
-    history.forEach {
-        canvas.drawText("${it.title} - ${it.date} - ${if (it.verified) "Verified" else "Unverified"}", 10f, y, paint)
-        y += 16f
-    }
-    doc.finishPage(page)
-    val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    val file = File(downloads, "history.pdf")
-    FileOutputStream(file).use { doc.writeTo(it) }
-    doc.close()
-}
 
 @Composable
 private fun SectionCard(
     title: String,
     showExport: Boolean = false,
     volunteerHistoryState: UiState<List<DomainVolunteerHistoryEntry>>? = null,
+    currentUser: DomainUser? = null,
+    authRepository: com.example.gooddeedfeed.domain.repository.AuthRepository? = null,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -648,14 +630,10 @@ private fun SectionCard(
                 if (showExport) {
                     FilledTonalButton(onClick = {
                         scope.launch {
-                            when (val historyState = volunteerHistoryState) {
-                                is UiState.Success -> {
-                                    exportVolunteerHistoryPdf(context, historyState.data)
-                                    ToastUtils.showSuccessToast(context, "History exported to Downloads")
-                                }
-                                else -> {
-                                    ToastUtils.showErrorToast(context, "No volunteer history to export")
-                                }
+                            if (authRepository != null) {
+                                exportVolunteerHistoryPdf(context, authRepository, scope)
+                            } else {
+                                ToastUtils.showErrorToast(context, "Unable to export PDF")
                             }
                         }
                     }) {
@@ -941,13 +919,13 @@ private fun SubscriptionCard(
 private fun StatusTag(status: String) {
     val (backgroundColor, textColor, text) = when (status) {
         "pending" -> Triple(
-            MaterialTheme.colorScheme.surface,
-            MaterialTheme.colorScheme.onSurface,
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant,
             "Pending",
         )
         "approved" -> Triple(
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.onPrimaryContainer,
+            ComposeColor(0xFF4CAF50),
+            ComposeColor.White,
             "Verified",
         )
         "rejected" -> Triple(
