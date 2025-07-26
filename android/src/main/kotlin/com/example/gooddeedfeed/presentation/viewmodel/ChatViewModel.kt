@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.data.remote.AuthApiService
 import com.example.gooddeedfeed.data.remote.ChatApiService
+import com.example.gooddeedfeed.data.remote.dto.MessageDto
 import com.example.gooddeedfeed.data.repository.ConversationPreferencesRepository
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.presentation.common.UiState
@@ -31,7 +32,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import com.example.gooddeedfeed.data.remote.dto.MessageDto
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
@@ -129,7 +129,7 @@ class ChatViewModel @Inject constructor(
                         val isDeleted = conversationPreferencesRepository.isConversationDeleted(
                             currentUser.id,
                             conversation.id,
-                            conversation.lastMessage
+                            conversation.lastMessage,
                         )
 
                         if (!isDeleted) {
@@ -321,7 +321,7 @@ class ChatViewModel @Inject constructor(
                 conversationPreferencesRepository.deleteConversation(
                     currentUser.id,
                     conversation.id,
-                    conversation.lastMessage
+                    conversation.lastMessage,
                 )
 
                 // Update the UI state by filtering out the deleted conversation
@@ -357,4 +357,4 @@ class ChatViewModel @Inject constructor(
     }
 }
 
-// Removed obsolete MessageResponse; now using MessageDto from data.remote.dto 
+// Removed obsolete MessageResponse; now using MessageDto from data.remote.dto

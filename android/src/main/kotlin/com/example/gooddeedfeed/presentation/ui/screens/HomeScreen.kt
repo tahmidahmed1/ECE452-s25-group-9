@@ -307,7 +307,7 @@ private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
             data.forEach { event ->
                 android.util.Log.i("HomeScreen", "  📅 Processing event: '${event.title}' on ${event.date} (${event.startTime} - ${event.endTime})")
             }
-            
+
             val grouped: Map<LocalDate, List<EventItem>> = data.mapNotNull { event ->
                 val parsedDate = parseDate(event.date)
                 if (parsedDate != null) {
@@ -321,7 +321,7 @@ private fun VolunteerCalendarView(homeViewModel: HomeViewModel) {
                     null
                 }
             }.groupBy({ it.first }, { it.second })
-            
+
             android.util.Log.i("HomeScreen", "🗓️ CALENDAR VIEW - Created events map with ${grouped.size} dates")
             grouped.forEach { (date, events) ->
                 android.util.Log.i("HomeScreen", "  📆 Date $date has ${events.size} events: ${events.map { it.title }}")

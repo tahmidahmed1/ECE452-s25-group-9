@@ -68,7 +68,7 @@ fun VolunteerOpportunityDetailScreen(
             InfoRow(icon = Icons.Default.Category, text = opportunity.category.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() })
             InfoRow(icon = Icons.Default.Group, text = "${opportunity.currentVolunteers}/${opportunity.requiredVolunteers} volunteers")
             InfoRow(icon = Icons.Default.Star, text = "${opportunity.karmaPoints} Karma Points")
-            
+
             // Organization display with logging and fallback
             val organizationDisplayText = when {
                 opportunity.organizationName.isNotBlank() -> {

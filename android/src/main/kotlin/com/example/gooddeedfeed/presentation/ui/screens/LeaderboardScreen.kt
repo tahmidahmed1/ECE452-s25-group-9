@@ -4,9 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
-import androidx.core.content.FileProvider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -79,11 +77,11 @@ import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.LeaderboardViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
-import com.example.gooddeedfeed.R
 import androidx.compose.ui.graphics.Color as ComposeColor
-import java.util.Locale
 
 @Composable
 fun StatsScreen(
@@ -550,29 +548,29 @@ private fun BadgeCard(badge: DomainBadge, isEarned: Boolean) {
 }
 
 private fun exportVolunteerHistoryPdf(
-    context: android.content.Context, 
+    context: android.content.Context,
     authRepository: com.example.gooddeedfeed.domain.repository.AuthRepository,
-    coroutineScope: CoroutineScope
+    coroutineScope: CoroutineScope,
 ) {
     coroutineScope.launch {
         try {
             ToastUtils.showInfoToast(context, "Generating PDF from server...")
-            
+
             // Download PDF from backend
             val result = authRepository.downloadVolunteerHistoryPdf()
-            
+
             result.onSuccess { pdfBytes ->
                 // Save PDF to downloads folder
                 val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val file = File(downloads, "volunteer_history.pdf")
-                
+
                 try {
-                    FileOutputStream(file).use { 
+                    FileOutputStream(file).use {
                         it.write(pdfBytes)
                     }
-                    
+
                     ToastUtils.showSuccessToast(context, "PDF downloaded successfully!")
-                    
+
                     // Open the PDF for preview
                     try {
                         val uri: Uri = FileProvider.getUriForFile(
@@ -602,7 +600,6 @@ private fun exportVolunteerHistoryPdf(
         }
     }
 }
-
 
 @Composable
 private fun SectionCard(

@@ -26,7 +26,7 @@ private fun EventDto.toOpportunity(isJoined: Boolean = false): VolunteerOpportun
     Log.d("OpportunitiesRepo", "🏢 DTO MAPPING - Raw organizer_name: '$organizer_name'")
     Log.d("OpportunitiesRepo", "🏢 DTO MAPPING - organizer_name is null: ${organizer_name == null}")
     Log.d("OpportunitiesRepo", "🏢 DTO MAPPING - Final organizationName: '${organizer_name ?: ""}'")
-    
+
     return VolunteerOpportunity(
         id = id ?: 0,
         title = title,
