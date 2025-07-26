@@ -316,5 +316,4 @@ class AuthRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-
 }

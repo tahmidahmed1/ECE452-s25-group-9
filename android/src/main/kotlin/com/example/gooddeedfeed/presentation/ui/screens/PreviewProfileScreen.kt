@@ -98,7 +98,6 @@ fun OrganizerPreviewProfileScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier
@@ -566,7 +565,6 @@ private fun OrganizationImagesCard(user: DomainUser) {
         }
     }
 }
-
 
 @Composable
 private fun getSocialMediaIcon(platform: SocialMediaPlatform): ImageVector {

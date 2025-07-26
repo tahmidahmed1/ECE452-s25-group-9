@@ -409,7 +409,6 @@ fun EditOrganizerProfileScreen(
                 ),
             )
 
-
             VerticalSpacer(SpacingSize.Medium)
 
             OutlinedTextField(
@@ -435,7 +434,6 @@ fun EditOrganizerProfileScreen(
                 ),
             )
 
-
             VerticalSpacer(SpacingSize.Medium)
 
             OutlinedTextField(
@@ -460,7 +458,6 @@ fun EditOrganizerProfileScreen(
                     errorBorderColor = MaterialTheme.colorScheme.error,
                 ),
             )
-
 
             VerticalSpacer(SpacingSize.Large)
 

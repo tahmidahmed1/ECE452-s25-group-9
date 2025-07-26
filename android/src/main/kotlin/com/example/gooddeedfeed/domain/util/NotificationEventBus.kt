@@ -24,6 +24,6 @@ sealed class MessageNotificationEvent {
         val senderId: Int,
         val receiverId: Int,
         val senderName: String?,
-        val messagePreview: String?
+        val messagePreview: String?,
     ) : MessageNotificationEvent()
 }

@@ -49,7 +49,7 @@ class NotificationApiService @Inject constructor(
             android.util.Log.i("NotificationApiService", "🔄 API: Updating FCM token on server")
             android.util.Log.i("NotificationApiService", "🔄 API: Token: ${token.take(20)}...${token.takeLast(10)}")
             android.util.Log.i("NotificationApiService", "🔄 API: Session ID: ${sessionId.take(10)}...")
-            
+
             val response = withFallbackUrls { baseUrl ->
                 android.util.Log.i("NotificationApiService", "🔄 API: Sending PUT request to: $baseUrl/notifications/token")
                 client.put("$baseUrl/notifications/token") {
@@ -58,14 +58,14 @@ class NotificationApiService @Inject constructor(
                     header("Authorization", "Bearer $sessionId")
                 }
             }
-            
+
             val responseText = response.body<String>()
             android.util.Log.i("NotificationApiService", "🔄 API: Server response: $responseText")
-            
+
             // Parse the JSON manually to avoid serialization issues
             val success = responseText.contains("\"success\":true")
             android.util.Log.i("NotificationApiService", "🔄 API: Success result: $success")
-            
+
             success
         } catch (e: Exception) {
             android.util.Log.e("NotificationApiService", "🔄 API: Failed to update FCM token", e)

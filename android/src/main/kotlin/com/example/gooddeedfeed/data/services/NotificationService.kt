@@ -152,7 +152,7 @@ class NotificationService : FirebaseMessagingService() {
                 val messagePreview = data["messagePreview"]
                 val senderId = data["senderId"]?.toIntOrNull()
                 val receiverId = data["receiverId"]?.toIntOrNull()
-                
+
                 // Emit notification event for real-time chat updates
                 if (senderId != null && receiverId != null) {
                     CoroutineScope(Dispatchers.IO).launch {
@@ -161,12 +161,12 @@ class NotificationService : FirebaseMessagingService() {
                                 senderId = senderId,
                                 receiverId = receiverId,
                                 senderName = senderName,
-                                messagePreview = messagePreview
-                            )
+                                messagePreview = messagePreview,
+                            ),
                         )
                     }
                 }
-                
+
                 showNotification(
                     title = "Message from $senderName",
                     body = messagePreview ?: "You have a new message",

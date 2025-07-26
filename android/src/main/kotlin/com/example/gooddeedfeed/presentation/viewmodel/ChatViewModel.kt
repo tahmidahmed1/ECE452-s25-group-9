@@ -27,12 +27,12 @@ import io.ktor.http.contentType
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -100,7 +100,7 @@ class ChatViewModel @Inject constructor(
     val messageFlow = _messageChannel.receiveAsFlow()
 
     private val json = Json { ignoreUnknownKeys = true }
-    
+
     // Current chat state for real-time updates
     private var currentChatUserId: Int? = null
     private var currentUser: DomainUser? = null
@@ -126,11 +126,11 @@ class ChatViewModel @Inject constructor(
             // Always refresh conversations to update unread counts
             Log.d(TAG, "📱 CONVERSATION REFRESH: Refreshing conversations for new message from ${event.senderName}")
             loadConversations(user)
-            
+
             // Check if the notification is for the currently open chat
             if ((event.senderId == currentChatUserId && event.receiverId == user.id) ||
-                (event.senderId == user.id && event.receiverId == currentChatUserId)) {
-                
+                (event.senderId == user.id && event.receiverId == currentChatUserId)
+            ) {
                 Log.d(TAG, "📱 CHAT REFRESH: Refreshing chat for new message from ${event.senderName}")
                 currentChatUserId?.let { otherUserId ->
                     refreshMessages(otherUserId, user, showLoading = false)
@@ -210,7 +210,7 @@ class ChatViewModel @Inject constructor(
 
     private fun startPeriodicRefresh() {
         if (isPeriodicRefreshActive) return
-        
+
         isPeriodicRefreshActive = true
         viewModelScope.launch {
             while (isPeriodicRefreshActive && currentChatUserId != null && currentUser != null) {

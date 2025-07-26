@@ -45,7 +45,7 @@ class NotificationRepositoryImpl @Inject constructor(
             Log.i(TAG, "🔄 UPDATE FCM TOKEN: Sending token to server")
             val serverResult = notificationApiService.updateFcmToken(token)
             Log.i(TAG, "🔄 UPDATE FCM TOKEN: Server API result: $serverResult")
-            
+
             if (!serverResult) {
                 Log.e(TAG, "🔄 UPDATE FCM TOKEN: ❌ Server rejected token update")
                 throw Exception("Server failed to update FCM token")
@@ -65,7 +65,7 @@ class NotificationRepositoryImpl @Inject constructor(
     override suspend fun getFcmToken(): Result<String?> {
         return try {
             Log.d(TAG, "🔑 FCM TOKEN GET: Starting FCM token retrieval process")
-            
+
             val localToken = dataStore.data.map { preferences ->
                 preferences[FCM_TOKEN_KEY]
             }.first()
@@ -79,7 +79,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 val newToken = firebaseMessaging.token.await()
                 Log.d(TAG, "🔑 FCM TOKEN GET: New token generated: ${newToken.take(20)}...")
                 Log.d(TAG, "🔑 FCM TOKEN GET: Token length: ${newToken.length}")
-                
+
                 Log.d(TAG, "🔑 FCM TOKEN GET: Updating token on server...")
                 updateFcmToken(newToken)
                 Log.d(TAG, "🔑 FCM TOKEN GET: ✅ Token update completed")
@@ -96,39 +96,39 @@ class NotificationRepositoryImpl @Inject constructor(
     override suspend fun regenerateFcmToken(): Result<String> {
         return try {
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: Starting FCM token regeneration")
-            
+
             // Delete FCM instance to force token refresh
             firebaseMessaging.deleteToken().await()
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: Old token deleted")
-            
+
             // Clear local storage
             dataStore.edit { preferences ->
                 preferences.remove(FCM_TOKEN_KEY)
             }
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: Local token cleared")
-            
+
             // Get new token
             val newToken = firebaseMessaging.token.await()
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: New token generated: ${newToken.take(20)}...")
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: Token length: ${newToken.length}")
-            
+
             // Save to local storage
             dataStore.edit { preferences ->
                 preferences[FCM_TOKEN_KEY] = newToken
             }
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: Token saved to local storage")
-            
+
             // Update on server
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: Updating token on server...")
             val serverResult = notificationApiService.updateFcmToken(newToken)
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: Server API result: $serverResult")
-            
+
             if (!serverResult) {
                 Log.e(TAG, "🔄 REGENERATE FCM TOKEN: ❌ Server rejected token update")
                 throw Exception("Server failed to update FCM token")
             }
             Log.d(TAG, "🔄 REGENERATE FCM TOKEN: ✅ Token updated on server successfully")
-            
+
             Result.success(newToken)
         } catch (e: Exception) {
             Log.e(TAG, "🔄 REGENERATE FCM TOKEN: ❌ Failed to regenerate FCM token", e)

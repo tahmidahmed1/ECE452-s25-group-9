@@ -387,7 +387,7 @@ class AuthApiService @Inject constructor(
                         val imageFiles = images.mapNotNull { imagePath ->
                             java.io.File(imagePath).takeIf { it.exists() }
                         }
-                        
+
                         if (imageFiles.isNotEmpty()) {
                             val uploadResponse = uploadOrganizationImages(imageFiles)
                             organizationImageUrls = uploadResponse.organization_images
@@ -671,14 +671,14 @@ class AuthApiService @Inject constructor(
         return try {
             val sessionId = getSessionIdFromDataStore() ?: throw Exception("No authentication session found")
             Log.d(TAG, "🔍 Checking notification debug status...")
-            
+
             val response = withFallbackUrls { baseUrl ->
                 client.get("$baseUrl/notifications/debug") {
                     contentType(ContentType.Application.Json)
                     header("Authorization", "Bearer $sessionId")
                 }
             }
-            
+
             if (response.status.isSuccess()) {
                 val responseBody = response.bodyAsText()
                 Log.d(TAG, "🔍 Debug response: $responseBody")

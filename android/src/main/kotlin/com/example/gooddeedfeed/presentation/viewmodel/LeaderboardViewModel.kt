@@ -165,5 +165,4 @@ class LeaderboardViewModel @Inject constructor(
             )
         }
     }
-
 } 
