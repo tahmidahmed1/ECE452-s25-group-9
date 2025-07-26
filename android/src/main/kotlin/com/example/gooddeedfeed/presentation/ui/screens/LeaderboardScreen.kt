@@ -465,6 +465,8 @@ fun StatsScreen(
                     onClick = {
                         viewModel.increaseKarmaPointsDevOnly { updatedUser ->
                             authViewModel.updateUserState(updatedUser)
+                            badgeViewModel.checkBadgeAchievements()
+                            badgeViewModel.loadUserBadges()
                             ToastUtils.showSuccessToast(context, "Karma points increased by 100!")
                         }
                     },
@@ -477,26 +479,6 @@ fun StatsScreen(
             }
         }
 
-        // Test notification button (for all users to test FCM)
-        VerticalSpacer(SpacingSize.Large)
-
-        Button(
-            onClick = {
-                viewModel.sendTestNotification(
-                    onSuccess = {
-                        ToastUtils.showSuccessToast(context, "Test notification sent! Check your device notifications.")
-                    },
-                    onError = { error ->
-                        ToastUtils.showErrorToast(context, "Failed to send test notification: $error")
-                    },
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-        ) {
-            Text("🧪 Test Push Notification")
-        }
 
         Spacer(modifier = Modifier.height(24.dp))
     }

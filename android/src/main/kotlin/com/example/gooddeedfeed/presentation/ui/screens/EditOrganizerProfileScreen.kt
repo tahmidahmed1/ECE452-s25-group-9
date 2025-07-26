@@ -122,13 +122,13 @@ fun EditOrganizerProfileScreen(
         }
     }
 
-    // Validation states
+    // Validation states - only validate website URL, social media can be plain text
     val isWebsiteValid = isValidUrl(organizationWebsite)
-    val isInstagramValid = isValidUrl(instagramHandle)
-    val isTwitterValid = isValidUrl(twitterHandle)
-    val isFacebookValid = isValidUrl(facebookPage)
+    val isInstagramValid = true // Allow any text
+    val isTwitterValid = true // Allow any text
+    val isFacebookValid = true // Allow any text
 
-    val hasValidationErrors = !isWebsiteValid || !isInstagramValid || !isTwitterValid || !isFacebookValid
+    val hasValidationErrors = !isWebsiteValid
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview(),
@@ -389,8 +389,8 @@ fun EditOrganizerProfileScreen(
             OutlinedTextField(
                 value = instagramHandle,
                 onValueChange = { instagramHandle = it },
-                label = { Text("Instagram Handle") },
-                placeholder = { Text("@username") },
+                label = { Text("Instagram") },
+                placeholder = { Text("@username or profile text") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 isError = !isInstagramValid,
@@ -409,22 +409,14 @@ fun EditOrganizerProfileScreen(
                 ),
             )
 
-            if (!isInstagramValid) {
-                Text(
-                    text = "Please enter a valid Instagram handle or URL",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.align(Alignment.Start),
-                )
-            }
 
             VerticalSpacer(SpacingSize.Medium)
 
             OutlinedTextField(
                 value = twitterHandle,
                 onValueChange = { twitterHandle = it },
-                label = { Text("Twitter Handle") },
-                placeholder = { Text("@username") },
+                label = { Text("Twitter") },
+                placeholder = { Text("@username or profile text") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 isError = !isTwitterValid,
@@ -443,22 +435,14 @@ fun EditOrganizerProfileScreen(
                 ),
             )
 
-            if (!isTwitterValid) {
-                Text(
-                    text = "Please enter a valid Twitter handle or URL",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.align(Alignment.Start),
-                )
-            }
 
             VerticalSpacer(SpacingSize.Medium)
 
             OutlinedTextField(
                 value = facebookPage,
                 onValueChange = { facebookPage = it },
-                label = { Text("Facebook Page") },
-                placeholder = { Text("Page name or URL") },
+                label = { Text("Facebook") },
+                placeholder = { Text("Page name or profile text") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 isError = !isFacebookValid,
@@ -477,14 +461,6 @@ fun EditOrganizerProfileScreen(
                 ),
             )
 
-            if (!isFacebookValid) {
-                Text(
-                    text = "Please enter a valid Facebook page or URL",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.align(Alignment.Start),
-                )
-            }
 
             VerticalSpacer(SpacingSize.Large)
 

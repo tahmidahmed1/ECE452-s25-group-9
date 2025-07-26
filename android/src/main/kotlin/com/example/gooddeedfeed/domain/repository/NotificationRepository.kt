@@ -17,6 +17,11 @@ interface NotificationRepository {
     suspend fun getFcmToken(): Result<String?>
 
     /**
+     * Force regenerate and update FCM token
+     */
+    suspend fun regenerateFcmToken(): Result<String>
+
+    /**
      * Enable/disable notifications for the user
      */
     suspend fun setNotificationsEnabled(enabled: Boolean): Result<Unit>

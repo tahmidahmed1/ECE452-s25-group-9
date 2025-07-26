@@ -9,6 +9,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.gooddeedfeed.R
 import com.example.gooddeedfeed.domain.repository.NotificationRepository
+import com.example.gooddeedfeed.domain.util.MessageNotificationEvent
+import com.example.gooddeedfeed.domain.util.NotificationEventBus
 import com.example.gooddeedfeed.presentation.MainActivity
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -26,6 +28,9 @@ class NotificationService : FirebaseMessagingService() {
 
     @Inject
     lateinit var notificationRepository: NotificationRepository
+
+    @Inject
+    lateinit var notificationEventBus: NotificationEventBus
 
     companion object {
         private const val TAG = "NotificationService"
@@ -145,6 +150,23 @@ class NotificationService : FirebaseMessagingService() {
                 Log.i(TAG, "🔄 DATA MESSAGE: Handling new_message notification")
                 val senderName = data["senderName"]
                 val messagePreview = data["messagePreview"]
+                val senderId = data["senderId"]?.toIntOrNull()
+                val receiverId = data["receiverId"]?.toIntOrNull()
+                
+                // Emit notification event for real-time chat updates
+                if (senderId != null && receiverId != null) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        notificationEventBus.emitMessageNotification(
+                            MessageNotificationEvent.NewMessage(
+                                senderId = senderId,
+                                receiverId = receiverId,
+                                senderName = senderName,
+                                messagePreview = messagePreview
+                            )
+                        )
+                    }
+                }
+                
                 showNotification(
                     title = "Message from $senderName",
                     body = messagePreview ?: "You have a new message",
