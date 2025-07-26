@@ -377,6 +377,29 @@ class AuthApiService @Inject constructor(
                 Log.d(TAG, "✅ Profile picture uploaded: $profilePictureUrl")
             }
 
+            // Upload organization images if they are file paths
+            var organizationImageUrls: List<String>? = null
+            profile.organizationImages?.let { images ->
+                if (images.isNotEmpty()) {
+                    Log.d(TAG, "📤 Uploading ${images.size} organization images...")
+                    try {
+                        // Convert string paths to File objects
+                        val imageFiles = images.mapNotNull { imagePath ->
+                            java.io.File(imagePath).takeIf { it.exists() }
+                        }
+
+                        if (imageFiles.isNotEmpty()) {
+                            val uploadResponse = uploadOrganizationImages(imageFiles)
+                            organizationImageUrls = uploadResponse.organization_images
+                            Log.d(TAG, "✅ Organization images uploaded: ${organizationImageUrls?.size ?: 0} URLs")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "❌ Failed to upload organization images", e)
+                        // Continue without organization images rather than failing the whole onboarding
+                    }
+                }
+            }
+
             Log.d(TAG, "📤 Sending organizer onboarding request...")
             withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying URL: $baseUrl/complete-organizer-onboarding")
@@ -391,7 +414,7 @@ class AuthApiService @Inject constructor(
                             organization_description = profile.organizationDescription,
                             organization_website = profile.organizationWebsite,
                             organization_social_media = profile.organizationSocialMedia?.map { it.toDto() },
-                            organization_images = profile.organizationImages,
+                            organization_images = organizationImageUrls,
                         ),
                     )
                 }
@@ -641,6 +664,33 @@ class AuthApiService @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "🧪 ❌ Test notification API call failed with exception", e)
             false
+        }
+    }
+
+    suspend fun debugNotificationStatus(): String? {
+        return try {
+            val sessionId = getSessionIdFromDataStore() ?: throw Exception("No authentication session found")
+            Log.d(TAG, "🔍 Checking notification debug status...")
+
+            val response = withFallbackUrls { baseUrl ->
+                client.get("$baseUrl/notifications/debug") {
+                    contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $sessionId")
+                }
+            }
+
+            if (response.status.isSuccess()) {
+                val responseBody = response.bodyAsText()
+                Log.d(TAG, "🔍 Debug response: $responseBody")
+                responseBody
+            } else {
+                val errorBody = response.bodyAsText()
+                Log.e(TAG, "🔍 Debug failed: ${response.status.description} - $errorBody")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "🔍 Debug exception", e)
+            null
         }
     }
 }

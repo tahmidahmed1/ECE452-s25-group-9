@@ -11,6 +11,8 @@ import com.example.gooddeedfeed.data.remote.ChatApiService
 import com.example.gooddeedfeed.data.remote.dto.MessageDto
 import com.example.gooddeedfeed.data.repository.ConversationPreferencesRepository
 import com.example.gooddeedfeed.domain.model.DomainUser
+import com.example.gooddeedfeed.domain.util.MessageNotificationEvent
+import com.example.gooddeedfeed.domain.util.NotificationEventBus
 import com.example.gooddeedfeed.presentation.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.client.HttpClient
@@ -25,6 +27,7 @@ import io.ktor.http.contentType
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -73,6 +76,7 @@ class ChatViewModel @Inject constructor(
     private val authApiService: AuthApiService,
     private val dataStore: DataStore<Preferences>,
     private val conversationPreferencesRepository: ConversationPreferencesRepository,
+    private val notificationEventBus: NotificationEventBus,
 ) : ViewModel() {
 
     companion object {
@@ -96,6 +100,44 @@ class ChatViewModel @Inject constructor(
     val messageFlow = _messageChannel.receiveAsFlow()
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    // Current chat state for real-time updates
+    private var currentChatUserId: Int? = null
+    private var currentUser: DomainUser? = null
+    private var isPeriodicRefreshActive = false
+
+    init {
+        // Listen for message notifications to refresh chat in real-time
+        Log.d(TAG, "🔔 CHAT INIT: Setting up notification event listener")
+        viewModelScope.launch {
+            notificationEventBus.messageNotificationEvents.collect { event ->
+                Log.d(TAG, "🔔 CHAT EVENT: Received notification event: $event")
+                when (event) {
+                    is MessageNotificationEvent.NewMessage -> {
+                        handleNewMessageNotification(event)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleNewMessageNotification(event: MessageNotificationEvent.NewMessage) {
+        currentUser?.let { user ->
+            // Always refresh conversations to update unread counts
+            Log.d(TAG, "📱 CONVERSATION REFRESH: Refreshing conversations for new message from ${event.senderName}")
+            loadConversations(user)
+
+            // Check if the notification is for the currently open chat
+            if ((event.senderId == currentChatUserId && event.receiverId == user.id) ||
+                (event.senderId == user.id && event.receiverId == currentChatUserId)
+            ) {
+                Log.d(TAG, "📱 CHAT REFRESH: Refreshing chat for new message from ${event.senderName}")
+                currentChatUserId?.let { otherUserId ->
+                    refreshMessages(otherUserId, user, showLoading = false)
+                }
+            }
+        }
+    }
 
     fun loadConversations(currentUser: DomainUser) {
         viewModelScope.launch {
@@ -153,9 +195,46 @@ class ChatViewModel @Inject constructor(
     }
 
     fun loadMessages(otherUserId: Int, currentUser: DomainUser) {
+        // Update current chat state for real-time updates
+        this.currentChatUserId = otherUserId
+        this.currentUser = currentUser
+        refreshMessages(otherUserId, currentUser, showLoading = true)
+        startPeriodicRefresh()
+    }
+
+    fun clearCurrentChat() {
+        currentChatUserId = null
+        currentUser = null
+        stopPeriodicRefresh()
+    }
+
+    private fun startPeriodicRefresh() {
+        if (isPeriodicRefreshActive) return
+
+        isPeriodicRefreshActive = true
+        viewModelScope.launch {
+            while (isPeriodicRefreshActive && currentChatUserId != null && currentUser != null) {
+                delay(30_000) // Refresh every 30 seconds
+                currentChatUserId?.let { otherUserId ->
+                    currentUser?.let { user ->
+                        Log.d(TAG, "🔄 PERIODIC REFRESH: Refreshing messages")
+                        refreshMessages(otherUserId, user, showLoading = false)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun stopPeriodicRefresh() {
+        isPeriodicRefreshActive = false
+    }
+
+    fun refreshMessages(otherUserId: Int, currentUser: DomainUser, showLoading: Boolean = false) {
         viewModelScope.launch {
             try {
-                _messagesState.value = UiState.Loading
+                if (showLoading) {
+                    _messagesState.value = UiState.Loading
+                }
 
                 val sessionId = getSessionId()
                 if (sessionId.isNullOrEmpty()) {
@@ -192,7 +271,9 @@ class ChatViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load messages", e)
-                _messagesState.value = UiState.Error("Failed to load messages: ${e.message}")
+                if (showLoading) {
+                    _messagesState.value = UiState.Error("Failed to load messages: ${e.message}")
+                }
             }
         }
     }

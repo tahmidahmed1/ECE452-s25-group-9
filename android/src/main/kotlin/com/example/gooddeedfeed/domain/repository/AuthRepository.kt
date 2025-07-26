@@ -30,5 +30,4 @@ interface AuthRepository {
     suspend fun increaseKarmaPointsDevOnly(): Result<DomainUser>
     suspend fun getVolunteerHistory(): Result<List<DomainVolunteerHistoryEntry>>
     suspend fun downloadVolunteerHistoryPdf(): Result<ByteArray>
-    suspend fun sendTestNotification(): Result<Unit>
 }

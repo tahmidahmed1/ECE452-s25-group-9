@@ -100,7 +100,8 @@ object AuthModule {
     fun provideAuthRepository(
         api: AuthApiService,
         dataStore: DataStore<Preferences>,
-    ): AuthRepository = AuthRepositoryImpl(api, dataStore)
+        notificationRepository: com.example.gooddeedfeed.domain.repository.NotificationRepository,
+    ): AuthRepository = AuthRepositoryImpl(api, dataStore, notificationRepository)
 
     @Provides
     fun provideSignUpUseCase(repo: AuthRepository) = SignUpUseCase(repo)
