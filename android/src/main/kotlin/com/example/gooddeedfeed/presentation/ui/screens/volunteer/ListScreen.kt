@@ -879,7 +879,7 @@ private fun OrganizationImagesCard(organizer: DomainOrganizerWithSubscriptionSta
     android.util.Log.d("ListScreen", "📸 OrganizationImagesCard called for organizer: ${organizer.username}")
     android.util.Log.d("ListScreen", "📸 Organizer organizationImages: ${organizer.organizationImages?.size ?: 0} items")
     android.util.Log.d("ListScreen", "📸 Organization images URLs: ${organizer.organizationImages}")
-    
+
     organizer.organizationImages?.let { images ->
         android.util.Log.d("ListScreen", "📸 Images not null, checking if empty")
         if (images.isNotEmpty()) {
@@ -909,7 +909,7 @@ private fun OrganizationImagesCard(organizer: DomainOrganizerWithSubscriptionSta
                                 },
                                 onSuccess = { success ->
                                     android.util.Log.d("ListScreen", "📸 Successfully loaded image: $imageUrl")
-                                }
+                                },
                             )
                         }
                     }

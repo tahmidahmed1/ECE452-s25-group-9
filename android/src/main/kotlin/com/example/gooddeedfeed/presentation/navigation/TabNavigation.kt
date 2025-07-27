@@ -40,8 +40,8 @@ import com.example.gooddeedfeed.presentation.theme.BorderRadius
 import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
 import com.example.gooddeedfeed.presentation.ui.components.BadgeManager
-import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundScreen
 import com.example.gooddeedfeed.presentation.ui.screens.organizer.CreateEventScreen
+import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundScreen
 import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
@@ -279,7 +279,7 @@ fun TabNavigationScreen(
                         )
                     }
                 }
-                
+
                 androidx.compose.animation.AnimatedVisibility(
                     visible = showCreateEvent,
                     enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
@@ -291,7 +291,7 @@ fun TabNavigationScreen(
                             .background(MaterialTheme.colorScheme.background),
                     ) {
                         CreateEventScreen(
-                            onBack = { showCreateEvent = false }
+                            onBack = { showCreateEvent = false },
                         )
                     }
                 }

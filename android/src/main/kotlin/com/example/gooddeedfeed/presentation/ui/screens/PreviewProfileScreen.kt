@@ -546,7 +546,7 @@ private fun OrganizationImagesCard(user: DomainUser) {
     android.util.Log.d("PreviewProfileScreen", "📸 OrganizationImagesCard called")
     android.util.Log.d("PreviewProfileScreen", "📸 User organizationImages: ${user.organizationImages?.size ?: 0} items")
     android.util.Log.d("PreviewProfileScreen", "📸 Organization images URLs: ${user.organizationImages}")
-    
+
     user.organizationImages?.let { images ->
         android.util.Log.d("PreviewProfileScreen", "📸 Images not null, checking if empty")
         if (images.isNotEmpty()) {
@@ -576,7 +576,7 @@ private fun OrganizationImagesCard(user: DomainUser) {
                                 },
                                 onSuccess = { success ->
                                     android.util.Log.d("PreviewProfileScreen", "📸 Successfully loaded image: $imageUrl")
-                                }
+                                },
                             )
                         }
                     }
