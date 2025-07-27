@@ -23,9 +23,10 @@ import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BearerTokens
-import io.ktor.client.plugins.auth.providers.bearer
+// Removed Auth imports since global auth interceptor is disabled
+// import io.ktor.client.plugins.auth.Auth
+// import io.ktor.client.plugins.auth.providers.BearerTokens
+// import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -64,6 +65,10 @@ object AuthModule {
                 level = LogLevel.INFO
             }
 
+            // Disabled global Auth interceptor to avoid conflicts with manual Authorization headers
+            // All services manually add Authorization headers, so this global interceptor is not needed
+            // and may cause conflicts or double authentication headers
+            /*
             install(Auth) {
                 bearer {
                     loadTokens {
@@ -89,6 +94,7 @@ object AuthModule {
                     }
                 }
             }
+            */
 
             install(HttpTimeout) {
                 requestTimeoutMillis = 30000 // 30 seconds
