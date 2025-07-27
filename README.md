@@ -104,9 +104,10 @@ Below is a non-exhaustive overview of what GoodDeedFeed can do. For a deep techn
 
 
 **Tech Stack:**
-- Backend: Python FastAPI, SQLAlchemy, PostgreSQL, MinIO, session auth
-- Frontend: Android (Jetpack Compose, MVVM, Hilt, Ktor client)
-- Infrastructure: Docker Compose, Alembic migrations
+- Backend: <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/python.svg" alt="Python" height="16"/> Python, <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/fastapi.svg" alt="FastAPI" height="16"/> FastAPI, SQLAlchemy, <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/postgresql.svg" alt="PostgreSQL" height="16"/> PostgreSQL, MinIO, session auth
+- Frontend: <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/android.svg" alt="Android" height="16"/> Android ( <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/jetpackcompose.svg" alt="Jetpack Compose" height="16"/> Jetpack Compose, MVVM, Hilt, Ktor client )
+- Infrastructure: <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/docker.svg" alt="Docker" height="16"/> Docker Compose, Alembic migrations
+
 
 ## Development Mode 🚀
 

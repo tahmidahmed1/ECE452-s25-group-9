@@ -134,8 +134,15 @@ fun OrganizerPreviewProfileScreen(
             if (!user.organizationSocialMedia.isNullOrEmpty()) {
                 SocialMediaCard(user)
             }
+            android.util.Log.d("PreviewProfileScreen", "📸 Checking organizationImages condition")
+            android.util.Log.d("PreviewProfileScreen", "📸 organizationImages is null: ${user.organizationImages == null}")
+            android.util.Log.d("PreviewProfileScreen", "📸 organizationImages is empty: ${user.organizationImages?.isEmpty() == true}")
+            android.util.Log.d("PreviewProfileScreen", "📸 organizationImages size: ${user.organizationImages?.size ?: 0}")
             if (!user.organizationImages.isNullOrEmpty()) {
+                android.util.Log.d("PreviewProfileScreen", "📸 Condition passed, calling OrganizationImagesCard")
                 OrganizationImagesCard(user)
+            } else {
+                android.util.Log.d("PreviewProfileScreen", "📸 Condition failed, NOT showing OrganizationImagesCard")
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -536,8 +543,14 @@ private fun SocialMediaRow(platform: SocialMediaPlatform, url: String) {
 
 @Composable
 private fun OrganizationImagesCard(user: DomainUser) {
+    android.util.Log.d("PreviewProfileScreen", "📸 OrganizationImagesCard called")
+    android.util.Log.d("PreviewProfileScreen", "📸 User organizationImages: ${user.organizationImages?.size ?: 0} items")
+    android.util.Log.d("PreviewProfileScreen", "📸 Organization images URLs: ${user.organizationImages}")
+    
     user.organizationImages?.let { images ->
+        android.util.Log.d("PreviewProfileScreen", "📸 Images not null, checking if empty")
         if (images.isNotEmpty()) {
+            android.util.Log.d("PreviewProfileScreen", "📸 Images not empty, showing ${images.size} images")
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -550,6 +563,7 @@ private fun OrganizationImagesCard(user: DomainUser) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(images) { imageUrl ->
+                            android.util.Log.d("PreviewProfileScreen", "📸 Loading image: $imageUrl")
                             AsyncImage(
                                 model = imageUrl,
                                 contentDescription = "Organization Image",
@@ -557,6 +571,12 @@ private fun OrganizationImagesCard(user: DomainUser) {
                                     .size(120.dp)
                                     .clip(RoundedCornerShape(8.dp)),
                                 contentScale = ContentScale.Crop,
+                                onError = { error ->
+                                    android.util.Log.e("PreviewProfileScreen", "📸 Failed to load image: $imageUrl, error: ${error.result.throwable}")
+                                },
+                                onSuccess = { success ->
+                                    android.util.Log.d("PreviewProfileScreen", "📸 Successfully loaded image: $imageUrl")
+                                }
                             )
                         }
                     }

@@ -41,6 +41,7 @@ import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
 import com.example.gooddeedfeed.presentation.ui.components.BadgeManager
 import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundScreen
+import com.example.gooddeedfeed.presentation.ui.screens.organizer.CreateEventScreen
 import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
@@ -158,6 +159,7 @@ fun TabNavigationScreen(
     var showPreviewProfile by remember { mutableStateOf(false) }
     var showPrivacySettings by remember { mutableStateOf(false) }
     var showLostAndFound by remember { mutableStateOf(false) }
+    var showCreateEvent by remember { mutableStateOf(false) }
     var showChatProfile by remember { mutableStateOf(false) }
     var chatProfileUser by remember { mutableStateOf<DomainUser?>(null) }
 
@@ -204,7 +206,11 @@ fun TabNavigationScreen(
                     showLostAndFound = true
                     selectedTabIndex
                 }
-                HomeAction.CreateEvent, HomeAction.ManageEvents -> {
+                HomeAction.CreateEvent -> {
+                    showCreateEvent = true
+                    selectedTabIndex
+                }
+                HomeAction.ManageEvents -> {
                     val index = tabs.indexOfFirst { tab: TabItem -> tab.title == "Manage Events" }
                     if (index >= 0) index else selectedTabIndex
                 }
@@ -270,6 +276,22 @@ fun TabNavigationScreen(
                             user = currentUser,
                             onBack = { showLostAndFound = false },
                             modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+                
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showCreateEvent,
+                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        CreateEventScreen(
+                            onBack = { showCreateEvent = false }
                         )
                     }
                 }

@@ -35,7 +35,12 @@ fun UserDto.toDomain(): DomainUser {
         organizationDescription = organization_description,
         organizationWebsite = organization_website,
         organizationSocialMedia = organization_social_media?.map { it.toDomain() },
-        organizationImages = organization_images?.map { it.toEmulatorAccessibleUrl() },
+        organizationImages = organization_images?.map { it.toEmulatorAccessibleUrl() }.also { mapped ->
+            android.util.Log.d("UserMappers", "📸 User Organization Images Mapping:")
+            android.util.Log.d("UserMappers", "📸 Raw organization_images: ${organization_images?.size ?: 0} items")
+            android.util.Log.d("UserMappers", "📸 Raw URLs: $organization_images")
+            android.util.Log.d("UserMappers", "📸 Mapped URLs: $mapped")
+        },
         sex = sex?.toDomain(),
         description = description,
         skills = skills,

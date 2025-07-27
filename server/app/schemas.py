@@ -180,6 +180,12 @@ class UserUpdate(BaseModel):
 
 # Duplicate schema definitions removed to avoid conflicts
 
+# ------------------ Organization Images Response ------------------
+
+class OrganizationImagesResponse(BaseModel):
+    organization_images: List[str]
+    message: str
+
 # ------------------ Event Schemas ------------------
 
 class EventImageBase(BaseModel):

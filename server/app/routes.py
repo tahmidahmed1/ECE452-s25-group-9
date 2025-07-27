@@ -25,7 +25,7 @@ from .schemas import (
     OnboardingComplete, ProfilePictureUploadResponse, EventSchema,
     UserUpdate, EventCreate, EventImageOut,
     MessageCreate, MessageOut, ChatSummary,
-    ProfileBannerUploadResponse,
+    ProfileBannerUploadResponse, OrganizationImagesResponse,
     LeaderboardResponse, LeaderboardEntry,
     Badge as BadgeSchema, UserBadge, BadgeCheckResponse, BadgeAchievement,
     SubscriptionCreate, SubscriptionResponse, SubscriptionStatus,
@@ -394,12 +394,26 @@ def login_for_session(form_data: OAuth2PasswordRequestForm = Depends(), db: Sess
     }
 
 @router.get("/users/me", response_model=UserSchema)
-def read_users_me(current_user: User = Depends(get_current_active_user)):
+def read_users_me(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     logger.info(f"🔍 /users/me - User info request for: {current_user.username}")
     logger.info(f"🔍 /users/me - User ID: {current_user.id}")
     logger.info(f"🔍 /users/me - User onboarding completed: {current_user.onboarding_completed}")
     logger.info(f"🔍 /users/me - User type: {current_user.user_type}")
     logger.info(f"🔍 /users/me - User email: {current_user.email}")
+    
+    # Fix for users who completed onboarding but don't have user_type set
+    # This should not happen, but if it does, reset onboarding to force proper flow
+    if current_user.onboarding_completed and current_user.user_type is None:
+        logger.warning(f"🚨 User {current_user.username} has completed onboarding but no user_type set. Resetting onboarding...")
+        current_user.onboarding_completed = False
+        try:
+            db.commit()
+            db.refresh(current_user)
+            logger.info(f"✅ Reset onboarding for user {current_user.username}")
+        except Exception as e:
+            logger.error(f"❌ Failed to reset onboarding for {current_user.username}: {e}")
+            db.rollback()
+    
     return current_user
 
 @router.post("/logout")
@@ -458,6 +472,41 @@ async def remove_profile_picture(
         return {"message": "Profile picture removed successfully"}
     else:
         return {"message": "No profile picture to remove"}
+
+# Organization images upload endpoint
+@router.post("/upload-organization-images", response_model=OrganizationImagesResponse)
+async def upload_organization_images(
+    files: List[UploadFile] = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    logger.info(f"Organization images upload request from user: {current_user.username}, file count: {len(files)}")
+    
+    # Validate max number of files (up to 10)
+    if len(files) > 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 organization images allowed")
+    
+    # Upload all files
+    uploaded_urls = []
+    for i, file in enumerate(files):
+        try:
+            url = await storage_service.upload_organization_image(file, current_user.id)
+            uploaded_urls.append(url)
+            logger.info(f"Uploaded organization image {i+1}/{len(files)}: {url}")
+        except Exception as e:
+            logger.error(f"Failed to upload organization image {i+1}: {e}")
+            # Clean up already uploaded files
+            for uploaded_url in uploaded_urls:
+                try:
+                    await storage_service.delete_file_from_url(uploaded_url)
+                except:
+                    pass  # Best effort cleanup
+            raise HTTPException(status_code=500, detail=f"Failed to upload organization image {i+1}")
+    
+    return {
+        "organization_images": uploaded_urls,
+        "message": f"Successfully uploaded {len(uploaded_urls)} organization images"
+    }
 
 # Onboarding endpoints
 @router.post("/onboarding/step-one")
@@ -553,6 +602,7 @@ def complete_organizer_onboarding(
     db: Session = Depends(get_db)
 ):
     logger.info(f"Completing organizer onboarding for user {current_user.username}")
+    logger.info(f"📸 Received organization_images: {onboarding_data.organization_images}")
     
     # Update user profile with all organizer fields
     current_user.full_name = onboarding_data.full_name

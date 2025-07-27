@@ -17,21 +17,21 @@ The system enables organizers to publish volunteering opportunities, volunteers 
 ## 2. High-Level Architecture
 ```mermaid
 graph TD;
-  subgraph Mobile
-    A[Android App (Compose)]
+  subgraph Mobile [Mobile]
+    A[Android App Compose]
   end
-  subgraph Backend
+  subgraph Backend [Backend]
     B[FastAPI Service]
     C[PostgreSQL]
     D[MinIO]
   end
-  E[Firebase&nbsp;Cloud&nbsp;Messaging]
+  E[Firebase Cloud Messaging]
   F[OpenAI API]
   A <--> |REST+WebSocket| B
   B <-->|SQLAlchemy| C
   B <-->|S3-API| D
   B --> |Push Tokens| E
-  B --> |Optional| F
+  B --> |LLM Ideas| F
 ```
 > **Note:** For production deployments MinIO can be swapped for AWS S3 and FCM for APNS where needed.
 
