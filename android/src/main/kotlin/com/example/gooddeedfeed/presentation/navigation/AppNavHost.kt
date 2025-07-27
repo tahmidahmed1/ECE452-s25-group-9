@@ -237,6 +237,7 @@ fun appNavHost(
             }
         }
 
+        // Toast notifications (shows at bottom)
         Box(
             modifier = Modifier
                 .fillMaxSize()

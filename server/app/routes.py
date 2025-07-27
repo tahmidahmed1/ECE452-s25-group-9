@@ -235,19 +235,120 @@ async def upload_profile_banner(
 class ConnectionManager:
     def __init__(self):
         self.active: Dict[int, List[WebSocket]] = {}
+        self.user_connections: Dict[int, List[WebSocket]] = {}
 
     async def connect(self, room: int, websocket: WebSocket):
         await websocket.accept()
         self.active.setdefault(room, []).append(websocket)
 
+    async def connect_user(self, user_id: int, websocket: WebSocket):
+        logger.info(f"🔌 MANAGER CONNECT: Accepting WebSocket for user {user_id}")
+        await websocket.accept()
+        self.user_connections.setdefault(user_id, []).append(websocket)
+        total_connections = len(self.user_connections.get(user_id, []))
+        logger.info(f"🔌 MANAGER CONNECT: User {user_id} connected. Total connections for user: {total_connections}")
+        logger.info(f"🔌 MANAGER CONNECT: Active users: {list(self.user_connections.keys())}")
+
     def disconnect(self, room: int, websocket: WebSocket):
-        self.active.get(room, []).remove(websocket)
+        if room in self.active and websocket in self.active[room]:
+            self.active[room].remove(websocket)
+
+    def disconnect_user(self, user_id: int, websocket: WebSocket):
+        if user_id in self.user_connections and websocket in self.user_connections[user_id]:
+            self.user_connections[user_id].remove(websocket)
+            remaining_connections = len(self.user_connections.get(user_id, []))
+            logger.info(f"🔌 MANAGER DISCONNECT: User {user_id} disconnected. Remaining connections: {remaining_connections}")
+            
+            # Clean up empty lists
+            if not self.user_connections[user_id]:
+                del self.user_connections[user_id]
+                logger.info(f"🔌 MANAGER DISCONNECT: Removed user {user_id} from active connections")
+        else:
+            logger.warning(f"🔌 MANAGER DISCONNECT: Attempted to disconnect user {user_id} but connection not found")
 
     async def broadcast(self, room: int, message: dict):
         for ws in list(self.active.get(room, [])):
-            await ws.send_json(message)
+            try:
+                await ws.send_json(message)
+            except Exception as e:
+                logger.error(f"Failed to send message to WebSocket: {e}")
+
+    async def send_to_user(self, user_id: int, message: dict):
+        logger.info(f"🔌 MANAGER SEND: Attempting to send message to user {user_id}")
+        logger.info(f"🔌 MANAGER SEND: Message content: {message}")
+        
+        connections = self.user_connections.get(user_id, [])
+        logger.info(f"🔌 MANAGER SEND: Found {len(connections)} connections for user {user_id}")
+        
+        if not connections:
+            logger.warning(f"🔌 MANAGER SEND: No active WebSocket connections for user {user_id}")
+            return
+            
+        successful_sends = 0
+        failed_sends = 0
+        
+        for i, ws in enumerate(list(connections)):
+            try:
+                await ws.send_json(message)
+                successful_sends += 1
+                logger.info(f"🔌 MANAGER SEND: Successfully sent to connection {i+1} for user {user_id}")
+            except Exception as e:
+                failed_sends += 1
+                logger.error(f"🔌 MANAGER SEND: Failed to send to connection {i+1} for user {user_id}: {e}")
+                # Remove failed connection
+                if ws in connections:
+                    connections.remove(ws)
+                    
+        logger.info(f"🔌 MANAGER SEND: Summary for user {user_id} - Success: {successful_sends}, Failed: {failed_sends}")
 
 manager = ConnectionManager()
+
+# Debug endpoint to check WebSocket connections
+@router.get("/debug/websocket-connections")
+async def debug_websocket_connections():
+    """Debug endpoint to view active WebSocket connections"""
+    return {
+        "active_users": list(manager.user_connections.keys()),
+        "connection_counts": {
+            user_id: len(connections) 
+            for user_id, connections in manager.user_connections.items()
+        },
+        "total_connections": sum(len(connections) for connections in manager.user_connections.values())
+    }
+
+# Debug endpoint to test WebSocket message sending
+@router.post("/debug/websocket-test/{user_id}")
+async def test_websocket_send(user_id: int, message: str = "Test message"):
+    """Debug endpoint to test sending a message to a specific user via WebSocket"""
+    logger.info(f"🧪 DEBUG: Testing WebSocket send to user {user_id}")
+    
+    test_message = {
+        "type": "test_message",
+        "message": {
+            "id": "test-123",
+            "content": message,
+            "sender_id": 0,
+            "receiver_id": user_id,
+            "sender_name": "Test Sender",
+            "sender_type": "test",
+            "timestamp": "2024-01-01T00:00:00",
+            "is_from_current_user": False
+        }
+    }
+    
+    try:
+        await manager.send_to_user(user_id, test_message)
+        return {
+            "success": True,
+            "message": f"Test message sent to user {user_id}",
+            "sent_message": test_message
+        }
+    except Exception as e:
+        logger.error(f"🧪 DEBUG: Failed to send test message: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 @router.post("/register")
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -1677,25 +1778,47 @@ def list_events_by_organizer(organizer_id: int, q: str | None = None, db: Sessio
     
     return events
 
-@router.websocket("/ws/chat/{room_id}")
-async def chat_endpoint(websocket: WebSocket, room_id: int, db: Session = Depends(get_db)):
-    await manager.connect(room_id, websocket)
+@router.websocket("/ws/chat/{user_id}")
+async def chat_endpoint(websocket: WebSocket, user_id: int, db: Session = Depends(get_db)):
+    logger.info(f"🔌 WEBSOCKET CONNECT: User {user_id} attempting to connect")
+    
+    # Note: WebSocket authentication is tricky with FastAPI
+    # For now, we'll accept the connection and validate session through ping messages
+    # TODO: Consider implementing WebSocket authentication via query parameters or subprotocols
+    
     try:
+        await manager.connect_user(user_id, websocket)
+        logger.info(f"🔌 WEBSOCKET CONNECT: User {user_id} connected successfully")
+        
+        # Send initial connection confirmation
+        await websocket.send_json({
+            "type": "connection_established",
+            "user_id": user_id,
+            "message": "WebSocket connection established"
+        })
+        logger.info(f"🔌 WEBSOCKET CONNECT: Sent connection confirmation to user {user_id}")
+        
         while True:
-            data = await websocket.receive_json()
-            # data expected: {"sender_id":.., "receiver_id":.., "content":..}
             try:
-                payload = MessageCreate(**data)
+                data = await websocket.receive_json()
+                logger.info(f"🔌 WEBSOCKET RECEIVE: User {user_id} sent: {data}")
+                
+                # Handle ping messages to keep connection alive
+                if data.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+                    logger.debug(f"🔌 WEBSOCKET PING: Responded to ping from user {user_id}")
+                    
             except Exception as e:
-                await websocket.send_json({"error": str(e)})
-                continue
-            msg = Message(**payload.dict())
-            db.add(msg)
-            db.commit()
-            db.refresh(msg)
-            await manager.broadcast(room_id, MessageOut.from_orm(msg).dict())
+                logger.error(f"🔌 WEBSOCKET ERROR: Error receiving from user {user_id}: {e}")
+                break
+                
     except WebSocketDisconnect:
-        manager.disconnect(room_id, websocket)
+        logger.info(f"🔌 WEBSOCKET DISCONNECT: User {user_id} disconnected normally")
+    except Exception as e:
+        logger.error(f"🔌 WEBSOCKET ERROR: Unexpected error for user {user_id}: {e}")
+    finally:
+        manager.disconnect_user(user_id, websocket)
+        logger.info(f"🔌 WEBSOCKET CLEANUP: Cleaned up connection for user {user_id}")
 
 # ------------------ Profile Edit ------------------
 
@@ -2183,11 +2306,17 @@ def get_messages_with_user(other_user_id: int, current_user: User = Depends(get_
 
 @router.post("/messages", response_model=MessageOut)
 async def send_message(payload: MessageCreate, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    logger.info(f"💬 MESSAGE SEND: User {current_user.id} ({current_user.username}) sending message to user {payload.receiver_id}")
+    logger.info(f"💬 MESSAGE SEND: Message content length: {len(payload.content)} chars")
+    
     # Validate receiver exists to avoid FK errors
     receiver = db.get(User, payload.receiver_id)
     if not receiver:
+        logger.error(f"💬 MESSAGE SEND: Receiver user {payload.receiver_id} not found")
         raise HTTPException(status_code=404, detail="Receiver user not found")
  
+    logger.info(f"💬 MESSAGE SEND: Receiver found: {receiver.username}")
+    
     # Create message with current user as sender
     msg = Message(
         sender_id=current_user.id,
@@ -2197,13 +2326,38 @@ async def send_message(payload: MessageCreate, current_user: User = Depends(get_
     try:
         db.add(msg)
         db.commit()
+        logger.info(f"💬 MESSAGE SEND: Message saved to database with ID {msg.id}")
     except Exception as e:
         db.rollback()
         # Log and re-raise as proper HTTPException to ensure JSON error response
-        logger.error(f"Failed to create message: {e}")
+        logger.error(f"💬 MESSAGE SEND: Failed to create message: {e}")
         raise HTTPException(status_code=500, detail="Failed to create message")
 
     db.refresh(msg)
+    
+    # Send real-time message to receiver via WebSocket
+    logger.info(f"💬 MESSAGE SEND: Starting real-time WebSocket send to user {receiver.id}")
+    try:
+        message_data = {
+            "type": "new_message",
+            "message": {
+                "id": str(msg.id),
+                "content": msg.content,
+                "sender_id": current_user.id,
+                "receiver_id": receiver.id,
+                "sender_name": current_user.full_name or current_user.username,
+                "sender_type": current_user.user_type.name.lower() if current_user.user_type else "volunteer",
+                "timestamp": msg.created_at.isoformat(),
+                "is_from_current_user": False
+            }
+        }
+        logger.info(f"💬 MESSAGE SEND: Prepared WebSocket message data: {message_data}")
+        await manager.send_to_user(receiver.id, message_data)
+        logger.info(f"💬 MESSAGE SEND: ✅ Successfully sent real-time message to user {receiver.id}")
+    except Exception as e:
+        logger.error(f"💬 MESSAGE SEND: ❌ Failed to send real-time message: {e}")
+        import traceback
+        logger.error(f"💬 MESSAGE SEND: Full traceback: {traceback.format_exc()}")
     
     # Send push notification to receiver if they have notifications enabled
     try:
@@ -2432,17 +2586,6 @@ async def update_fcm_token(
         
         logger.info(f"✅ FCM TOKEN UPDATE: Successfully updated FCM token for user {current_user.username}")
         
-        # Test the FCM token by sending a test notification (optional)
-        if firebase_service and current_user.notifications_enabled:
-            logger.info(f"📱 FCM TOKEN TEST: Sending test notification to validate token")
-            test_success = firebase_service.send_notification_to_token(
-                token=token_update.fcm_token,
-                title="GoodDeedFeed",
-                body="Notifications are now enabled!",
-                data={"type": "token_updated"}
-            )
-            logger.info(f"📱 FCM TOKEN TEST: Test notification result: {test_success}")
-        
         return NotificationResponse(success=True, message="FCM token updated successfully")
     
     except Exception as e:
@@ -2453,6 +2596,57 @@ async def update_fcm_token(
             detail="Failed to update FCM token"
         )
 
+@router.get("/debug/fcm-status")
+async def debug_fcm_status(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Debug endpoint to check FCM token status for current user"""
+    logger.info(f"🔍 FCM DEBUG: Checking FCM status for user {current_user.username} (ID: {current_user.id})")
+    
+    # Refresh user from database to get latest data
+    db.refresh(current_user)
+    
+    fcm_token_status = {
+        "user_id": current_user.id,
+        "username": current_user.username,
+        "has_fcm_token": current_user.fcm_token is not None,
+        "fcm_token_length": len(current_user.fcm_token) if current_user.fcm_token else 0,
+        "fcm_token_preview": current_user.fcm_token[:20] + "..." if current_user.fcm_token else None,
+        "notifications_enabled": current_user.notifications_enabled,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None
+    }
+    
+    logger.info(f"🔍 FCM DEBUG: Status for {current_user.username}: {fcm_token_status}")
+    
+    return fcm_token_status
+
+@router.get("/debug/all-users-fcm")
+async def debug_all_users_fcm(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Debug endpoint to check FCM token status for all users"""
+    logger.info(f"🔍 FCM DEBUG ALL: Checking FCM status for all users")
+    
+    users = db.query(User).all()
+    
+    all_users_status = []
+    for user in users:
+        user_status = {
+            "user_id": user.id,
+            "username": user.username,
+            "user_type": user.user_type.value if user.user_type else None,
+            "has_fcm_token": user.fcm_token is not None,
+            "fcm_token_length": len(user.fcm_token) if user.fcm_token else 0,
+            "fcm_token_preview": user.fcm_token[:20] + "..." if user.fcm_token else None,
+            "notifications_enabled": user.notifications_enabled,
+            "created_at": user.created_at.isoformat() if user.created_at else None
+        }
+        all_users_status.append(user_status)
+        logger.info(f"🔍 FCM DEBUG ALL: User {user.username} (ID: {user.id}): FCM={user.fcm_token is not None}, Notifications={user.notifications_enabled}")
+    
+    return {"users": all_users_status}
 
 @router.put("/notifications/preferences", response_model=NotificationResponse)
 async def update_notification_preferences(
@@ -2892,6 +3086,19 @@ async def send_message_notification(
     logger.info(f"💬 MESSAGE NOTIFICATION: Message content length: {len(message_content)} chars")
     
     try:
+        # First, let's check if the user exists at all
+        logger.info(f"💬 MESSAGE NOTIFICATION: Checking if receiver {receiver_id} exists")
+        basic_receiver = db.query(User).filter(User.id == receiver_id).first()
+        
+        if not basic_receiver:
+            logger.warning(f"💬 MESSAGE NOTIFICATION: ⚠️ Receiver {receiver_id} does not exist in database")
+            return
+        
+        logger.info(f"💬 MESSAGE NOTIFICATION: Receiver {receiver_id} exists: {basic_receiver.username}")
+        logger.info(f"💬 MESSAGE NOTIFICATION: FCM token present: {basic_receiver.fcm_token is not None}")
+        logger.info(f"💬 MESSAGE NOTIFICATION: FCM token value: {basic_receiver.fcm_token[:20] + '...' if basic_receiver.fcm_token else 'None'}")
+        logger.info(f"💬 MESSAGE NOTIFICATION: Notifications enabled: {basic_receiver.notifications_enabled}")
+        
         # Get receiver with FCM token and notification preferences
         logger.info(f"💬 MESSAGE NOTIFICATION: Querying receiver {receiver_id} for FCM token and preferences")
         receiver = db.query(User).filter(
@@ -2902,6 +3109,8 @@ async def send_message_notification(
         
         if not receiver:
             logger.warning(f"💬 MESSAGE NOTIFICATION: ⚠️ Receiver {receiver_id} not found or has no FCM token/notifications disabled")
+            logger.warning(f"💬 MESSAGE NOTIFICATION: ⚠️ Debug - User has FCM token: {basic_receiver.fcm_token is not None}")
+            logger.warning(f"💬 MESSAGE NOTIFICATION: ⚠️ Debug - User notifications enabled: {basic_receiver.notifications_enabled}")
             return
         
         logger.info(f"💬 MESSAGE NOTIFICATION: Receiver found: {receiver.username}")

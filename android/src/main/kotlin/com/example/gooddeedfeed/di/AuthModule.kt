@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.remote.AuthApiService
 import com.example.gooddeedfeed.data.repository.AuthRepositoryImpl
 import com.example.gooddeedfeed.data.services.LocationService
+import com.example.gooddeedfeed.data.services.GlobalMessagingService
+import com.example.gooddeedfeed.domain.util.NotificationEventBus
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase
@@ -28,10 +30,14 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 @Module
@@ -89,6 +95,10 @@ object AuthModule {
                 connectTimeoutMillis = 30000 // 30 seconds
                 socketTimeoutMillis = 30000 // 30 seconds
             }
+
+            install(WebSockets) {
+                pingInterval = 20_000 // 20 seconds
+            }
         }
 
     @Provides
@@ -118,4 +128,21 @@ object AuthModule {
     @Provides
     @Singleton
     fun provideLocationService(@ApplicationContext context: Context): LocationService = LocationService(context)
+
+    @Provides
+    @Singleton
+    fun provideApplicationScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Provides
+    @Singleton
+    fun provideNotificationEventBus(): NotificationEventBus = NotificationEventBus()
+
+    @Provides
+    @Singleton
+    fun provideGlobalMessagingService(
+        client: HttpClient,
+        dataStore: DataStore<Preferences>,
+        notificationEventBus: NotificationEventBus,
+        applicationScope: CoroutineScope,
+    ): GlobalMessagingService = GlobalMessagingService(client, dataStore, notificationEventBus, applicationScope)
 }

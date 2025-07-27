@@ -2,6 +2,8 @@
 
 ![./assets/banner.png](./assets/banner.png)
 
+[![Watch the video](https://img.youtube.com/vi/pzxqJ4Y9Tws/maxresdefault.jpg)](https://youtu.be/pzxqJ4Y9Tws)
+
 ## Quick Start
 
 - Windows: Run `run-dev.bat`
@@ -26,6 +28,8 @@ This script will:
   - Auth: `/api/register`, `/api/login`, `/api/users/me`, `/api/logout`
   - Onboarding: `/api/onboarding/step-one`, `/api/onboarding/complete`
   - Upload: `/api/upload-profile-picture`
+  - Real-time Chat: WebSocket `/api/ws/chat/{room_id}`
+  - Notifications: `/api/notifications`, `/api/notifications/{id}/read`
 
 - **Database Viewer (Adminer):** [http://localhost:8082](http://localhost:8082)
   - System: PostgreSQL
@@ -52,11 +56,12 @@ This script will:
 ├── server/                # Python FastAPI backend
 │   ├── app/               # FastAPI application
 │   │   ├── main.py        # FastAPI entry point
-│   │   ├── models.py      # SQLAlchemy models
+│   │   ├── models.py      # SQLAlchemy models (Users, Events, Messages, Notifications)
 │   │   ├── schemas.py     # Pydantic schemas
-│   │   ├── routes.py      # API endpoints
+│   │   ├── routes.py      # API endpoints & WebSocket handlers
 │   │   ├── auth.py        # authentication
 │   │   ├── storage.py     # MinIO object storage
+│   │   ├── firebase_service.py # Push notification service
 │   │   └── database.py    # Database configuration
 │   ├── alembic/           # Database migrations
 │   ├── requirements.txt   # Python dependencies
@@ -80,10 +85,12 @@ Below is a non-exhaustive overview of what GoodDeedFeed can do. For a deep techn
 * **Badge Achievements** – Dynamic badge engine rewarding milestones & streaks checked through `/api/users/me/check-badges`.
 * **PDF Certificates** – One-click generation of a signed volunteering history PDF (`/api/users/me/volunteer-history/pdf`).
 
-### Social
-* **Realtime Chat** – WebSocket endpoint `/api/ws/chat/{room_id}` for peer-to-peer and group messaging, with local caching.
-* **Subscriptions & Notifications** – Volunteers subscribe to Organizers and receive Firebase Cloud Messaging (FCM) push **and** in-app notifications.
-* **Lost & Found** – Full CRUD for lost/found items with multi-image upload and automatic expiry cleanup.
+### Social & Real-time Features
+* **Real-time Chat** – WebSocket-powered messaging system (`/api/ws/chat/{room_id}`) enabling instant peer-to-peer and group conversations with optimistic updates and message reactions.
+* **Smart Notifications** – Comprehensive notification system with Firebase Cloud Messaging (FCM) push notifications and in-app notification center. Volunteers automatically receive notifications when subscribed organizers create events or when important updates occur.
+* **Event Subscriptions** – Volunteers can subscribe to favorite organizers and get instant notifications about new volunteering opportunities, event updates, and important announcements.
+* **Message Reactions & Status** – Rich messaging features including emoji reactions, read receipts, message importance flagging, and conversation management.
+* **Lost & Found** – Full CRUD for lost/found items with multi-image upload, tagging system, and automatic expiry cleanup.
 
 ### Intelligence & UX
 * **OpenAI Suggestions** – Optional GPT-powered helper that proposes engaging event descriptions and volunteering ideas when `OPENAI_API_KEY` is configured.

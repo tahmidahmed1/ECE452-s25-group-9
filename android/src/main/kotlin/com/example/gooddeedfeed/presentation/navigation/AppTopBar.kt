@@ -37,11 +37,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,11 +74,31 @@ fun AppTopBar(
 ) {
     var showNotifMenu by remember { mutableStateOf(false) }
     var showProfileMenu by remember { mutableStateOf(false) }
-
     val notifications by notificationViewModel.notifications.collectAsState()
     val unreadCount by notificationViewModel.unreadCount.collectAsState()
     val isLoading by notificationViewModel.isLoading.collectAsState()
     val error by notificationViewModel.error.collectAsState()
+    
+    // Debug logging for unread count changes
+    LaunchedEffect(unreadCount) {
+        Log.d("AppTopBar", "🔔 TOPBAR: Unread count changed to: $unreadCount")
+    }
+
+    // Listen for real-time notification events to update indicator immediately
+    LaunchedEffect(user.id) {
+        notificationViewModel.eventBus.notificationRefreshEvents.collect { event ->
+            when (event) {
+                is com.example.gooddeedfeed.domain.util.NotificationRefreshEvent.NewNotificationReceived -> {
+                    Log.d("AppTopBar", "🔔 TOPBAR: Real-time notification received, refreshing...")
+                    notificationViewModel.forceRefresh()
+                }
+                is com.example.gooddeedfeed.domain.util.NotificationRefreshEvent.NotificationCleared -> {
+                    Log.d("AppTopBar", "🔔 TOPBAR: Real-time notification cleared, refreshing...")
+                    notificationViewModel.forceRefresh()
+                }
+            }
+        }
+    }
 
     val density = LocalDensity.current
     val statusBarHeight = with(density) {
@@ -141,7 +164,12 @@ fun AppTopBar(
                                 .size(44.dp)
                                 .clickable {
                                     showNotifMenu = true
-                                    notificationViewModel.loadNotifications()
+                                    // Only load notifications if we don't have any or if there's an error
+                                    // But don't reload if we recently cleared all
+                                    if (!notificationViewModel.recentlyClearedAll && 
+                                        ((notifications.isEmpty() && unreadCount > 0) || error != null)) {
+                                        notificationViewModel.loadNotifications()
+                                    }
                                 },
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
@@ -161,6 +189,7 @@ fun AppTopBar(
                         }
 
                         if (unreadCount > 0) {
+                            Log.d("AppTopBar", "🔔 TOPBAR: Rendering notification badge with count: $unreadCount")
                             Surface(
                                 modifier = Modifier
                                     .size(if (unreadCount > 9) 18.dp else 16.dp)
@@ -181,6 +210,8 @@ fun AppTopBar(
                                     )
                                 }
                             }
+                        } else {
+                            Log.d("AppTopBar", "🔔 TOPBAR: NOT rendering notification badge, count: $unreadCount")
                         }
 
                         NotificationDropdownMenu(
@@ -196,7 +227,10 @@ fun AppTopBar(
                                 showNotifMenu = false
                             },
                             onClearAll = {
+                                Log.d("AppTopBar", "🔔 TOPBAR: Clear All clicked, current unread count: $unreadCount")
                                 notificationViewModel.clearAllNotifications()
+                                // Start aggressive polling after clear all to ensure indicator updates correctly
+                                notificationViewModel.startAggressivePollingAfterClear()
                                 showNotifMenu = false
                             },
                             onRetry = {

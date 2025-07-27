@@ -47,6 +47,8 @@ import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.common.NotificationViewModel
+import com.example.gooddeedfeed.domain.util.MessageNotificationEvent
 
 @Composable
 fun FloatingNavBarItem(
@@ -135,7 +137,12 @@ fun FloatingNavigationBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEachIndexed { index, tab ->
-                val showUnreadDot = chatTabIndex != null && index == chatTabIndex && hasUnreadChat
+                val showUnreadDot = when {
+                    // Show unread indicator on Chat tab ONLY if there are unread chat messages
+                    // General notifications have their own indicator in the top app bar
+                    chatTabIndex != null && index == chatTabIndex && hasUnreadChat -> true
+                    else -> false
+                }
                 FloatingNavBarItem(
                     icon = tab.icon,
                     isSelected = selectedTabIndex == index,
@@ -155,6 +162,8 @@ fun TabNavigationScreen(
 ) {
     val homeViewModel: HomeViewModel = hiltViewModel()
     val badgeViewModel: BadgeViewModel = hiltViewModel()
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
+    val chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showPreviewProfile by remember { mutableStateOf(false) }
     var showPrivacySettings by remember { mutableStateOf(false) }
@@ -172,14 +181,28 @@ fun TabNavigationScreen(
         authViewModel.refreshUser()
     }
 
+    // Listen for real-time message notifications to update chat badge immediately
+    // This ensures nav bar updates when messages arrive, separate from ChatViewModel's internal handling
+    LaunchedEffect(currentUser.id) {
+        notificationViewModel.eventBus.messageNotificationEvents.collect { event ->
+            when (event) {
+                is MessageNotificationEvent.NewMessage -> {
+                    // Only refresh conversations for nav bar updates, don't interfere with ChatViewModel
+                    if (event.receiverId == currentUser.id) {
+                        // Use a small delay to let WebSocket processing complete first
+                        kotlinx.coroutines.delay(200L)
+                        chatViewModel.loadConversations(currentUser)
+                    }
+                }
+            }
+        }
+    }
+
     LaunchedEffect(selectedTabIndex) {
         authViewModel.refreshUser()
     }
 
     val tabs = getTabsForUserType(currentUser.userType ?: DomainUserType.VOLUNTEER)
-
-    // --- Chat unread indicator setup ---
-    val chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel = hiltViewModel()
 
     // Load conversations once user info is ready
     LaunchedEffect(currentUser.id) {
@@ -188,6 +211,8 @@ fun TabNavigationScreen(
 
     val chatConversationsState by chatViewModel.conversationsState.collectAsStateWithLifecycle()
     val hasUnreadMessages = (chatConversationsState as? com.example.gooddeedfeed.presentation.common.UiState.Success)?.data?.any { it.unreadCount > 0 } == true
+
+    // Notification unread count is handled by AppTopBar, not navigation bar
 
     val chatTabIndex = tabs.indexOfFirst { it.title == "Chat" }.takeIf { it >= 0 }
 
