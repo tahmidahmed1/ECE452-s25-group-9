@@ -100,16 +100,16 @@ fun StatsScreen(
 
     LaunchedEffect(Unit) {
         Log.d("LeaderboardScreen", "🚀 Initializing badges and history data...")
-        
+
         // Force reload all badges from server
         badgeViewModel.loadAllBadges()
-        
+
         // Check for any new badge achievements first
         badgeViewModel.checkBadgeAchievements()
-        
+
         // Then load user's earned badges
         badgeViewModel.loadUserBadges()
-        
+
         // Load volunteer history
         viewModel.loadVolunteerHistory()
     }
@@ -349,7 +349,7 @@ fun StatsScreen(
                             onClick = {
                                 badgeViewModel.loadAllBadges()
                                 badgeViewModel.loadUserBadges()
-                            }
+                            },
                         ) {
                             Text("Retry")
                         }

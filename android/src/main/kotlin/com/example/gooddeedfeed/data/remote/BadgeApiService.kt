@@ -78,7 +78,7 @@ class BadgeApiService @Inject constructor(
             }
 
             Log.d(TAG, "📥 getUserBadges response status: ${response.status}")
-            
+
             if (response.status.value == 401) {
                 Log.e(TAG, "❌ getUserBadges received 401 Unauthorized - session invalid or expired")
                 val responseBody = response.bodyAsText()
@@ -124,7 +124,7 @@ class BadgeApiService @Inject constructor(
             }
 
             Log.d(TAG, "📥 checkBadgeAchievements response status: ${response.status}")
-            
+
             if (response.status.value == 401) {
                 Log.e(TAG, "❌ checkBadgeAchievements received 401 Unauthorized - session invalid or expired")
                 val responseBody = response.bodyAsText()

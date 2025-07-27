@@ -23,10 +23,6 @@ import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
-// Removed Auth imports since global auth interceptor is disabled
-// import io.ktor.client.plugins.auth.Auth
-// import io.ktor.client.plugins.auth.providers.BearerTokens
-// import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -36,8 +32,6 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
@@ -47,6 +41,15 @@ object AuthModule {
 
     private const val TAG = "AuthModule"
     private val SESSION_ID_KEY = stringPreferencesKey("session_id")
+
+    /**
+     * Note: Global Auth interceptor has been disabled to avoid conflicts with manual Authorization headers.
+     * All API services manually add Authorization headers using header("Authorization", "Bearer $sessionId").
+     * Previously imported but now removed:
+     * - io.ktor.client.plugins.auth.Auth
+     * - io.ktor.client.plugins.auth.providers.BearerTokens
+     * - io.ktor.client.plugins.auth.providers.bearer
+     */
 
     @Provides
     @Singleton
@@ -94,7 +97,7 @@ object AuthModule {
                     }
                 }
             }
-            */
+             */
 
             install(HttpTimeout) {
                 requestTimeoutMillis = 30000 // 30 seconds
