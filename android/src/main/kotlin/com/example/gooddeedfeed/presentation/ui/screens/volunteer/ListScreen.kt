@@ -648,8 +648,15 @@ private fun OrganizerProfileScreen(
             if (!organizer.organizationSocialMedia.isNullOrEmpty()) {
                 SocialMediaCard(organizer)
             }
+            android.util.Log.d("ListScreen", "📸 Checking organizationImages condition for organizer: ${organizer.username}")
+            android.util.Log.d("ListScreen", "📸 organizationImages is null: ${organizer.organizationImages == null}")
+            android.util.Log.d("ListScreen", "📸 organizationImages is empty: ${organizer.organizationImages?.isEmpty() == true}")
+            android.util.Log.d("ListScreen", "📸 organizationImages size: ${organizer.organizationImages?.size ?: 0}")
             if (!organizer.organizationImages.isNullOrEmpty()) {
+                android.util.Log.d("ListScreen", "📸 Condition passed, calling OrganizationImagesCard")
                 OrganizationImagesCard(organizer)
+            } else {
+                android.util.Log.d("ListScreen", "📸 Condition failed, NOT showing OrganizationImagesCard")
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -869,8 +876,14 @@ private fun SocialMediaCard(organizer: DomainOrganizerWithSubscriptionStatus) {
 
 @Composable
 private fun OrganizationImagesCard(organizer: DomainOrganizerWithSubscriptionStatus) {
+    android.util.Log.d("ListScreen", "📸 OrganizationImagesCard called for organizer: ${organizer.username}")
+    android.util.Log.d("ListScreen", "📸 Organizer organizationImages: ${organizer.organizationImages?.size ?: 0} items")
+    android.util.Log.d("ListScreen", "📸 Organization images URLs: ${organizer.organizationImages}")
+
     organizer.organizationImages?.let { images ->
+        android.util.Log.d("ListScreen", "📸 Images not null, checking if empty")
         if (images.isNotEmpty()) {
+            android.util.Log.d("ListScreen", "📸 Images not empty, showing ${images.size} images")
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -883,6 +896,7 @@ private fun OrganizationImagesCard(organizer: DomainOrganizerWithSubscriptionSta
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(images) { imageUrl ->
+                            android.util.Log.d("ListScreen", "📸 Loading image: $imageUrl")
                             AsyncImage(
                                 model = imageUrl,
                                 contentDescription = "Organization Image",
@@ -890,6 +904,12 @@ private fun OrganizationImagesCard(organizer: DomainOrganizerWithSubscriptionSta
                                     .size(120.dp)
                                     .clip(RoundedCornerShape(8.dp)),
                                 contentScale = ContentScale.Crop,
+                                onError = { error ->
+                                    android.util.Log.e("ListScreen", "📸 Failed to load image: $imageUrl, error: ${error.result.throwable}")
+                                },
+                                onSuccess = { success ->
+                                    android.util.Log.d("ListScreen", "📸 Successfully loaded image: $imageUrl")
+                                },
                             )
                         }
                     }

@@ -11,6 +11,7 @@ import com.example.gooddeedfeed.R
 import com.example.gooddeedfeed.domain.repository.NotificationRepository
 import com.example.gooddeedfeed.domain.util.MessageNotificationEvent
 import com.example.gooddeedfeed.domain.util.NotificationEventBus
+import com.example.gooddeedfeed.domain.util.NotificationRefreshEvent
 import com.example.gooddeedfeed.presentation.MainActivity
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -124,6 +125,12 @@ class NotificationService : FirebaseMessagingService() {
         when (type) {
             "new_event" -> {
                 Log.i(TAG, "🔄 DATA MESSAGE: Handling new_event notification")
+
+                // Emit notification refresh event for real-time UI updates
+                CoroutineScope(Dispatchers.IO).launch {
+                    notificationEventBus.emitNotificationRefresh(NotificationRefreshEvent.NewNotificationReceived)
+                }
+
                 showNotification(
                     title = "New Volunteer Opportunity!",
                     body = "$organizerName posted: $eventTitle",
@@ -132,6 +139,12 @@ class NotificationService : FirebaseMessagingService() {
             }
             "event_reminder" -> {
                 Log.i(TAG, "🔄 DATA MESSAGE: Handling event_reminder notification")
+
+                // Emit notification refresh event for real-time UI updates
+                CoroutineScope(Dispatchers.IO).launch {
+                    notificationEventBus.emitNotificationRefresh(NotificationRefreshEvent.NewNotificationReceived)
+                }
+
                 showNotification(
                     title = "Event Reminder",
                     body = "Don't forget about: $eventTitle",
@@ -140,6 +153,12 @@ class NotificationService : FirebaseMessagingService() {
             }
             "subscription_update" -> {
                 Log.i(TAG, "🔄 DATA MESSAGE: Handling subscription_update notification")
+
+                // Emit notification refresh event for real-time UI updates
+                CoroutineScope(Dispatchers.IO).launch {
+                    notificationEventBus.emitNotificationRefresh(NotificationRefreshEvent.NewNotificationReceived)
+                }
+
                 showNotification(
                     title = "Organization Update",
                     body = "$organizerName has an update for you",
@@ -152,6 +171,11 @@ class NotificationService : FirebaseMessagingService() {
                 val messagePreview = data["messagePreview"]
                 val senderId = data["senderId"]?.toIntOrNull()
                 val receiverId = data["receiverId"]?.toIntOrNull()
+
+                // Emit notification refresh event for real-time UI updates (for app top bar)
+                CoroutineScope(Dispatchers.IO).launch {
+                    notificationEventBus.emitNotificationRefresh(NotificationRefreshEvent.NewNotificationReceived)
+                }
 
                 // Emit notification event for real-time chat updates
                 if (senderId != null && receiverId != null) {

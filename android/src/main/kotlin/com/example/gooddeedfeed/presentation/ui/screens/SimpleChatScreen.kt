@@ -88,6 +88,7 @@ fun SimpleChatScreen(
             viewModel.loadMessages(otherUserId, user)
         } else {
             viewModel.loadConversations(user)
+            // Global messaging service handles WebSocket connections
         }
     }
 

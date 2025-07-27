@@ -44,7 +44,12 @@ fun OrganizerWithSubscriptionStatusDto.toDomainOrganizerWithSubscriptionStatus()
         organizationDescription = organization_description,
         organizationWebsite = organization_website,
         organizationSocialMedia = organization_social_media?.map { it.toDomainSocialMediaLink() },
-        organizationImages = organization_images,
+        organizationImages = organization_images?.map { it.toEmulatorAccessibleUrl() }.also { mapped ->
+            android.util.Log.d("SubscriptionMappers", "📸 Organization Images Mapping:")
+            android.util.Log.d("SubscriptionMappers", "📸 Raw organization_images: ${organization_images?.size ?: 0} items")
+            android.util.Log.d("SubscriptionMappers", "📸 Raw URLs: $organization_images")
+            android.util.Log.d("SubscriptionMappers", "📸 Mapped URLs: $mapped")
+        },
         organizationCustomType = organization_custom_type,
         sex = sex?.let { DomainSex.valueOf(it.uppercase()) },
         description = description,

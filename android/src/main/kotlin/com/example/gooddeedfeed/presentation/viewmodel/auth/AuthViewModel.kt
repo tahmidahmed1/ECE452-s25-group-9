@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.BuildConfig
+import com.example.gooddeedfeed.data.services.GlobalMessagingService
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
@@ -17,6 +18,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -39,6 +41,7 @@ constructor(
     private val getCurrentUser: GetCurrentUserUseCase,
     private val authRepository: AuthRepository,
     private val notificationRepository: NotificationRepository,
+    private val globalMessagingService: GlobalMessagingService,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
@@ -244,15 +247,27 @@ constructor(
                 result.onSuccess {
                     Log.d(TAG, "✅ SignOut successful")
                     _uiState.value = AuthUiState.SignedOut
+
+                    // Stop global messaging service when user signs out
+                    Log.d(TAG, "🌐 Stopping global messaging service")
+                    globalMessagingService.stopGlobalMessaging()
                 }.onFailure { error ->
                     Log.e(TAG, "❌ SignOut failed", error)
                     _uiState.value = AuthUiState.SignedOut
                     Log.w(TAG, "⚠️ Keeping local state as signed out despite server error")
+
+                    // Stop messaging service even if server sign out failed
+                    Log.d(TAG, "🌐 Stopping global messaging service despite server error")
+                    globalMessagingService.stopGlobalMessaging()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "❌ SignOut exception", e)
                 _uiState.value = AuthUiState.SignedOut
                 Log.w(TAG, "⚠️ Keeping local state as signed out despite exception")
+
+                // Stop messaging service even if exception occurred
+                Log.d(TAG, "🌐 Stopping global messaging service despite exception")
+                globalMessagingService.stopGlobalMessaging()
             }
         }
     }
@@ -270,6 +285,16 @@ constructor(
                     Log.d(TAG, "✅ User details - ID: ${user.id}, Username: ${user.username}")
                     Log.d(TAG, "✅ User onboarding completed: ${user.onboardingCompleted}")
                     _uiState.value = AuthUiState.Success(user)
+
+                    // Initialize FCM token and enable notifications for user
+                    Log.d(TAG, "🔔 Initializing FCM token for authenticated user ${user.id}")
+                    initializeFcmToken()
+                    Log.d(TAG, "🔔 Ensuring notifications are enabled for user ${user.id}")
+                    setNotificationsEnabled(true)
+
+                    // Start global messaging service when user is authenticated
+                    Log.d(TAG, "🌐 Starting global messaging service for user ${user.id}")
+                    globalMessagingService.startGlobalMessaging(user)
                 }.onFailure { error: Throwable ->
                     Log.e(TAG, "❌ FetchUser failed", error)
                     _uiState.value = AuthUiState.Error(error.message ?: "Failed to fetch user")
@@ -385,6 +410,16 @@ constructor(
                     Log.d(TAG, "✅ CheckCurrentUser successful - user is authenticated")
                     Log.d(TAG, "✅ User details - ID: ${user.id}, Username: ${user.username}")
                     _uiState.value = AuthUiState.Success(user)
+
+                    // Initialize FCM token and enable notifications for existing user on app start
+                    Log.d(TAG, "🔔 Initializing FCM token for existing user ${user.id}")
+                    initializeFcmToken()
+                    Log.d(TAG, "🔔 Ensuring notifications are enabled for existing user ${user.id}")
+                    setNotificationsEnabled(true)
+
+                    // Start global messaging service when user is authenticated on app start
+                    Log.d(TAG, "🌐 Starting global messaging service for existing user ${user.id}")
+                    globalMessagingService.startGlobalMessaging(user)
                 }.onFailure { error: Throwable ->
                     Log.d(TAG, "ℹ️ CheckCurrentUser failed - user not authenticated")
                     Log.d(TAG, "ℹ️ Error: ${error.message}")
@@ -399,17 +434,67 @@ constructor(
     }
 
     fun initializeFcmToken() {
+        Log.d(TAG, "🔔 FCM INIT: =================== STARTING FCM TOKEN INITIALIZATION ===================")
+        Log.d(TAG, "🔔 FCM INIT: Current thread: ${Thread.currentThread().name}")
+        Log.d(TAG, "🔔 FCM INIT: ViewModel scope active: ${viewModelScope.isActive}")
+
         viewModelScope.launch {
             try {
-                notificationRepository.getFcmToken().onSuccess { token ->
-                    token?.let {
-                        Log.d(TAG, "FCM token initialized: ${it.take(20)}...")
+                Log.d(TAG, "🔔 FCM INIT: Inside coroutine scope")
+                Log.d(TAG, "🔔 FCM INIT: About to call notificationRepository.getFcmToken()")
+
+                val result = notificationRepository.getFcmToken()
+                Log.d(TAG, "🔔 FCM INIT: getFcmToken() returned, processing result...")
+
+                result.onSuccess { token ->
+                    Log.d(TAG, "🔔 FCM INIT: ✅ SUCCESS - getFcmToken() succeeded")
+                    if (token != null) {
+                        Log.d(TAG, "🔔 FCM INIT: ✅ FCM token obtained: ${token.take(20)}...")
+                        Log.d(TAG, "🔔 FCM INIT: Token length: ${token.length}")
+                        Log.d(TAG, "🔔 FCM INIT: Token is valid and sent to server")
+
+                        // Check server status after token update
+                        Log.d(TAG, "🔔 FCM INIT: Checking FCM status on server after update...")
+                        notificationRepository.debugFcmStatus().onSuccess { status ->
+                            Log.d(TAG, "🔔 FCM INIT: ✅ Server FCM status check: $status")
+                        }.onFailure { debugError ->
+                            Log.e(TAG, "🔔 FCM INIT: ❌ Failed to check server FCM status", debugError)
+                        }
+                    } else {
+                        Log.w(TAG, "🔔 FCM INIT: ⚠️ FCM token is null - this should not happen")
+                        // Try to regenerate token if null
+                        Log.d(TAG, "🔔 FCM INIT: Attempting to regenerate FCM token...")
+                        notificationRepository.regenerateFcmToken().onSuccess { newToken ->
+                            Log.d(TAG, "🔔 FCM INIT: ✅ FCM token regenerated: ${newToken.take(20)}...")
+                        }.onFailure { regenerateError ->
+                            Log.e(TAG, "🔔 FCM INIT: ❌ Failed to regenerate FCM token", regenerateError)
+                        }
                     }
                 }.onFailure { e ->
-                    Log.e(TAG, "Failed to initialize FCM token", e)
+                    Log.e(TAG, "🔔 FCM INIT: ❌ FAILURE - getFcmToken() failed")
+                    Log.e(TAG, "🔔 FCM INIT: Exception type: ${e.javaClass.simpleName}")
+                    Log.e(TAG, "🔔 FCM INIT: Exception message: ${e.message}")
+                    Log.e(TAG, "🔔 FCM INIT: Exception cause: ${e.cause}")
+                    Log.e(TAG, "🔔 FCM INIT: Full exception:", e)
+
+                    // Try to regenerate token on failure
+                    Log.d(TAG, "🔔 FCM INIT: Attempting to regenerate FCM token after failure...")
+                    notificationRepository.regenerateFcmToken().onSuccess { newToken ->
+                        Log.d(TAG, "🔔 FCM INIT: ✅ FCM token regenerated after failure: ${newToken.take(20)}...")
+                    }.onFailure { regenerateError ->
+                        Log.e(TAG, "🔔 FCM INIT: ❌ Failed to regenerate FCM token after failure", regenerateError)
+                        Log.e(TAG, "🔔 FCM INIT: Regenerate error type: ${regenerateError.javaClass.simpleName}")
+                        Log.e(TAG, "🔔 FCM INIT: Regenerate error message: ${regenerateError.message}")
+                    }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error initializing FCM token", e)
+                Log.e(TAG, "🔔 FCM INIT: ❌ OUTER EXCEPTION in FCM token initialization")
+                Log.e(TAG, "🔔 FCM INIT: Outer exception type: ${e.javaClass.simpleName}")
+                Log.e(TAG, "🔔 FCM INIT: Outer exception message: ${e.message}")
+                Log.e(TAG, "🔔 FCM INIT: Outer exception cause: ${e.cause}")
+                Log.e(TAG, "🔔 FCM INIT: Full outer exception:", e)
+            } finally {
+                Log.d(TAG, "🔔 FCM INIT: =================== FCM TOKEN INITIALIZATION COMPLETED ===================")
             }
         }
     }

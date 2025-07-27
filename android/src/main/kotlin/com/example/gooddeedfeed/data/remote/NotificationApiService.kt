@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.remote.dto.InAppNotificationUpdateDto
 import com.example.gooddeedfeed.data.remote.dto.InAppNotificationsResponseDto
 import com.example.gooddeedfeed.data.remote.dto.NotificationPreferencesDto
+import com.example.gooddeedfeed.data.remote.dto.NotificationResponseDto
 import com.example.gooddeedfeed.data.remote.dto.NotificationTokenDto
 import com.example.gooddeedfeed.data.remote.dto.SubscriptionRequestDto
 import io.ktor.client.HttpClient
@@ -46,12 +47,16 @@ class NotificationApiService @Inject constructor(
     suspend fun updateFcmToken(token: String): Boolean {
         return try {
             val sessionId = getSessionId() ?: throw Exception("No authentication session found")
+            android.util.Log.i("NotificationApiService", "🔄 API: ===== STARTING FCM TOKEN UPDATE =====")
             android.util.Log.i("NotificationApiService", "🔄 API: Updating FCM token on server")
             android.util.Log.i("NotificationApiService", "🔄 API: Token: ${token.take(20)}...${token.takeLast(10)}")
+            android.util.Log.i("NotificationApiService", "🔄 API: Token length: ${token.length}")
             android.util.Log.i("NotificationApiService", "🔄 API: Session ID: ${sessionId.take(10)}...")
+            android.util.Log.i("NotificationApiService", "🔄 API: Request payload: NotificationTokenDto(fcmToken=<${token.length} chars>)")
 
             val response = withFallbackUrls { baseUrl ->
                 android.util.Log.i("NotificationApiService", "🔄 API: Sending PUT request to: $baseUrl/notifications/token")
+                android.util.Log.i("NotificationApiService", "🔄 API: Request headers: Authorization=Bearer ${sessionId.take(10)}..., Content-Type=application/json")
                 client.put("$baseUrl/notifications/token") {
                     contentType(ContentType.Application.Json)
                     setBody(NotificationTokenDto(fcmToken = token))
@@ -59,12 +64,15 @@ class NotificationApiService @Inject constructor(
                 }
             }
 
+            android.util.Log.i("NotificationApiService", "🔄 API: Response status: ${response.status}")
+            android.util.Log.i("NotificationApiService", "🔄 API: Response headers: ${response.headers}")
+
             val responseText = response.body<String>()
-            android.util.Log.i("NotificationApiService", "🔄 API: Server response: $responseText")
+            android.util.Log.i("NotificationApiService", "🔄 API: Server response body: $responseText")
 
             // Parse the JSON manually to avoid serialization issues
             val success = responseText.contains("\"success\":true")
-            android.util.Log.i("NotificationApiService", "🔄 API: Success result: $success")
+            android.util.Log.i("NotificationApiService", "🔄 API: ✅ FCM token update success: $success")
 
             success
         } catch (e: Exception) {
@@ -81,6 +89,8 @@ class NotificationApiService @Inject constructor(
     suspend fun setNotificationPreferences(enabled: Boolean): Boolean {
         return try {
             val sessionId = getSessionId() ?: throw Exception("No authentication session found")
+            android.util.Log.i("NotificationApiService", "🔔 PREFS: Updating notification preferences to: $enabled")
+
             val response = withFallbackUrls { baseUrl ->
                 client.put("$baseUrl/notifications/preferences") {
                     contentType(ContentType.Application.Json)
@@ -88,8 +98,15 @@ class NotificationApiService @Inject constructor(
                     header("Authorization", "Bearer $sessionId")
                 }
             }
-            response.body<Map<String, Any>>()["success"] as? Boolean ?: false
+
+            android.util.Log.i("NotificationApiService", "🔔 PREFS: Response status: ${response.status}")
+
+            val responseDto = response.body<NotificationResponseDto>()
+            android.util.Log.i("NotificationApiService", "🔔 PREFS: Response success: ${responseDto.success}")
+
+            responseDto.success
         } catch (e: Exception) {
+            android.util.Log.e("NotificationApiService", "🔔 PREFS: Failed to update notification preferences", e)
             false
         }
     }
@@ -219,6 +236,30 @@ class NotificationApiService @Inject constructor(
             response.body<Map<String, Any>>()["success"] as? Boolean ?: false
         } catch (e: Exception) {
             false
+        }
+    }
+
+    /**
+     * Debug: Check FCM token status for current user
+     */
+    suspend fun debugFcmStatus(): String {
+        return try {
+            val sessionId = getSessionId() ?: throw Exception("No authentication session found")
+            android.util.Log.i("NotificationApiService", "🔍 DEBUG: Checking FCM token status...")
+
+            val response = withFallbackUrls { baseUrl ->
+                client.get("$baseUrl/debug/fcm-status") {
+                    header("Authorization", "Bearer $sessionId")
+                }
+            }
+
+            val responseText = response.body<String>()
+            android.util.Log.i("NotificationApiService", "🔍 DEBUG: FCM Status Response: $responseText")
+            responseText
+        } catch (e: Exception) {
+            val errorMsg = "Failed to get FCM status: ${e.message}"
+            android.util.Log.e("NotificationApiService", "🔍 DEBUG: $errorMsg", e)
+            errorMsg
         }
     }
 }

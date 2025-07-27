@@ -36,16 +36,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.util.MessageNotificationEvent
 import com.example.gooddeedfeed.presentation.theme.BorderRadius
 import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
 import com.example.gooddeedfeed.presentation.ui.components.BadgeManager
+import com.example.gooddeedfeed.presentation.ui.screens.organizer.CreateEventScreen
 import com.example.gooddeedfeed.presentation.ui.screens.volunteer.LostAndFoundScreen
 import com.example.gooddeedfeed.presentation.viewmodel.BadgeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthUiState
 import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
+import com.example.gooddeedfeed.presentation.viewmodel.common.NotificationViewModel
 
 @Composable
 fun FloatingNavBarItem(
@@ -134,7 +137,12 @@ fun FloatingNavigationBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             tabs.forEachIndexed { index, tab ->
-                val showUnreadDot = chatTabIndex != null && index == chatTabIndex && hasUnreadChat
+                val showUnreadDot = when {
+                    // Show unread indicator on Chat tab ONLY if there are unread chat messages
+                    // General notifications have their own indicator in the top app bar
+                    chatTabIndex != null && index == chatTabIndex && hasUnreadChat -> true
+                    else -> false
+                }
                 FloatingNavBarItem(
                     icon = tab.icon,
                     isSelected = selectedTabIndex == index,
@@ -154,10 +162,13 @@ fun TabNavigationScreen(
 ) {
     val homeViewModel: HomeViewModel = hiltViewModel()
     val badgeViewModel: BadgeViewModel = hiltViewModel()
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
+    val chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel = hiltViewModel()
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showPreviewProfile by remember { mutableStateOf(false) }
     var showPrivacySettings by remember { mutableStateOf(false) }
     var showLostAndFound by remember { mutableStateOf(false) }
+    var showCreateEvent by remember { mutableStateOf(false) }
     var showChatProfile by remember { mutableStateOf(false) }
     var chatProfileUser by remember { mutableStateOf<DomainUser?>(null) }
 
@@ -170,14 +181,28 @@ fun TabNavigationScreen(
         authViewModel.refreshUser()
     }
 
+    // Listen for real-time message notifications to update chat badge immediately
+    // This ensures nav bar updates when messages arrive, separate from ChatViewModel's internal handling
+    LaunchedEffect(currentUser.id) {
+        notificationViewModel.eventBus.messageNotificationEvents.collect { event ->
+            when (event) {
+                is MessageNotificationEvent.NewMessage -> {
+                    // Only refresh conversations for nav bar updates, don't interfere with ChatViewModel
+                    if (event.receiverId == currentUser.id) {
+                        // Use a small delay to let WebSocket processing complete first
+                        kotlinx.coroutines.delay(200L)
+                        chatViewModel.loadConversations(currentUser)
+                    }
+                }
+            }
+        }
+    }
+
     LaunchedEffect(selectedTabIndex) {
         authViewModel.refreshUser()
     }
 
     val tabs = getTabsForUserType(currentUser.userType ?: DomainUserType.VOLUNTEER)
-
-    // --- Chat unread indicator setup ---
-    val chatViewModel: com.example.gooddeedfeed.presentation.viewmodel.ChatViewModel = hiltViewModel()
 
     // Load conversations once user info is ready
     LaunchedEffect(currentUser.id) {
@@ -186,6 +211,8 @@ fun TabNavigationScreen(
 
     val chatConversationsState by chatViewModel.conversationsState.collectAsStateWithLifecycle()
     val hasUnreadMessages = (chatConversationsState as? com.example.gooddeedfeed.presentation.common.UiState.Success)?.data?.any { it.unreadCount > 0 } == true
+
+    // Notification unread count is handled by AppTopBar, not navigation bar
 
     val chatTabIndex = tabs.indexOfFirst { it.title == "Chat" }.takeIf { it >= 0 }
 
@@ -204,7 +231,11 @@ fun TabNavigationScreen(
                     showLostAndFound = true
                     selectedTabIndex
                 }
-                HomeAction.CreateEvent, HomeAction.ManageEvents -> {
+                HomeAction.CreateEvent -> {
+                    showCreateEvent = true
+                    selectedTabIndex
+                }
+                HomeAction.ManageEvents -> {
                     val index = tabs.indexOfFirst { tab: TabItem -> tab.title == "Manage Events" }
                     if (index >= 0) index else selectedTabIndex
                 }
@@ -270,6 +301,22 @@ fun TabNavigationScreen(
                             user = currentUser,
                             onBack = { showLostAndFound = false },
                             modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showCreateEvent,
+                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { -it }),
+                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { -it }),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        CreateEventScreen(
+                            onBack = { showCreateEvent = false },
                         )
                     }
                 }

@@ -64,32 +64,64 @@ class NotificationRepositoryImpl @Inject constructor(
 
     override suspend fun getFcmToken(): Result<String?> {
         return try {
-            Log.d(TAG, "🔑 FCM TOKEN GET: Starting FCM token retrieval process")
+            Log.d(TAG, "🔑 FCM TOKEN GET: ============ STARTING FCM TOKEN RETRIEVAL ============")
+            Log.d(TAG, "🔑 FCM TOKEN GET: Thread: ${Thread.currentThread().name}")
+            Log.d(TAG, "🔑 FCM TOKEN GET: FirebaseMessaging instance: $firebaseMessaging")
 
+            Log.d(TAG, "🔑 FCM TOKEN GET: Checking local datastore for existing token...")
             val localToken = dataStore.data.map { preferences ->
+                Log.d(TAG, "🔑 FCM TOKEN GET: DataStore preferences accessed")
                 preferences[FCM_TOKEN_KEY]
             }.first()
 
+            Log.d(TAG, "🔑 FCM TOKEN GET: Local token check completed")
             Log.d(TAG, "🔑 FCM TOKEN GET: Local token present: ${localToken != null}")
+
             if (localToken != null) {
-                Log.d(TAG, "🔑 FCM TOKEN GET: Using existing local token: ${localToken.take(20)}...")
+                Log.d(TAG, "🔑 FCM TOKEN GET: Found existing local token: ${localToken.take(20)}...")
+                Log.d(TAG, "🔑 FCM TOKEN GET: Token length: ${localToken.length}")
+                Log.d(TAG, "🔑 FCM TOKEN GET: Verifying token is still valid by updating server...")
+
+                val updateResult = updateFcmToken(localToken)
+                updateResult.onSuccess {
+                    Log.d(TAG, "🔑 FCM TOKEN GET: ✅ Existing token successfully verified with server")
+                }.onFailure { updateError ->
+                    Log.w(TAG, "🔑 FCM TOKEN GET: ⚠️ Failed to verify existing token with server", updateError)
+                }
+
                 Result.success(localToken)
             } else {
-                Log.d(TAG, "🔑 FCM TOKEN GET: No local token, generating new one from Firebase...")
+                Log.d(TAG, "🔑 FCM TOKEN GET: No local token found, generating new one from Firebase...")
+                Log.d(TAG, "🔑 FCM TOKEN GET: Calling firebaseMessaging.token.await()...")
+
                 val newToken = firebaseMessaging.token.await()
-                Log.d(TAG, "🔑 FCM TOKEN GET: New token generated: ${newToken.take(20)}...")
+
+                Log.d(TAG, "🔑 FCM TOKEN GET: ✅ New Firebase token generated successfully")
+                Log.d(TAG, "🔑 FCM TOKEN GET: New token: ${newToken.take(20)}...")
                 Log.d(TAG, "🔑 FCM TOKEN GET: Token length: ${newToken.length}")
 
-                Log.d(TAG, "🔑 FCM TOKEN GET: Updating token on server...")
-                updateFcmToken(newToken)
-                Log.d(TAG, "🔑 FCM TOKEN GET: ✅ Token update completed")
+                Log.d(TAG, "🔑 FCM TOKEN GET: Updating new token on server...")
+                val updateResult = updateFcmToken(newToken)
+
+                updateResult.onSuccess {
+                    Log.d(TAG, "🔑 FCM TOKEN GET: ✅ New token successfully sent to server")
+                }.onFailure { updateError ->
+                    Log.e(TAG, "🔑 FCM TOKEN GET: ❌ Failed to send new token to server", updateError)
+                    // Continue anyway since we have the token locally
+                }
+
+                Log.d(TAG, "🔑 FCM TOKEN GET: ✅ FCM token retrieval completed successfully")
                 Result.success(newToken)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "🔑 FCM TOKEN GET: ❌ Failed to get FCM token", e)
+            Log.e(TAG, "🔑 FCM TOKEN GET: ❌ EXCEPTION in FCM token retrieval")
             Log.e(TAG, "🔑 FCM TOKEN GET: Exception type: ${e.javaClass.simpleName}")
             Log.e(TAG, "🔑 FCM TOKEN GET: Exception message: ${e.message}")
+            Log.e(TAG, "🔑 FCM TOKEN GET: Exception cause: ${e.cause}")
+            Log.e(TAG, "🔑 FCM TOKEN GET: Full exception:", e)
             Result.failure(e)
+        } finally {
+            Log.d(TAG, "🔑 FCM TOKEN GET: ============ FCM TOKEN RETRIEVAL COMPLETED ============")
         }
     }
 
@@ -265,6 +297,18 @@ class NotificationRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to delete notification: $notificationId", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun debugFcmStatus(): Result<String> {
+        return try {
+            Log.d(TAG, "🔍 DEBUG FCM STATUS: Checking FCM token status on server")
+            val response = notificationApiService.debugFcmStatus()
+            Log.d(TAG, "🔍 DEBUG FCM STATUS: Server response: $response")
+            Result.success(response)
+        } catch (e: Exception) {
+            Log.e(TAG, "🔍 DEBUG FCM STATUS: Failed to get FCM status", e)
             Result.failure(e)
         }
     }

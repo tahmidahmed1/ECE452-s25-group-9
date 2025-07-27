@@ -11,6 +11,7 @@ data class NotificationTokenDto(
 
 @Serializable
 data class NotificationPreferencesDto(
+    @SerialName("notifications_enabled")
     val notificationsEnabled: Boolean,
 )
 

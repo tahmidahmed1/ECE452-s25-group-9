@@ -65,4 +65,9 @@ interface NotificationRepository {
      * Delete a specific notification
      */
     suspend fun deleteNotification(notificationId: Int): Result<Unit>
+
+    /**
+     * Debug: Check FCM token status on server
+     */
+    suspend fun debugFcmStatus(): Result<String>
 }
