@@ -1,5 +1,6 @@
 package com.example.gooddeedfeed.presentation.navigation
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,14 +38,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,7 +77,7 @@ fun AppTopBar(
     val unreadCount by notificationViewModel.unreadCount.collectAsState()
     val isLoading by notificationViewModel.isLoading.collectAsState()
     val error by notificationViewModel.error.collectAsState()
-    
+
     // Debug logging for unread count changes
     LaunchedEffect(unreadCount) {
         Log.d("AppTopBar", "🔔 TOPBAR: Unread count changed to: $unreadCount")
@@ -166,8 +165,9 @@ fun AppTopBar(
                                     showNotifMenu = true
                                     // Only load notifications if we don't have any or if there's an error
                                     // But don't reload if we recently cleared all
-                                    if (!notificationViewModel.recentlyClearedAll && 
-                                        ((notifications.isEmpty() && unreadCount > 0) || error != null)) {
+                                    if (!notificationViewModel.recentlyClearedAll &&
+                                        ((notifications.isEmpty() && unreadCount > 0) || error != null)
+                                    ) {
                                         notificationViewModel.loadNotifications()
                                     }
                                 },

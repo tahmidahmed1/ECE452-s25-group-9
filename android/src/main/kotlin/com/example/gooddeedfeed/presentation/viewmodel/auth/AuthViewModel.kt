@@ -4,12 +4,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gooddeedfeed.BuildConfig
+import com.example.gooddeedfeed.data.services.GlobalMessagingService
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
 import com.example.gooddeedfeed.domain.model.DomainUserUpdate
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.repository.NotificationRepository
-import com.example.gooddeedfeed.data.services.GlobalMessagingService
 import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase
 import com.example.gooddeedfeed.domain.usecase.SignOutUseCase
@@ -247,7 +247,7 @@ constructor(
                 result.onSuccess {
                     Log.d(TAG, "✅ SignOut successful")
                     _uiState.value = AuthUiState.SignedOut
-                    
+
                     // Stop global messaging service when user signs out
                     Log.d(TAG, "🌐 Stopping global messaging service")
                     globalMessagingService.stopGlobalMessaging()
@@ -255,7 +255,7 @@ constructor(
                     Log.e(TAG, "❌ SignOut failed", error)
                     _uiState.value = AuthUiState.SignedOut
                     Log.w(TAG, "⚠️ Keeping local state as signed out despite server error")
-                    
+
                     // Stop messaging service even if server sign out failed
                     Log.d(TAG, "🌐 Stopping global messaging service despite server error")
                     globalMessagingService.stopGlobalMessaging()
@@ -264,7 +264,7 @@ constructor(
                 Log.e(TAG, "❌ SignOut exception", e)
                 _uiState.value = AuthUiState.SignedOut
                 Log.w(TAG, "⚠️ Keeping local state as signed out despite exception")
-                
+
                 // Stop messaging service even if exception occurred
                 Log.d(TAG, "🌐 Stopping global messaging service despite exception")
                 globalMessagingService.stopGlobalMessaging()
@@ -285,13 +285,13 @@ constructor(
                     Log.d(TAG, "✅ User details - ID: ${user.id}, Username: ${user.username}")
                     Log.d(TAG, "✅ User onboarding completed: ${user.onboardingCompleted}")
                     _uiState.value = AuthUiState.Success(user)
-                    
+
                     // Initialize FCM token and enable notifications for user
                     Log.d(TAG, "🔔 Initializing FCM token for authenticated user ${user.id}")
                     initializeFcmToken()
                     Log.d(TAG, "🔔 Ensuring notifications are enabled for user ${user.id}")
                     setNotificationsEnabled(true)
-                    
+
                     // Start global messaging service when user is authenticated
                     Log.d(TAG, "🌐 Starting global messaging service for user ${user.id}")
                     globalMessagingService.startGlobalMessaging(user)
@@ -410,13 +410,13 @@ constructor(
                     Log.d(TAG, "✅ CheckCurrentUser successful - user is authenticated")
                     Log.d(TAG, "✅ User details - ID: ${user.id}, Username: ${user.username}")
                     _uiState.value = AuthUiState.Success(user)
-                    
+
                     // Initialize FCM token and enable notifications for existing user on app start
                     Log.d(TAG, "🔔 Initializing FCM token for existing user ${user.id}")
                     initializeFcmToken()
                     Log.d(TAG, "🔔 Ensuring notifications are enabled for existing user ${user.id}")
                     setNotificationsEnabled(true)
-                    
+
                     // Start global messaging service when user is authenticated on app start
                     Log.d(TAG, "🌐 Starting global messaging service for existing user ${user.id}")
                     globalMessagingService.startGlobalMessaging(user)
@@ -437,22 +437,22 @@ constructor(
         Log.d(TAG, "🔔 FCM INIT: =================== STARTING FCM TOKEN INITIALIZATION ===================")
         Log.d(TAG, "🔔 FCM INIT: Current thread: ${Thread.currentThread().name}")
         Log.d(TAG, "🔔 FCM INIT: ViewModel scope active: ${viewModelScope.isActive}")
-        
+
         viewModelScope.launch {
             try {
                 Log.d(TAG, "🔔 FCM INIT: Inside coroutine scope")
                 Log.d(TAG, "🔔 FCM INIT: About to call notificationRepository.getFcmToken()")
-                
+
                 val result = notificationRepository.getFcmToken()
                 Log.d(TAG, "🔔 FCM INIT: getFcmToken() returned, processing result...")
-                
+
                 result.onSuccess { token ->
                     Log.d(TAG, "🔔 FCM INIT: ✅ SUCCESS - getFcmToken() succeeded")
                     if (token != null) {
                         Log.d(TAG, "🔔 FCM INIT: ✅ FCM token obtained: ${token.take(20)}...")
                         Log.d(TAG, "🔔 FCM INIT: Token length: ${token.length}")
                         Log.d(TAG, "🔔 FCM INIT: Token is valid and sent to server")
-                        
+
                         // Check server status after token update
                         Log.d(TAG, "🔔 FCM INIT: Checking FCM status on server after update...")
                         notificationRepository.debugFcmStatus().onSuccess { status ->
@@ -476,7 +476,7 @@ constructor(
                     Log.e(TAG, "🔔 FCM INIT: Exception message: ${e.message}")
                     Log.e(TAG, "🔔 FCM INIT: Exception cause: ${e.cause}")
                     Log.e(TAG, "🔔 FCM INIT: Full exception:", e)
-                    
+
                     // Try to regenerate token on failure
                     Log.d(TAG, "🔔 FCM INIT: Attempting to regenerate FCM token after failure...")
                     notificationRepository.regenerateFcmToken().onSuccess { newToken ->

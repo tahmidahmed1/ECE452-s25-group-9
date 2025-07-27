@@ -42,7 +42,7 @@ class NotificationViewModel @Inject constructor(
 
     // Flag to prevent immediate refresh after clearing notifications
     private var _recentlyClearedAll = false
-    
+
     // Expose the recently cleared state for UI components
     val recentlyClearedAll: Boolean get() = _recentlyClearedAll
 
@@ -51,7 +51,7 @@ class NotificationViewModel @Inject constructor(
         startPeriodicRefresh()
         listenForNotificationEvents()
     }
-    
+
     /**
      * Start periodic refresh of notifications to ensure real-time updates
      */
@@ -94,7 +94,7 @@ class NotificationViewModel @Inject constructor(
                 Log.d(TAG, "🔄 LOAD: Skipping load due to recent clear all operation")
                 return@launch
             }
-            
+
             _isLoading.value = true
             _error.value = null
 
@@ -117,7 +117,7 @@ class NotificationViewModel @Inject constructor(
             // Store current state for potential rollback
             val previousNotifications = _notifications.value
             val previousUnreadCount = _unreadCount.value
-            
+
             // Immediately update UI for responsive feedback
             val updatedNotifications = _notifications.value.map { notification ->
                 if (notification.id == notificationId) {
@@ -129,7 +129,7 @@ class NotificationViewModel @Inject constructor(
             _notifications.value = updatedNotifications
             _unreadCount.value = updatedNotifications.count { !it.isRead }
             _error.value = null
-            
+
             notificationRepository.updateNotification(notificationId, true)
                 .onSuccess {
                     // UI already updated, no need to change anything
@@ -148,14 +148,14 @@ class NotificationViewModel @Inject constructor(
             // Store current state for potential rollback
             val previousNotifications = _notifications.value
             val previousUnreadCount = _unreadCount.value
-            
+
             // Immediately update UI for responsive feedback
             _notifications.value = _notifications.value.map { notification ->
                 notification.copy(isRead = true)
             }
             _unreadCount.value = 0
             _error.value = null
-            
+
             notificationRepository.markAllNotificationsRead()
                 .onSuccess {
                     // UI already updated, no need to change anything
@@ -172,24 +172,24 @@ class NotificationViewModel @Inject constructor(
     fun clearAllNotifications() {
         Log.d(TAG, "🔄 CLEAR ALL: Starting clearAllNotifications")
         Log.d(TAG, "🔄 CLEAR ALL: Current unread count: ${_unreadCount.value}")
-        
+
         viewModelScope.launch {
             // Store current state for potential rollback
             val previousNotifications = _notifications.value
             val previousUnreadCount = _unreadCount.value
-            
+
             Log.d(TAG, "🔄 CLEAR ALL: Previous state - notifications: ${previousNotifications.size}, unread: $previousUnreadCount")
-            
+
             // Set flag to prevent immediate refresh
             _recentlyClearedAll = true
-            
+
             // Immediately update UI for responsive feedback
             _notifications.value = emptyList()
             _unreadCount.value = 0
             _error.value = null
-            
+
             Log.d(TAG, "🔄 CLEAR ALL: ✅ UI state updated - notifications: ${_notifications.value.size}, unread: ${_unreadCount.value}")
-            
+
             notificationRepository.clearAllNotifications()
                 .onSuccess {
                     Log.d(TAG, "🔄 CLEAR ALL: ✅ API call succeeded")
@@ -216,13 +216,13 @@ class NotificationViewModel @Inject constructor(
             // Store current state for potential rollback
             val previousNotifications = _notifications.value
             val previousUnreadCount = _unreadCount.value
-            
+
             // Immediately update UI for responsive feedback
             val updatedNotifications = _notifications.value.filterNot { it.id == notificationId }
             _notifications.value = updatedNotifications
             _unreadCount.value = updatedNotifications.count { !it.isRead }
             _error.value = null
-            
+
             notificationRepository.deleteNotification(notificationId)
                 .onSuccess {
                     // UI already updated, no need to change anything
@@ -239,7 +239,7 @@ class NotificationViewModel @Inject constructor(
     fun clearError() {
         _error.value = null
     }
-    
+
     /**
      * Force refresh notifications - useful when receiving Firebase notifications
      */
@@ -249,7 +249,7 @@ class NotificationViewModel @Inject constructor(
         _recentlyClearedAll = false
         loadNotifications()
     }
-    
+
     /**
      * Start aggressive polling for accurate notification count after clear all
      */
@@ -261,7 +261,7 @@ class NotificationViewModel @Inject constructor(
                 delay(1000L)
                 Log.d(TAG, "🔄 AGGRESSIVE POLLING: Poll #${pollCount + 1}/5 after clear all")
                 loadNotifications()
-                
+
                 // Stop early if we recently cleared all (no point in continuing)
                 if (_recentlyClearedAll && pollCount >= 1) {
                     Log.d(TAG, "🔄 AGGRESSIVE POLLING: Stopping early due to recent clear all")

@@ -7,14 +7,14 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.gooddeedfeed.data.remote.AuthApiService
 import com.example.gooddeedfeed.data.repository.AuthRepositoryImpl
-import com.example.gooddeedfeed.data.services.LocationService
 import com.example.gooddeedfeed.data.services.GlobalMessagingService
-import com.example.gooddeedfeed.domain.util.NotificationEventBus
+import com.example.gooddeedfeed.data.services.LocationService
 import com.example.gooddeedfeed.domain.repository.AuthRepository
 import com.example.gooddeedfeed.domain.usecase.GetCurrentUserUseCase
 import com.example.gooddeedfeed.domain.usecase.SignInUseCase
 import com.example.gooddeedfeed.domain.usecase.SignOutUseCase
 import com.example.gooddeedfeed.domain.usecase.SignUpUseCase
+import com.example.gooddeedfeed.domain.util.NotificationEventBus
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,12 +32,12 @@ import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
 @Module

@@ -45,10 +45,10 @@ class GlobalMessagingService @Inject constructor(
     fun startGlobalMessaging(user: DomainUser) {
         Log.d(TAG, "🌐 GLOBAL: Starting global messaging service for user ${user.id}")
         currentUser = user
-        
+
         // Stop any existing connection
         stopGlobalMessaging()
-        
+
         webSocketJob = coroutineScope.launch {
             connectToGlobalWebSocket(user)
         }
@@ -66,7 +66,7 @@ class GlobalMessagingService @Inject constructor(
 
     private suspend fun connectToGlobalWebSocket(user: DomainUser) {
         Log.d(TAG, "🌐 GLOBAL: Connecting to global WebSocket for user ${user.id}")
-        
+
         try {
             val sessionId = getSessionId()
             if (sessionId.isNullOrEmpty()) {
@@ -79,12 +79,12 @@ class GlobalMessagingService @Inject constructor(
                 val wsUrl = baseUrl.replace("http", "ws").replace("https", "wss")
                 val fullWsUrl = "$wsUrl/ws/chat/${user.id}"
                 Log.d(TAG, "🌐 GLOBAL: Attempting connection to: $fullWsUrl")
-                
+
                 try {
                     httpClient.webSocket(fullWsUrl) {
                         isConnected = true
                         Log.d(TAG, "🌐 GLOBAL: ✅ Connected successfully for user ${user.id}")
-                        
+
                         // Send ping periodically to keep connection alive
                         val pingJob = launch {
                             var pingCount = 0
@@ -101,7 +101,7 @@ class GlobalMessagingService @Inject constructor(
                                 }
                             }
                         }
-                        
+
                         // Listen for incoming messages
                         Log.d(TAG, "🌐 GLOBAL: Starting to listen for incoming messages")
                         try {
@@ -109,11 +109,11 @@ class GlobalMessagingService @Inject constructor(
                                 if (frame is Frame.Text) {
                                     val messageText = frame.readText()
                                     Log.d(TAG, "🌐 GLOBAL: Received message: $messageText")
-                                    
+
                                     try {
                                         val jsonElement = json.parseToJsonElement(messageText)
                                         val data = jsonElement.jsonObject
-                                        
+
                                         val messageType = data["type"]?.jsonPrimitive?.content
                                         when (messageType) {
                                             "connection_established" -> {
@@ -138,7 +138,7 @@ class GlobalMessagingService @Inject constructor(
                         } catch (e: Exception) {
                             Log.e(TAG, "🌐 GLOBAL: ❌ Error in message listening loop: $e")
                         }
-                        
+
                         // Cancel ping job when connection ends
                         pingJob.cancel()
                         Log.d(TAG, "🌐 GLOBAL: Message listening ended")
@@ -151,7 +151,7 @@ class GlobalMessagingService @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "🌐 GLOBAL: ❌ WebSocket connection failed completely: $e")
             isConnected = false
-            
+
             // Retry connection after delay
             Log.d(TAG, "🌐 GLOBAL: Will retry connection in 30 seconds...")
             delay(30_000)
@@ -172,20 +172,20 @@ class GlobalMessagingService @Inject constructor(
                 val receiverId = try { messageData["receiver_id"]?.jsonPrimitive?.int ?: 0 } catch (e: Exception) { 0 }
                 val senderName = messageData["sender_name"]?.jsonPrimitive?.content
                 val messageContent = messageData["content"]?.jsonPrimitive?.content
-                
+
                 Log.d(TAG, "🌐 GLOBAL: Processing message - sender: $senderId, receiver: $receiverId, content: '$messageContent'")
-                
+
                 // Only process messages where current user is the receiver
                 if (receiverId == currentUser.id && senderId != currentUser.id) {
                     Log.d(TAG, "🌐 GLOBAL: ✅ Message is for current user, emitting notification event")
-                    
+
                     val notificationEvent = MessageNotificationEvent.NewMessage(
                         senderId = senderId,
                         receiverId = receiverId,
                         senderName = senderName,
-                        messagePreview = messageContent
+                        messagePreview = messageContent,
                     )
-                    
+
                     notificationEventBus.emitMessageNotification(notificationEvent)
                     Log.d(TAG, "🌐 GLOBAL: ✅ Message notification event emitted successfully")
                     Log.d(TAG, "🌐 GLOBAL: 🔔 Firebase notification should be triggered automatically")

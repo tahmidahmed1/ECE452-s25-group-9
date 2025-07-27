@@ -36,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gooddeedfeed.domain.model.DomainUser
 import com.example.gooddeedfeed.domain.model.DomainUserType
+import com.example.gooddeedfeed.domain.util.MessageNotificationEvent
 import com.example.gooddeedfeed.presentation.theme.BorderRadius
 import com.example.gooddeedfeed.presentation.theme.Elevation
 import com.example.gooddeedfeed.presentation.theme.Spacing
@@ -48,7 +49,6 @@ import com.example.gooddeedfeed.presentation.viewmodel.auth.AuthViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeAction
 import com.example.gooddeedfeed.presentation.viewmodel.common.HomeViewModel
 import com.example.gooddeedfeed.presentation.viewmodel.common.NotificationViewModel
-import com.example.gooddeedfeed.domain.util.MessageNotificationEvent
 
 @Composable
 fun FloatingNavBarItem(

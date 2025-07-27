@@ -35,13 +35,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.int
 import javax.inject.Inject
 
 @Serializable
@@ -127,7 +124,7 @@ class ChatViewModel @Inject constructor(
                 }
             }
         }
-        
+
         // Listen for WebSocket messages
         viewModelScope.launch {
             Log.d(TAG, "🔔 CHAT INIT: Starting WebSocket message flow listener")
@@ -145,32 +142,32 @@ class ChatViewModel @Inject constructor(
     private fun handleWebSocketMessage(message: ChatMessage) {
         Log.d(TAG, "📱 WEBSOCKET HANDLER: Processing real-time message")
         Log.d(TAG, "📱 WEBSOCKET HANDLER: Message details - ID: ${message.id}, Content: '${message.content}', Sender: ${message.senderId}, Receiver: ${message.receiverId}")
-        
+
         currentUser?.let { user ->
             Log.d(TAG, "📱 WEBSOCKET HANDLER: Current user ID: ${user.id}, Current chat user ID: $currentChatUserId")
-            
+
             // Update messages if this message is for the current chat
             val isForCurrentChat = (message.senderId == currentChatUserId && message.receiverId == user.id) ||
                 (message.senderId == user.id && message.receiverId == currentChatUserId)
-            
+
             Log.d(TAG, "📱 WEBSOCKET HANDLER: Is message for current chat? $isForCurrentChat")
-            
+
             if (isForCurrentChat) {
                 val currentMessages = (_messagesState.value as? UiState.Success)?.data ?: emptyList()
                 Log.d(TAG, "📱 WEBSOCKET HANDLER: Current message count before adding: ${currentMessages.size}")
-                
+
                 val newMessage = message.copy(
-                    isFromCurrentUser = message.senderId == user.id
+                    isFromCurrentUser = message.senderId == user.id,
                 )
-                
+
                 Log.d(TAG, "📱 WEBSOCKET HANDLER: Updated message isFromCurrentUser: ${newMessage.isFromCurrentUser}")
-                
+
                 _messagesState.value = UiState.Success(currentMessages + newMessage)
                 Log.d(TAG, "📱 WEBSOCKET HANDLER: ✅ Added real-time message to current chat. New count: ${currentMessages.size + 1}")
             } else {
                 Log.d(TAG, "📱 WEBSOCKET HANDLER: Message not for current chat, skipping UI update")
             }
-            
+
             // Always refresh conversations to update unread counts, but only for WebSocket messages
             // to avoid duplicate calls when both WebSocket and Firebase notification arrive
             Log.d(TAG, "📱 WEBSOCKET HANDLER: Refreshing conversations for unread count update")
@@ -183,10 +180,10 @@ class ChatViewModel @Inject constructor(
     private fun handleNewMessageNotification(event: MessageNotificationEvent.NewMessage) {
         currentUser?.let { user ->
             Log.d(TAG, "📱 NOTIFICATION: Processing Firebase notification from ${event.senderName}")
-            
+
             val isForCurrentChat = (event.senderId == currentChatUserId && event.receiverId == user.id) ||
                 (event.senderId == user.id && event.receiverId == currentChatUserId)
-            
+
             if (isForCurrentChat) {
                 // For current chat, don't refresh messages (WebSocket handles that)
                 // but do refresh conversations after a delay to update unread counts correctly
@@ -194,7 +191,7 @@ class ChatViewModel @Inject constructor(
             } else {
                 Log.d(TAG, "📱 NOTIFICATION: Message not for current chat")
             }
-            
+
             // Note: TabNavigation will handle conversation refresh with delay to avoid conflicts
         }
     }
@@ -259,7 +256,7 @@ class ChatViewModel @Inject constructor(
         this.currentChatUserId = otherUserId
         this.currentUser = currentUser
         refreshMessages(otherUserId, currentUser, showLoading = true)
-        
+
         // Global messaging service handles WebSocket connections
         // Reduce polling frequency since we have real-time updates from global service
         startPeriodicRefresh()
@@ -267,14 +264,14 @@ class ChatViewModel @Inject constructor(
 
     fun clearCurrentChat() {
         Log.d(TAG, "📱 CHAT CLEAR: Clearing current chat state")
-        
+
         // Refresh conversations one final time to ensure unread counts are accurate
         // This helps fix nav bar indicator not updating when leaving chat
         currentUser?.let { user ->
             Log.d(TAG, "📱 CHAT CLEAR: Final conversation refresh to update nav bar indicators")
             loadConversations(user)
         }
-        
+
         currentChatUserId = null
         currentUser = null
         // Don't disconnect WebSocket here as user might still be in chat list
@@ -341,7 +338,7 @@ class ChatViewModel @Inject constructor(
 
                     // Refresh conversations to update unread counts
                     loadConversations(currentUser)
-                    
+
                     // Also do a delayed refresh to catch server-side read status updates
                     viewModelScope.launch {
                         delay(1000L) // Wait 1 second for server to process read status
@@ -407,18 +404,18 @@ class ChatViewModel @Inject constructor(
 
     fun connectToWebSocket(userId: Int, currentUser: DomainUser) {
         Log.d(TAG, "📱 WEBSOCKET INIT: Starting WebSocket connection for user $userId")
-        
+
         if (isWebSocketConnected && connectedUserId == userId) {
             Log.d(TAG, "📱 WEBSOCKET INIT: WebSocket already connected for user $userId, skipping")
             return
         }
-        
+
         if (isWebSocketConnected && connectedUserId != userId) {
             Log.d(TAG, "📱 WEBSOCKET INIT: WebSocket connected for different user ($connectedUserId), disconnecting first")
             isWebSocketConnected = false
             connectedUserId = null
         }
-        
+
         viewModelScope.launch {
             try {
                 Log.d(TAG, "📱 WEBSOCKET INIT: Getting session ID for authentication")
@@ -433,13 +430,13 @@ class ChatViewModel @Inject constructor(
                     val wsUrl = baseUrl.replace("http", "ws").replace("https", "wss")
                     val fullWsUrl = "$wsUrl/ws/chat/$userId"
                     Log.d(TAG, "📱 WEBSOCKET INIT: Attempting connection to: $fullWsUrl")
-                    
+
                     try {
                         httpClient.webSocket(fullWsUrl) {
                             isWebSocketConnected = true
                             connectedUserId = userId
                             Log.d(TAG, "📱 WEBSOCKET CONNECT: ✅ Connected successfully for user $userId")
-                            
+
                             // Send ping periodically to keep connection alive
                             val pingJob = launch {
                                 var pingCount = 0
@@ -457,22 +454,22 @@ class ChatViewModel @Inject constructor(
                                 }
                                 Log.d(TAG, "📱 WEBSOCKET PING: Ping loop ended for user $userId")
                             }
-                            
+
                             // Listen for incoming messages
                             Log.d(TAG, "📱 WEBSOCKET LISTEN: Starting to listen for incoming messages")
                             try {
                                 for (frame in incoming) {
                                     Log.d(TAG, "📱 WEBSOCKET LISTEN: Received frame type: ${frame.javaClass.simpleName}")
-                                    
+
                                     if (frame is Frame.Text) {
                                         val messageText = frame.readText()
                                         Log.d(TAG, "📱 WEBSOCKET LISTEN: Received text message: $messageText")
-                                        
+
                                         try {
                                             val jsonElement = json.parseToJsonElement(messageText)
                                             val data = jsonElement.jsonObject
                                             Log.d(TAG, "📱 WEBSOCKET LISTEN: Parsed message data: $data")
-                                            
+
                                             val messageType = data["type"]?.jsonPrimitive?.content
                                             when (messageType) {
                                                 "connection_established" -> {
@@ -486,11 +483,11 @@ class ChatViewModel @Inject constructor(
                                                     val messageData = data["message"]?.jsonObject
                                                     if (messageData != null) {
                                                         Log.d(TAG, "📱 WEBSOCKET LISTEN: Processing message data: $messageData")
-                                                        
+
                                                         val senderId = try { messageData["sender_id"]?.jsonPrimitive?.int ?: 0 } catch (e: Exception) { 0 }
                                                         val receiverId = try { messageData["receiver_id"]?.jsonPrimitive?.int ?: 0 } catch (e: Exception) { 0 }
                                                         Log.d(TAG, "📱 WEBSOCKET LISTEN: Parsed IDs - sender: $senderId, receiver: $receiverId")
-                                                        
+
                                                         val message = ChatMessage(
                                                             id = messageData["id"]?.jsonPrimitive?.content ?: "",
                                                             content = messageData["content"]?.jsonPrimitive?.content ?: "",
@@ -499,7 +496,7 @@ class ChatViewModel @Inject constructor(
                                                             timestamp = formatTimestamp(messageData["timestamp"]?.jsonPrimitive?.content ?: ""),
                                                             senderId = senderId,
                                                             receiverId = receiverId,
-                                                            isFromCurrentUser = false
+                                                            isFromCurrentUser = false,
                                                         )
                                                         Log.d(TAG, "📱 WEBSOCKET LISTEN: Created ChatMessage: $message")
                                                         _messageChannel.send(message)
@@ -522,7 +519,7 @@ class ChatViewModel @Inject constructor(
                             } catch (e: Exception) {
                                 Log.e(TAG, "📱 WEBSOCKET LISTEN: ❌ Error in message listening loop: $e")
                             }
-                            
+
                             // Cancel ping job when connection ends
                             pingJob.cancel()
                             Log.d(TAG, "📱 WEBSOCKET LISTEN: Message listening ended for user $userId")

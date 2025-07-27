@@ -125,12 +125,12 @@ class NotificationService : FirebaseMessagingService() {
         when (type) {
             "new_event" -> {
                 Log.i(TAG, "🔄 DATA MESSAGE: Handling new_event notification")
-                
+
                 // Emit notification refresh event for real-time UI updates
                 CoroutineScope(Dispatchers.IO).launch {
                     notificationEventBus.emitNotificationRefresh(NotificationRefreshEvent.NewNotificationReceived)
                 }
-                
+
                 showNotification(
                     title = "New Volunteer Opportunity!",
                     body = "$organizerName posted: $eventTitle",
@@ -139,12 +139,12 @@ class NotificationService : FirebaseMessagingService() {
             }
             "event_reminder" -> {
                 Log.i(TAG, "🔄 DATA MESSAGE: Handling event_reminder notification")
-                
+
                 // Emit notification refresh event for real-time UI updates
                 CoroutineScope(Dispatchers.IO).launch {
                     notificationEventBus.emitNotificationRefresh(NotificationRefreshEvent.NewNotificationReceived)
                 }
-                
+
                 showNotification(
                     title = "Event Reminder",
                     body = "Don't forget about: $eventTitle",
@@ -153,12 +153,12 @@ class NotificationService : FirebaseMessagingService() {
             }
             "subscription_update" -> {
                 Log.i(TAG, "🔄 DATA MESSAGE: Handling subscription_update notification")
-                
+
                 // Emit notification refresh event for real-time UI updates
                 CoroutineScope(Dispatchers.IO).launch {
                     notificationEventBus.emitNotificationRefresh(NotificationRefreshEvent.NewNotificationReceived)
                 }
-                
+
                 showNotification(
                     title = "Organization Update",
                     body = "$organizerName has an update for you",

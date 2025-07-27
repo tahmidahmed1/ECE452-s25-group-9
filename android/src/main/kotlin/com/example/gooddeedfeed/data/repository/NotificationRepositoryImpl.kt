@@ -76,40 +76,40 @@ class NotificationRepositoryImpl @Inject constructor(
 
             Log.d(TAG, "🔑 FCM TOKEN GET: Local token check completed")
             Log.d(TAG, "🔑 FCM TOKEN GET: Local token present: ${localToken != null}")
-            
+
             if (localToken != null) {
                 Log.d(TAG, "🔑 FCM TOKEN GET: Found existing local token: ${localToken.take(20)}...")
                 Log.d(TAG, "🔑 FCM TOKEN GET: Token length: ${localToken.length}")
                 Log.d(TAG, "🔑 FCM TOKEN GET: Verifying token is still valid by updating server...")
-                
+
                 val updateResult = updateFcmToken(localToken)
                 updateResult.onSuccess {
                     Log.d(TAG, "🔑 FCM TOKEN GET: ✅ Existing token successfully verified with server")
                 }.onFailure { updateError ->
                     Log.w(TAG, "🔑 FCM TOKEN GET: ⚠️ Failed to verify existing token with server", updateError)
                 }
-                
+
                 Result.success(localToken)
             } else {
                 Log.d(TAG, "🔑 FCM TOKEN GET: No local token found, generating new one from Firebase...")
                 Log.d(TAG, "🔑 FCM TOKEN GET: Calling firebaseMessaging.token.await()...")
-                
+
                 val newToken = firebaseMessaging.token.await()
-                
+
                 Log.d(TAG, "🔑 FCM TOKEN GET: ✅ New Firebase token generated successfully")
                 Log.d(TAG, "🔑 FCM TOKEN GET: New token: ${newToken.take(20)}...")
                 Log.d(TAG, "🔑 FCM TOKEN GET: Token length: ${newToken.length}")
 
                 Log.d(TAG, "🔑 FCM TOKEN GET: Updating new token on server...")
                 val updateResult = updateFcmToken(newToken)
-                
+
                 updateResult.onSuccess {
                     Log.d(TAG, "🔑 FCM TOKEN GET: ✅ New token successfully sent to server")
                 }.onFailure { updateError ->
                     Log.e(TAG, "🔑 FCM TOKEN GET: ❌ Failed to send new token to server", updateError)
                     // Continue anyway since we have the token locally
                 }
-                
+
                 Log.d(TAG, "🔑 FCM TOKEN GET: ✅ FCM token retrieval completed successfully")
                 Result.success(newToken)
             }

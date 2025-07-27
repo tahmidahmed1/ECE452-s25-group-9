@@ -90,7 +90,7 @@ class NotificationApiService @Inject constructor(
         return try {
             val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             android.util.Log.i("NotificationApiService", "🔔 PREFS: Updating notification preferences to: $enabled")
-            
+
             val response = withFallbackUrls { baseUrl ->
                 client.put("$baseUrl/notifications/preferences") {
                     contentType(ContentType.Application.Json)
@@ -98,12 +98,12 @@ class NotificationApiService @Inject constructor(
                     header("Authorization", "Bearer $sessionId")
                 }
             }
-            
+
             android.util.Log.i("NotificationApiService", "🔔 PREFS: Response status: ${response.status}")
-            
+
             val responseDto = response.body<NotificationResponseDto>()
             android.util.Log.i("NotificationApiService", "🔔 PREFS: Response success: ${responseDto.success}")
-            
+
             responseDto.success
         } catch (e: Exception) {
             android.util.Log.e("NotificationApiService", "🔔 PREFS: Failed to update notification preferences", e)
@@ -246,13 +246,13 @@ class NotificationApiService @Inject constructor(
         return try {
             val sessionId = getSessionId() ?: throw Exception("No authentication session found")
             android.util.Log.i("NotificationApiService", "🔍 DEBUG: Checking FCM token status...")
-            
+
             val response = withFallbackUrls { baseUrl ->
                 client.get("$baseUrl/debug/fcm-status") {
                     header("Authorization", "Bearer $sessionId")
                 }
             }
-            
+
             val responseText = response.body<String>()
             android.util.Log.i("NotificationApiService", "🔍 DEBUG: FCM Status Response: $responseText")
             responseText
