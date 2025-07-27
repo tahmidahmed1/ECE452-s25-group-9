@@ -99,8 +99,18 @@ fun StatsScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        Log.d("LeaderboardScreen", "🚀 Initializing badges and history data...")
+
+        // Force reload all badges from server
+        badgeViewModel.loadAllBadges()
+
+        // Check for any new badge achievements first
         badgeViewModel.checkBadgeAchievements()
+
+        // Then load user's earned badges
         badgeViewModel.loadUserBadges()
+
+        // Load volunteer history
         viewModel.loadVolunteerHistory()
     }
     uiState.errorMessage?.let { error ->
@@ -212,6 +222,10 @@ fun StatsScreen(
                     val allBadges = badgesState.data
                     val earnedBadgeIds = when (val userState = userBadgesState) {
                         is UiState.Success -> userState.data.map { it.badge.id }.toSet()
+                        is UiState.Error -> {
+                            Log.e("LeaderboardScreen", "❌ User badges error: ${userState.message}")
+                            emptySet()
+                        }
                         else -> emptySet()
                     }
 
@@ -304,12 +318,42 @@ fun StatsScreen(
                     }
                 }
                 is UiState.Error -> {
-                    Text(
-                        text = "Failed to load badges",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(16.dp),
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.EmojiEvents,
+                            contentDescription = "Error loading badges",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Failed to load badges",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = badgesState.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        androidx.compose.material3.TextButton(
+                            onClick = {
+                                badgeViewModel.loadAllBadges()
+                                badgeViewModel.loadUserBadges()
+                            },
+                        ) {
+                            Text("Retry")
+                        }
+                    }
                 }
                 is UiState.Idle -> {
                     Box(

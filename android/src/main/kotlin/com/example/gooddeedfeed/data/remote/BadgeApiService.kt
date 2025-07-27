@@ -12,6 +12,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -68,6 +69,7 @@ class BadgeApiService @Inject constructor(
 
         try {
             Log.d(TAG, "📤 Sending getUserBadges request with session authorization...")
+            Log.d(TAG, "🔍 Using session ID: ${sessionId.take(20)}...")
             val response = withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying getUserBadges URL: $baseUrl/users/me/badges")
                 client.get("$baseUrl/users/me/badges") {
@@ -77,12 +79,22 @@ class BadgeApiService @Inject constructor(
 
             Log.d(TAG, "📥 getUserBadges response status: ${response.status}")
 
+            if (response.status.value == 401) {
+                Log.e(TAG, "❌ getUserBadges received 401 Unauthorized - session invalid or expired")
+                val responseBody = response.bodyAsText()
+                Log.e(TAG, "❌ Response body: $responseBody")
+                emit(Result.failure(Exception("Authentication failed: Session invalid or expired")))
+                return@flow
+            }
+
             if (response.status.value in 200..299) {
                 val userBadges: List<UserBadgeDto> = response.body()
                 Log.d(TAG, "✅ getUserBadges successful - Found ${userBadges.size} badges")
                 emit(Result.success(userBadges))
             } else {
+                val responseBody = response.bodyAsText()
                 Log.e(TAG, "❌ getUserBadges failed with status ${response.status}")
+                Log.e(TAG, "❌ Response body: $responseBody")
                 emit(Result.failure(Exception("Failed to fetch user badges: ${response.status}")))
             }
         } catch (e: Exception) {
@@ -103,6 +115,7 @@ class BadgeApiService @Inject constructor(
 
         try {
             Log.d(TAG, "📤 Sending checkBadgeAchievements request with session authorization...")
+            Log.d(TAG, "🔍 Using session ID: ${sessionId.take(20)}...")
             val response = withFallbackUrls { baseUrl ->
                 Log.d(TAG, "🌐 Trying checkBadgeAchievements URL: $baseUrl/users/me/check-badges")
                 client.post("$baseUrl/users/me/check-badges") {
@@ -112,12 +125,22 @@ class BadgeApiService @Inject constructor(
 
             Log.d(TAG, "📥 checkBadgeAchievements response status: ${response.status}")
 
+            if (response.status.value == 401) {
+                Log.e(TAG, "❌ checkBadgeAchievements received 401 Unauthorized - session invalid or expired")
+                val responseBody = response.bodyAsText()
+                Log.e(TAG, "❌ Response body: $responseBody")
+                emit(Result.failure(Exception("Authentication failed: Session invalid or expired")))
+                return@flow
+            }
+
             if (response.status.value in 200..299) {
                 val badgeCheckResponse: BadgeCheckResponseDto = response.body()
                 Log.d(TAG, "✅ checkBadgeAchievements successful")
                 emit(Result.success(badgeCheckResponse))
             } else {
+                val responseBody = response.bodyAsText()
                 Log.e(TAG, "❌ checkBadgeAchievements failed with status ${response.status}")
+                Log.e(TAG, "❌ Response body: $responseBody")
                 emit(Result.failure(Exception("Failed to check badge achievements: ${response.status}")))
             }
         } catch (e: Exception) {
