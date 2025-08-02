@@ -80,7 +80,7 @@ Below is a non-exhaustive overview of what GoodDeedFeed can do. For a deep techn
 * **User Onboarding** – Guided multi-step flow for Volunteers and Organizers with rich profile capture.
 
 ### Volunteering Platform
-* **Event Management** – Organizers create, update, delete, and attach image carousels to volunteering opportunities. Volunteers discover, join and submit attendance (QR or manual).
+* **Event Management** – Organizers create, update, delete, and attach image carousels to volunteering opportunities. Volunteers discover, join and submit attendance (manual).
 * **Karma & Leaderboard** – Volunteers accumulate karma; top contributors are ranked server-side via `/api/leaderboard`.
 * **Badge Achievements** – Dynamic badge engine rewarding milestones & streaks checked through `/api/users/me/check-badges`.
 * **PDF Certificates** – One-click generation of a signed volunteering history PDF (`/api/users/me/volunteer-history/pdf`).
@@ -212,3 +212,4 @@ Once these are set, the CI will:
 1. Restore the debug keystore  
 2. Inject your `GOOGLE_MAPS_API_KEY`  
 3. Run `./gradlew assembleDebug`
+
